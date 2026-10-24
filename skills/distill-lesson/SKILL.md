@@ -25,7 +25,7 @@ Do not render goals, Start routes, study instructions, article legends, navigati
 
 Work only from material the learner owns or is licensed to use, and keep sources and outputs local. A digest of a commercial course book is for the learner's own study; do not publish the book's pages, audio or the digest itself on the learner's behalf.
 
-Scripts live in this skill's `scripts/` folder. `<skill-dir>` below means the base directory Claude Code reports when this skill loads (plugin or standalone install alike). They need Python 3.10+; audio additionally needs `edge-tts` and ffmpeg (`imageio-ffmpeg` provides one).
+Scripts live in this skill's `scripts/` folder. `<skill-dir>` below means the folder that contains this `SKILL.md`, wherever the client installed it. They need Python 3.10+ (`python` below; `py -3` on Windows, `python3` on some systems). Audio additionally needs `edge-tts`, `pyspellchecker` and ffmpeg (`imageio-ffmpeg` provides one).
 
 ## 1. Inspect the whole lesson internally
 
@@ -93,9 +93,9 @@ Check every German example, gloss, article/form, grammar statement, template and
 
 Use the bundled version-2 pipeline:
 
-```powershell
-py -3 <skill-dir>/scripts/study_pack.py validate --inventory L01_Inventory_v2.json --lesson L01_Lesson_v2.json --review L01_Review_v2.json --source "BOOK.pdf"
-py -3 <skill-dir>/scripts/study_pack.py render --inventory L01_Inventory_v2.json --lesson L01_Lesson_v2.json --review L01_Review_v2.json --source "BOOK.pdf" --output L01_Studysheet_v6.html
+```text
+python <skill-dir>/scripts/study_pack.py validate --inventory L01_Inventory_v2.json --lesson L01_Lesson_v2.json --review L01_Review_v2.json --source "BOOK.pdf"
+python <skill-dir>/scripts/study_pack.py render --inventory L01_Inventory_v2.json --lesson L01_Lesson_v2.json --review L01_Review_v2.json --source "BOOK.pdf" --output L01_Studysheet_v6.html
 ```
 
 Without a completed review, render only to a filename containing `DRAFT`. Draft/review status is machine metadata, not learner-facing prose. Rendering creates only the HTML; internal evidence stays in `_work`.
@@ -114,14 +114,16 @@ Only read the flashcard references when the user explicitly requests Anki/CSV or
 
 When several units are reviewed and the learner wants to study on the phone, listen on the go, or practise with flashcards, read [course-app.md](references/course-app.md). It builds two deliverables from the same reviewed records, so nothing drifts:
 
-- **one offline HTML study app**: *Lernen* (all sheets, 🔊 on every German item, a spoken grammar explanation, and a guided "listen to the whole unit" mode with pauses to repeat) and *Üben* (one card per sheet card, spaced repetition, tap to flip, swipe or tap to grade, skip, short rounds, a daily summary);
+- **one offline HTML study app**: *Lernen* (all sheets, 🔊 on every German item, a spoken explanation of each grammar point, and a guided "listen to the whole unit" mode with pauses to repeat) and *Üben* (one card per sheet card, spaced repetition, one tap per card: ✓ moves on with a short undo, ✗ opens the answer; tap to peek, swipe to grade, short rounds, a daily summary);
 - **one MP3 episode per unit** for commuting: German, a pause to repeat aloud, English.
 
-```powershell
-py -3 <skill-dir>/scripts/course_audio.py plan --course course.json                          # offline: what would be synthesized
-py -3 <skill-dir>/scripts/course_audio.py synth --course course.json --confirm-external-tts   # only after the user approved hosted TTS
-py -3 <skill-dir>/scripts/course_audio.py episodes --course course.json --confirm-external-tts
-py -3 <skill-dir>/scripts/build_course_app.py --course course.json --output Course_Studienpaket_v1.html
+German is always spoken by a German voice and English by an English voice; German words inside English text are detected and switched (see [course-app.md](references/course-app.md)). For natural grammar audio, write `narration.json`: one short spoken explanation per grammar point, with every German word marked «…».
+
+```text
+python <skill-dir>/scripts/course_audio.py plan --course course.json                          # offline: what would be synthesized
+python <skill-dir>/scripts/course_audio.py synth --course course.json --confirm-external-tts   # only after the user approved hosted TTS
+python <skill-dir>/scripts/course_audio.py episodes --course course.json --confirm-external-tts
+python <skill-dir>/scripts/build_course_app.py --course course.json --output Course_Studienpaket_v1.html
 ```
 
 Only reviewed sheets go into the app. Without approval for hosted speech, build with `--no-audio`. The app is the course-level practice surface; it never changes the three-section sheets.

@@ -13,18 +13,16 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import hashlib
 import json
 from pathlib import Path
 import re
-import shutil
 import subprocess
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from embed_audio import AudioError, Clip, build_plan, require, speakable, synthesize  # noqa: E402
+from embed_audio import AudioError, build_plan, require, synthesize  # noqa: E402
+import speech  # noqa: E402
 
-DEFAULT_VOICE = "de-DE-SeraphinaMultilingualNeural"
 SECTIONS = ("Wortschatz", "Grammatik", "Redemittel")
 BYTES_PER_SECOND = 6000   # edge-tts delivers 48 kbit/s constant-bitrate MP3
 STEP = 0.4                # silence granularity in seconds
@@ -36,7 +34,9 @@ def load_course(path):
     base = path.parent
     require(isinstance(course.get("units"), list) and course["units"], "course.json needs a non-empty units list")
     course["title"] = course.get("title") or "Course"
-    course["voice"] = course.get("voice") or DEFAULT_VOICE
+    course["voices"] = {**speech.DEFAULT_VOICES, **(course.get("voices") or {})}
+    narration = course.get("narration")
+    course["narration"] = json.loads((base / narration).read_text(encoding="utf-8-sig")) if narration else {}
     course["cache"] = (base / course.get("cache", "_work/audio")).resolve()
     course["episodes_dir"] = (base / course.get("episodes_dir", "Audio")).resolve()
     seen = set()
@@ -53,43 +53,44 @@ def load_course(path):
     return course
 
 
-def clip_id(text, voice):
-    """Same id scheme as embed_audio.build_plan."""
-    spoken = speakable(text)
-    require(spoken, "empty audio text")
-    return "a_" + hashlib.sha256((voice + "\0" + spoken).encode("utf-8")).hexdigest()[:20], spoken
-
-
-def unit_plan(lesson, voice):
-    """Full narration (episodes) plus the keys the app needs: German controls, grammar explanation, sections."""
-    clips, sequence, controls = build_plan(lesson, voice)
+def unit_plan(lesson, voices, narration=None, announcement=None):
+    """Full listening order (episodes) plus what the app needs: German controls, grammar explanations, sections."""
+    clips, sequence, controls, explain = build_plan(lesson, voices, narration)
 
     def add(text):
-        cid, spoken = clip_id(text, voice)
-        clips.setdefault(cid, Clip(cid, spoken, voice))
-        return cid
+        clip = speech.make_clip(text, "de", voices)
+        clips.setdefault(clip.clip_id, clip)
+        return clip.clip_id
 
-    grammar = {}
-    for record in lesson["grammar"]:
-        grammar[record["id"]] = {
-            "title": add(record["title"]),
-            "meaning": add("Meaning. " + record["meaning"]),
-            "rule": add("Rule. " + record["rule"]),
-            "contrast": add("Important. " + record["contrast"]) if record.get("contrast") else None,
-        }
     plan = {"title": add(lesson["title"]), "sections": {name: add(name) for name in SECTIONS},
-            "sequence": sequence, "controls": controls, "grammar": grammar}
+            "sequence": sequence, "controls": controls, "explain": explain}
+    if announcement:
+        plan["intro"] = add(announcement)            # opens the unit's listening episode
     return clips, plan
+
+
+def narration_notes(course):
+    """Spoken explanations are keyed by unit id and grammar id; a typo would silently fall back, so refuse it."""
+    lessons = {u["id"]: json.loads(u["lesson"].read_text(encoding="utf-8-sig")) for u in course["units"]}
+    notes = []
+    for uid, points in course["narration"].items():
+        require(uid in lessons, f"narration names an unknown unit: {uid}")
+        grammar = {record["id"] for record in lessons[uid]["grammar"]}
+        for gid, text in points.items():
+            require(gid in grammar, f"narration names an unknown grammar point: {uid} {gid}")
+            notes += [f"{uid} {gid}: '{word}' looks German but is not marked «…»" for word in speech.unmarked_german(text)]
+    return notes
 
 
 def build_course_plan(course):
     all_clips, units = {}, {}
     for unit in course["units"]:
         lesson = json.loads(unit["lesson"].read_text(encoding="utf-8-sig"))
-        clips, plan = unit_plan(lesson, course["voice"])
+        clips, plan = unit_plan(lesson, course["voices"], course["narration"].get(unit["id"]),
+                                f"{course['title']}. {unit['label']}.")
         all_clips.update(clips)
         units[unit["id"]] = plan
-    plan = {"voice": course["voice"], "units": units, "texts": {cid: clip.text for cid, clip in all_clips.items()}}
+    plan = {"voices": course["voices"], "units": units, "texts": {cid: clip.text for cid, clip in all_clips.items()}}
     course["cache"].mkdir(parents=True, exist_ok=True)
     (course["cache"] / "plan.json").write_text(json.dumps(plan, ensure_ascii=False, indent=1), encoding="utf-8")
     return all_clips, plan
@@ -100,14 +101,7 @@ def missing(course, clips):
     return [cid for cid in clips if not (folder / f"{cid}.mp3").is_file()]
 
 
-def ffmpeg_exe():
-    try:
-        import imageio_ffmpeg
-        return imageio_ffmpeg.get_ffmpeg_exe()
-    except ImportError:
-        found = shutil.which("ffmpeg")
-        require(found, "ffmpeg is required: install ffmpeg or `py -3 -m pip install imageio-ffmpeg`")
-        return found
+ffmpeg_exe = speech.ffmpeg_exe
 
 
 def silence(course, seconds, ff):
@@ -125,33 +119,25 @@ def safe_name(name):
     return re.sub(r'[<>:"/\\|?*!„“]', "", name).strip()
 
 
-async def announcements(course):
-    import edge_tts
-    paths = {}
-    for unit in course["units"]:
-        path = course["cache"] / "intro" / f"{unit['id']}.mp3"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        if not path.exists():
-            await edge_tts.Communicate(f"{course['title']}. {unit['label']}.", course["voice"]).save(str(path))
-        paths[unit["id"]] = path
-    return paths
-
-
 def build_episodes(course, plan):
     """Listening order of the sheet; after each German item a pause about as long as the clip, to repeat it."""
     ff = ffmpeg_exe()
-    intros = asyncio.run(announcements(course))
     course["episodes_dir"].mkdir(parents=True, exist_ok=True)
     clips_dir, total = course["cache"] / "clips", 0.0
     for number, unit in enumerate(course["units"], 1):
         unit_plan_ = plan["units"][unit["id"]]
-        repeat = {cid: (0.8 if key.endswith("-head") else 1.0) for key, cid in unit_plan_["controls"].items()}
-        parts, seconds = [intros[unit["id"]], silence(course, 0.8, ff)], 3.0
+        grammar_titles = {cid for gid, chain in unit_plan_["explain"].items() for cid in chain[:1]}
+        repeat = {cid: (0.8 if key.endswith("-head") else 1.0) for key, cid in unit_plan_["controls"].items()
+                  if cid not in grammar_titles}               # German items get a pause to repeat aloud
+        section_ids = set(unit_plan_["sections"].values())
+        intro = clips_dir / f"{unit_plan_['intro']}.mp3"
+        require(intro.is_file(), f"missing clip {unit_plan_['intro']}: run `course_audio.py synth` first")
+        parts, seconds = [intro, silence(course, 0.8, ff)], intro.stat().st_size / BYTES_PER_SECOND + 0.8
         for cid in unit_plan_["sequence"]:
             clip = clips_dir / f"{cid}.mp3"
             require(clip.is_file(), f"missing clip {cid}: run `course_audio.py synth` first")
             length = clip.stat().st_size / BYTES_PER_SECOND
-            gap = 1.2 if plan["texts"][cid] in SECTIONS else 0.4 + (length * repeat[cid] + 0.4 if cid in repeat else 0)
+            gap = 1.2 if cid in section_ids else 0.4 + (length * repeat[cid] + 0.4 if cid in repeat else 0)
             parts += [clip, silence(course, gap, ff)]
             seconds += length + max(STEP, round(gap / STEP) * STEP)
         listing = course["cache"] / "episodes" / f"{unit['id']}.txt"
@@ -179,22 +165,26 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         course = load_course(args.course)
+        notes = narration_notes(course)
         clips, plan = build_course_plan(course)
         todo = missing(course, clips)
         print(f"PLAN: {len(clips)} unique clips for {len(course['units'])} units; {len(todo)} not yet synthesized; "
-              f"voice={course['voice']}; cache={course['cache']}")
+              f"voices={course['voices']}; spoken grammar narration for "
+              f"{sum(len(v) for v in course['narration'].values())} points; cache={course['cache']}")
+        for note in notes:
+            print("NARRATION: " + note)
         if args.command == "plan":
             return 0
         require(args.confirm_external_tts, "Hosted synthesis sends lesson text externally; obtain approval and pass --confirm-external-tts")
         require(1 <= args.concurrency <= 8, "Concurrency must be from 1 to 8")
         if todo:
-            asyncio.run(synthesize({cid: clips[cid] for cid in todo}, course["cache"] / "clips", args.concurrency))
+            asyncio.run(synthesize({cid: clips[cid] for cid in todo}, course["cache"], course["voices"], args.concurrency))
         seconds = sum((course["cache"] / "clips" / f"{cid}.mp3").stat().st_size for cid in clips) / BYTES_PER_SECOND
         print(f"SYNTH: all {len(clips)} clips cached, about {seconds / 60:.0f} minutes of speech")
         if args.command == "episodes":
             build_episodes(course, plan)
         return 0
-    except (AudioError, OSError, json.JSONDecodeError, subprocess.CalledProcessError) as error:
+    except (AudioError, speech.SpeechError, OSError, json.JSONDecodeError, subprocess.CalledProcessError) as error:
         print("FAIL: " + str(error), file=sys.stderr)
         return 1
 

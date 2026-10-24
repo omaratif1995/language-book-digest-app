@@ -5,10 +5,11 @@
     build_course_app.py --course course.json --output Course_App_v1.html --no-audio   # study + practice only
 
 Lernen: every reviewed sheet in course order, a 🔊 button on each German headword, example, phrase and variant,
-a "🔊 Erklärung" button on each grammar point (English explanation), and "Ganze Lektion anhören", which plays the
+a "🔊 Erklärung" button on each grammar point (spoken explanation), and "Ganze Lektion anhören", which plays the
 unit as a guided listening session: German vocabulary and expressions with pauses to repeat, grammar explained
 in English with German examples. Üben: one card per sheet card (rendered from the same sheet HTML), a small
-spaced-repetition schedule, tap to flip, swipe or tap to grade, skip, short rounds and a daily summary.
+spaced-repetition schedule, ✓/✗ visible at once (✓ = known, next card, its answer shown below with undo;
+✗ = the answer opens), tap to peek, swipe to grade, short rounds and a daily summary.
 Audio comes from `course_audio.py synth` and is embedded as base64 so the file works without a network.
 See references/course-app.md.
 """
@@ -27,6 +28,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from embed_audio import AUDIO_CSS, AudioError, inject_example_buttons, play_button, require, transform_card  # noqa: E402
 from course_audio import build_course_plan, ffmpeg_exe, load_course  # noqa: E402
+import speech  # noqa: E402
 
 KIND = {"voc": "w", "rule": "g", "phrase": "r"}
 
@@ -51,9 +53,7 @@ def add_audio_buttons(page, lesson, unit_plan, used):
 
     for rec in lesson["grammar"]:
         def rule(block, rec=rec):
-            parts = unit_plan["grammar"][rec["id"]]
-            chain = [parts["title"], parts["meaning"], parts["rule"]] + ([parts["contrast"]] if parts["contrast"] else [])
-            used.update(chain)
+            chain = unit_plan["explain"][rec["id"]]            # title + spoken explanation (embedded at the explain bitrate)
             button = (f'<button type="button" class="explain-button" data-chain="{" ".join(chain)}" '
                       f'aria-label="Listen to the explanation">🔊 Erklärung</button>')
             block, n = re.subn(r"</h3>", lambda m: button + "</h3>", block, count=1)
@@ -92,10 +92,8 @@ def listening(unit_id, lesson, unit_plan, used):
     if lesson["grammar"]:
         add(unit_plan["sections"]["Grammatik"], 0.3)
     for rec in lesson["grammar"]:
-        parts = unit_plan["grammar"][rec["id"]]
-        for key in ("title", "meaning", "rule", "contrast"):
-            if parts[key]:
-                add(parts[key], 0.15, rec["id"])
+        for cid in unit_plan["explain"][rec["id"]]:
+            add(cid, 0.15, rec["id"])
         for i in range(len(rec["examples"])):
             add(c[f'{rec["id"]}-ex-{i}'], 1.0, rec["id"])
     add(unit_plan["sections"]["Redemittel"], 0.3)
@@ -168,7 +166,9 @@ APP_CSS = r"""
   .fc .front{font-size:26px;font-weight:700;line-height:1.3}
   .fc .front .q-mean{display:block}
   .fc .front .q-when{display:block;font-size:15px;font-weight:400;color:var(--muted);margin-top:10px}
-  .fc .tap{margin-top:28px;font-size:13px;color:var(--muted);text-align:center}
+  .fc .peek{margin-top:28px;font-size:13px;color:var(--muted);text-align:center}
+  .fc.enter{animation:enter .22s ease}
+  @keyframes enter{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   .fc .back{margin-top:16px;border-top:1px dashed var(--line);padding-top:12px;animation:reveal .25s ease}
   .fc .back article{background:none;border:0;box-shadow:none;padding:0;margin:0}
   .fc .msg{text-align:center;padding:26px 4px}
@@ -176,13 +176,19 @@ APP_CSS = r"""
   .fc .msg h3{margin:0 0 6px;font-size:22px}
   .fc .msg p{margin:4px 0;color:var(--muted)}
   @keyframes reveal{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-  .acts{display:flex;gap:10px;margin:14px 0 6px}
+  body{background-repeat:no-repeat}
+  .dock{position:sticky;bottom:0;z-index:4;margin:0 -16px;padding:12px 16px env(safe-area-inset-bottom);
+        background:linear-gradient(rgba(23,25,31,0),var(--bg) 12px)}
+  @media(max-width:520px){.dock{margin:0 -9px;padding-left:9px;padding-right:9px}}
+  .acts{display:flex;gap:10px}
   .acts button{flex:1;min-height:56px;font-size:17px;font-weight:700;border-radius:14px;cursor:pointer}
   .acts .main{background:var(--accent);color:#1a1030;border-color:var(--accent)}
   .acts .again{background:#5b2333;border-color:#9f3a55;color:#ffe4ea}
   .acts .good{background:#145c4d;border-color:#34d399;color:#e7fff6}
-  .skip{display:block;margin:0 auto;background:none !important;border:0 !important;color:var(--muted) !important;font-size:14px !important;cursor:pointer;min-height:36px}
-  .swipe-hint{text-align:center;font-size:12px;color:var(--muted);margin-top:2px}
+  .undo{display:flex;align-items:center;justify-content:center;gap:10px;min-height:44px;font-size:14px;color:var(--muted);visibility:hidden}
+  .undo.on{visibility:visible}
+  .undo span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pr .undo button{flex:none;min-height:32px;padding:3px 12px;font-size:13px;border-radius:999px;background:none;cursor:pointer}
   .settings{margin-top:24px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:rgba(36,39,46,.55)}
   .settings summary{cursor:pointer;color:var(--muted);font-size:14px;padding:4px 0}
   .settings[open] summary{margin-bottom:12px}
@@ -195,7 +201,7 @@ APP_CSS = r"""
   .pr .backup button,.pr .backup label{font:inherit;font-size:14px;cursor:pointer;color:var(--ink);background:var(--card);
        border:1px solid var(--line);border-radius:10px;padding:8px 10px}
   .pr .backup input{display:none}
-  @media(prefers-reduced-motion:reduce){.fc,.fc .back,.tr-bar i{transition:none;animation:none}}
+  @media(prefers-reduced-motion:reduce){.fc,.fc.enter,.fc .back,.tr-bar i{transition:none;animation:none}}
 """
 
 APP_JS = r"""
@@ -270,13 +276,14 @@ APP_JS = r"""
   var DAYS=[0,1,3,7,14,30,60], KIND={w:'Wortschatz',g:'Grammatik',r:'Redemittel'};
   var S={units:ui.units||ORDER.slice(), kinds:ui.kinds||['w','g','r'], dir:ui.dir||'de', perDay:ui.perDay||CFG.perDay,
          auto:ui.auto!==false, round:(ui.round===undefined?10:ui.round), browse:!!ui.browse};
-  var queue=[], cur=null, shown=false, view='card', ses={inRound:0,rg:0,ra:0}, bList=[], bIdx=0;
-  var fc=d.getElementById('fc'), acts=d.getElementById('acts'), skipBtn=d.getElementById('skip');
+  var queue=[], cur=null, shown=false, missed=false, view='card', ses={inRound:0,rg:0,ra:0}, bList=[], bIdx=0;
+  var busy=false, readyAt=0, undo=null, undoTimer=null;
+  var fc=d.getElementById('fc'), acts=d.getElementById('acts'), undoBox=d.getElementById('undo');
   function persist(){ ui.units=S.units; ui.kinds=S.kinds; ui.dir=S.dir; ui.perDay=S.perDay; ui.auto=S.auto; ui.round=S.round; ui.browse=S.browse; save('ui',ui); }
   function pool(){ return CARDS.filter(function(c){return S.units.indexOf(c.u)>=0 && S.kinds.indexOf(c.k)>=0;}); }
   function newDay(){ var T=today(); if(meta.day!==T){ meta.day=T; meta.fresh=0; meta.extra=0; meta.done=0; meta.good=0; save('meta',meta); } }
-  function start(){ newDay(); renderSettings();
-    if(S.browse){ bList=pool(); bIdx=Math.min(bIdx,Math.max(0,bList.length-1)); cur=bList[bIdx]||null; shown=false; view=cur?'card':'empty'; render(); return; }
+  function start(){ newDay(); dropUndo(); renderSettings();
+    if(S.browse){ bList=pool(); bIdx=Math.min(bIdx,Math.max(0,bList.length-1)); cur=bList[bIdx]||null; shown=false; missed=false; view=cur?'card':'empty'; render(); return; }
     var T=today(), p=pool();
     var due=p.filter(function(c){var s=state[c.id]; return s && s[1]<=T;}).sort(function(a,b){return state[a.id][1]-state[b.id][1]||state[a.id][0]-state[b.id][0];});
     var fresh=p.filter(function(c){return !state[c.id];}).slice(0,Math.max(0,S.perDay+meta.extra-meta.fresh));
@@ -284,7 +291,9 @@ APP_JS = r"""
     ses={inRound:0,rg:0,ra:0};
     if(!p.length){ cur=null; view='empty'; render(); return; }
     next(); }
-  function next(){ cur=queue.shift()||null; shown=false; view=cur?'card':'done'; render(); if(cur) autoFront(); }
+  function next(){ cur=queue.shift()||null; shown=false; missed=false; view=cur?'card':'done'; readyAt=Date.now()+250;   /* a double tap must not grade the next card */
+    fc.style.transition='none'; render(); void fc.offsetWidth; fc.style.transition=''; fc.classList.add('enter');
+    if(cur) autoFront(); }
   function autoFront(){ if(S.auto && cur.k==='w' && S.dir==='de' && cur.fa) clip(cur.fa,null); }
   function autoBack(){ if(!S.auto) return; if(cur.k==='w' && S.dir==='en' && cur.fa) clip(cur.fa,null); else if(cur.k==='r' && cur.ba) clip(cur.ba,null); }
   function topbar(){ var t=d.getElementById('tr-count'), bar=d.getElementById('tr-fill'), st=d.getElementById('tr-streak');
@@ -292,7 +301,7 @@ APP_JS = r"""
     else { var left=queue.length+(cur && view==='card'?1:0), all=(meta.done||0)+left; t.textContent='Heute '+(meta.done||0)+' / '+all; bar.style.width=(all?100*(meta.done||0)/all:0)+'%'; }
     st.textContent=meta.streak>0 && meta.last>=today()-1 ? '🔥 '+meta.streak : ''; }
   function msg(big,title,lines){ return '<div class="msg"><div class="big">'+big+'</div><h3>'+title+'</h3>'+lines.map(function(l){return '<p>'+l+'</p>';}).join('')+'</div>'; }
-  function render(){ topbar(); fc.className='fc'; fc.style.transform=''; skipBtn.style.display='none'; d.getElementById('swipe-hint').style.display='none';
+  function render(){ topbar(); fc.className='fc'; fc.style.transform='';
     if(view==='empty'){ fc.innerHTML=msg('🗂️','Keine Karten','<span>Wähle in den Einstellungen Lektionen und Teile.</span>'.split('|')); acts.innerHTML=''; return; }
     if(view==='done'){ var more=pool().some(function(c){return !state[c.id];});
       fc.innerHTML=msg('🎉','Fertig für heute!',[meta.done?meta.done+' Karten geübt · '+meta.good+' gewusst':'Heute ist nichts fällig.', meta.streak>1?'🔥 '+meta.streak+' Tage in Folge':'Bis morgen!']);
@@ -302,48 +311,71 @@ APP_JS = r"""
     if(view==='paused'){ fc.innerHTML=msg('☕','Gute Pause!',['Dein Fortschritt ist gespeichert.']); acts.innerHTML='<button type="button" class="main" data-a="resume">Weiter lernen</button>'; return; }
     var reverse=(cur.k==='w' && S.dir==='en'), cls={w:'voc',g:'rule',r:'phrase'}[cur.k];
     fc.innerHTML='<div class="tag">'+cur.l+' · '+KIND[cur.k]+'</div><div class="front">'+(reverse?cur.r:cur.f)+'</div>'+
-      (shown?'<div class="back"><article class="'+cls+'">'+cur.b+'</article></div>':'<div class="tap">Tippen zum Umdrehen</div>');
-    if(S.browse){ acts.innerHTML='<button type="button" data-a="prev">‹</button><button type="button" class="main" data-a="flip">'+(shown?'Verstecken':'Antwort zeigen')+'</button><button type="button" data-a="nxt">›</button>'; return; }
-    if(!shown){ acts.innerHTML='<button type="button" class="main" data-a="flip">Antwort zeigen</button>'; skipBtn.style.display='block'; }
-    else { acts.innerHTML='<button type="button" class="again" data-a="again">✗ Nochmal</button><button type="button" class="good" data-a="good">✓ Gewusst</button>';
-      d.getElementById('swipe-hint').style.display='block'; } }
-  function reveal(){ if(view!=='card'||!cur||shown) return; shown=true; render(); autoBack(); }
-  function grade(ok){ if(view!=='card'||!cur||!shown) return; var T=today(), s=state[cur.id], isNew=!s;
+      (shown?'<div class="back"><article class="'+cls+'">'+cur.b+'</article></div>':'<div class="peek">Tippen = Antwort ansehen</div>');
+    if(S.browse){ acts.innerHTML='<button type="button" data-a="prev" aria-label="Zurück">‹</button><button type="button" class="main" data-a="flip">'+(shown?'Verstecken':'Antwort zeigen')+'</button><button type="button" data-a="nxt" aria-label="Weiter">›</button>'; return; }
+    acts.innerHTML=missed?'<button type="button" class="main" data-a="go">Weiter ›</button>'
+      :'<button type="button" class="again" data-a="again">✗ Nochmal</button><button type="button" class="good" data-a="good">✓ Gewusst</button>'; }
+
+  /* one tap per card: ✓ = known, next card (its answer stays below for a moment, with undo);
+     ✗ = not known, the answer opens, then Weiter; a tap on the card only peeks */
+  function peek(){ if(view!=='card'||!cur||missed) return; shown=!shown; render(); if(shown) autoBack(); }
+  function canGrade(){ return !busy && view==='card' && !!cur && !missed && !S.browse && Date.now()>=readyAt; }
+  function grade(ok){ var T=today(), s=state[cur.id], isNew=!s,
+      snap={card:cur, s:s?s.slice():null, meta:JSON.stringify(meta), ses:JSON.stringify(ses), queue:queue.slice()};
     if(isNew){ meta.fresh++; }
     if(meta.last!==T){ meta.streak=(meta.last===T-1?meta.streak:0)+1; meta.last=T; }
     if(ok){ var box=isNew?2:Math.min((s[0]||0)+1,6); state[cur.id]=[box,T+DAYS[box]]; meta.good=(meta.good||0)+1; ses.rg++; }
     else { state[cur.id]=[0,T]; ses.ra++; queue.splice(Math.min(3,queue.length),0,cur); }
     meta.done=(meta.done||0)+1; ses.inRound++; save('srs',state); save('meta',meta); if(navigator.vibrate) navigator.vibrate(12);
-    if(S.round && ses.inRound>=S.round && queue.length){ ses.inRound=0; cur=null; view='round'; render(); ses.rg=0; ses.ra=0; return; }
+    return snap; }
+  function advance(){ if(S.round && ses.inRound>=S.round && queue.length){ ses.inRound=0; cur=null; view='round'; render(); ses.rg=0; ses.ra=0; return; }
     next(); }
-  var busy=false;
-  function fly(ok){ if(busy||view!=='card'||!shown) return; busy=true; fc.classList.add(ok?'fly-right':'fly-left');
-    setTimeout(function(){ busy=false; grade(ok); },200); }
-  function skip(){ if(view!=='card'||!cur||S.browse) return; queue.push(cur); next(); }
+  function fly(dir,then){ if(busy) return; busy=true; fc.style.transform=''; fc.classList.add(dir);
+    setTimeout(function(){ busy=false; then(); },200); }
+  function good(){ if(!canGrade()) return; var quick=!shown;
+    fly('fly-right',function(){ var snap=grade(true); if(quick) offerUndo(snap); else dropUndo(); advance(); }); }
+  function again(){ if(!canGrade()) return; dropUndo();
+    if(shown){ fly('fly-left',function(){ grade(false); advance(); }); return; }
+    grade(false); missed=true; shown=true; render(); autoBack(); }
+  function offerUndo(snap){ clearTimeout(undoTimer); undo=snap; undoBox.innerHTML='';
+    var t=d.createElement('span'); t.textContent='✓ '+(snap.card.a||''); undoBox.appendChild(t);
+    var b=d.createElement('button'); b.type='button'; b.textContent='Rückgängig'; b.addEventListener('click',doUndo); undoBox.appendChild(b);
+    undoBox.classList.add('on'); undoTimer=setTimeout(dropUndo,6000); }
+  function dropUndo(){ clearTimeout(undoTimer); undo=null; if(undoBox) undoBox.classList.remove('on'); }
+  function doUndo(){ if(!undo) return; var u=undo; dropUndo(); stopAll();
+    if(u.s) state[u.card.id]=u.s; else delete state[u.card.id];
+    meta=JSON.parse(u.meta); ses=JSON.parse(u.ses); queue=u.queue; cur=u.card; shown=true; missed=false; view='card';
+    save('srs',state); save('meta',meta); render(); autoBack(); }
   function browseMove(n){ bIdx=Math.max(0,Math.min(bList.length-1,bIdx+n)); cur=bList[bIdx]; shown=false; render(); }
   acts.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; var a=b.getAttribute('data-a');
-    if(a==='flip'){ if(S.browse){ shown=!shown; render(); if(shown) autoBack(); } else reveal(); }
-    else if(a==='good') fly(true); else if(a==='again') fly(false);
-    else if(a==='resume'){ next(); } else if(a==='pause'){ view='paused'; render(); }
+    if(a==='good') good(); else if(a==='again') again(); else if(a==='go') advance(); else if(a==='flip') peek();
+    else if(a==='resume'){ next(); } else if(a==='pause'){ dropUndo(); view='paused'; render(); }
     else if(a==='extra'){ meta.extra+=10; save('meta',meta); start(); }
     else if(a==='browse'){ S.browse=true; persist(); start(); }
     else if(a==='prev') browseMove(-1); else if(a==='nxt') browseMove(1); });
-  skipBtn.addEventListener('click',skip);
-  /* tap to flip, swipe to grade */
+  /* tap = peek, swipe right = ✓, swipe left = ✗; after ✗ a swipe either way = Weiter */
   var sx=0, sy=0, dx=0, dragging=false;
-  fc.addEventListener('pointerdown',function(e){ if(e.target.closest('button')||view!=='card') return; dragging=true; sx=e.clientX; sy=e.clientY; dx=0; fc.classList.add('dragging'); });
+  fc.addEventListener('pointerdown',function(e){ if(e.target.closest('button')||view!=='card') return; dragging=true; sx=e.clientX; sy=e.clientY; dx=0; fc.classList.add('dragging');
+    try{ fc.setPointerCapture(e.pointerId); }catch(err){} });   /* a mouse swipe may leave the window */
   fc.addEventListener('pointermove',function(e){ if(!dragging) return; dx=e.clientX-sx; var dy=e.clientY-sy;
-    if(shown && !S.browse && Math.abs(dx)>Math.abs(dy)){ fc.style.transform='translateX('+dx+'px) rotate('+(dx/28)+'deg)'; fc.classList.toggle('hint-good',dx>40); fc.classList.toggle('hint-again',dx<-40); } });
+    if(!S.browse && Math.abs(dx)>Math.abs(dy)){ fc.style.transform='translateX('+dx+'px) rotate('+(dx/28)+'deg)';
+      if(!missed){ fc.classList.toggle('hint-good',dx>40); fc.classList.toggle('hint-again',dx<-40); } } });
   function end(e){ if(!dragging) return; dragging=false; fc.classList.remove('dragging'); var dy=(e&&e.clientY!==undefined)?e.clientY-sy:0;
-    if(shown && !S.browse && Math.abs(dx)>80){ fly(dx>0); return; }
+    if(!S.browse && Math.abs(dx)>80){
+      if(missed && !busy){ fly(dx>0?'fly-right':'fly-left',advance); return; }
+      if(canGrade()){ if(dx>0) good(); else again(); return; } }
     fc.style.transform=''; fc.classList.remove('hint-good','hint-again');
-    if(Math.abs(dx)<10 && Math.abs(dy)<10){ if(S.browse){ shown=!shown; render(); if(shown) autoBack(); } else if(!shown) reveal(); } }
+    if(Math.abs(dx)<10 && Math.abs(dy)<10) peek(); }
   fc.addEventListener('pointerup',end); fc.addEventListener('pointercancel',function(){ dragging=false; fc.classList.remove('dragging','hint-good','hint-again'); fc.style.transform=''; });
-  d.addEventListener('keydown',function(e){ if(!d.body.classList.contains('mode-practice')||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
-    if(e.key===' '||e.key==='Enter'){ e.preventDefault(); if(view==='card'){ if(S.browse){ shown=!shown; render(); } else if(!shown) reveal(); } else if(view==='round'||view==='paused') next(); }
-    else if(e.key==='ArrowRight'||e.key==='2'){ if(S.browse) browseMove(1); else if(shown) fly(true); }
-    else if(e.key==='ArrowLeft'||e.key==='1'){ if(S.browse) browseMove(-1); else if(shown) fly(false); }
-    else if(e.key==='s'||e.key==='S') skip(); });
+  d.addEventListener('keydown',function(e){ if(!d.body.classList.contains('mode-practice')||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)||e.repeat||e.ctrlKey||e.metaKey||e.altKey) return;
+    var k=e.key, onButton=!!(e.target.closest && e.target.closest('button')), confirm=(k===' '||k==='Enter') && !onButton;
+    if((k==='Backspace'||k==='z'||k==='Z') && undo){ e.preventDefault(); doUndo(); return; }
+    if(view==='round'||view==='paused'){ if(confirm){ e.preventDefault(); next(); } return; }
+    if(view!=='card') return;
+    if(S.browse){ if(k==='ArrowRight') browseMove(1); else if(k==='ArrowLeft') browseMove(-1); else if(confirm){ e.preventDefault(); peek(); } return; }
+    if(missed){ if(confirm||k==='ArrowRight'||k==='2'){ e.preventDefault(); advance(); } return; }
+    if(k==='ArrowRight'||k==='2') good(); else if(k==='ArrowLeft'||k==='1') again();
+    else if(confirm){ e.preventDefault(); peek(); } });
 
   /* ---------------- settings ---------------- */
   function chips(id,items,active,toggle){ var box=d.getElementById(id); box.innerHTML='';
@@ -377,9 +409,7 @@ PRACTICE = """
 <section id="practice" class="pr" aria-label="Üben">
 <div class="tr-top"><div class="tr-bar"><i id="tr-fill"></i></div><span class="tr-count" id="tr-count"></span><span class="tr-streak" id="tr-streak"></span></div>
 <div class="fc" id="fc" aria-live="polite"></div>
-<div class="acts" id="acts"></div>
-<button type="button" class="skip" id="skip">Überspringen ›</button>
-<div class="swipe-hint" id="swipe-hint">Tipp: nach rechts wischen = gewusst · nach links = nochmal</div>
+<div class="dock"><div class="acts" id="acts"></div><div class="undo" id="undo" aria-live="polite"></div></div>
 <details class="settings"><summary>Einstellungen</summary>
 <div class="group"><div class="lab">Lektionen <button type="button" id="all-u" style="min-height:28px;padding:2px 8px;font-size:12px;margin-left:6px">alle / keine</button></div><div class="chips" id="s-units"></div></div>
 <div class="group"><div class="lab">Teile</div><div class="chips" id="s-kinds"></div></div>
@@ -400,6 +430,12 @@ def slug(text):
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-") or "course"
 
 
+def plain(fragment):
+    """Visible text of a card fragment, without its audio buttons (the one-line answer shown after a quick ✓)."""
+    text = re.sub(r"<[^>]+>", " ", re.sub(r"<button.*?</button>", "", fragment, flags=re.S))
+    return " ".join(html.unescape(text).split())
+
+
 def build(course, output, audio=True, bitrate="32k", explain_bitrate="24k", placeholder_audio=False):
     plan = build_course_plan(course)[1] if audio else None
     css, sections, options, cards, sequences = None, [], [], [], {}
@@ -414,8 +450,8 @@ def build(course, output, audio=True, bitrate="32k", explain_bitrate="24k", plac
             unit_plan = plan["units"][uid]
             page = add_audio_buttons(page, lesson, unit_plan, used_german)
             sequences[uid] = listening(uid, lesson, unit_plan, set())
-            for grammar_parts in unit_plan["grammar"].values():
-                used_explain.update(v for v in grammar_parts.values() if v)
+            for chain in unit_plan["explain"].values():
+                used_explain.update(chain)
             used_german.update([unit_plan["title"]] + list(unit_plan["sections"].values()))
             for cid in used_german | used_explain:
                 first_unit.setdefault(cid, len(sections))
@@ -429,15 +465,17 @@ def build(course, output, audio=True, bitrate="32k", explain_bitrate="24k", plac
             card = {"u": uid, "l": label, "id": f"{uid}-{cid}", "k": KIND[kind], "b": inner}
             if kind == "voc":
                 m = re.search(r'<span class="de">(.*?)</span>(?:<button[^>]*>.*?</button>)?<span class="en">(.*?)</span>', inner, re.S)
-                card.update(f=m.group(1), r=m.group(2))
+                card.update(f=m.group(1), r=m.group(2), a=f"{plain(m.group(1))} = {plain(m.group(2))}")
                 if audio:
                     card["fa"] = plan["units"][uid]["controls"][f"{cid}-head"]
             elif kind == "rule":
                 card["f"] = re.sub(r"<button.*?</button>", "", re.search(r"<h3>(.*?)</h3>", inner, re.S).group(1), flags=re.S)
+                card["a"] = plain(card["f"])
             else:
                 meaning = re.search(r'<p class="meaning">(.*?)</p>', inner, re.S).group(1)
                 when = re.search(r'<div class="when">(.*?)</div>', inner, re.S).group(1)
                 card["f"] = f'<span class="q-mean">{meaning}</span><span class="q-when">{when}</span>'
+                card["a"] = plain(re.search(r'<div class="head">(.*?)</div>', inner, re.S).group(1))
                 if audio:
                     card["ba"] = plan["units"][uid]["controls"][f"{cid}-head"]
             cards.append(card)
@@ -516,7 +554,7 @@ def main(argv=None):
         print(f"WROTE: {args.output} ({result['bytes'] / 1e6:.1f} MB): {len(course['units'])} units, "
               f"{result['cards']} cards, {result['clips']} embedded clips")
         return 0
-    except (AudioError, OSError, json.JSONDecodeError, subprocess.CalledProcessError, AttributeError) as error:
+    except (AudioError, speech.SpeechError, OSError, json.JSONDecodeError, subprocess.CalledProcessError, AttributeError) as error:
         print("FAIL: " + str(error), file=sys.stderr)
         return 1
 

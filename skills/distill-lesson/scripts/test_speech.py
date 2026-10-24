@@ -1,0 +1,102 @@
+"""Tests for language-aware speech: German words must always reach the German voice."""
+import unittest
+
+import speech
+
+VOICES = {"de": "de-voice", "en": "en-voice"}
+NEEDS_DICTS = unittest.skipUnless(speech.dictionaries_available(), "pip install pyspellchecker")
+
+
+def parts(text, kind="en"):
+    return [(lang, spoken) for lang, spoken in speech.make_clip(text, kind, VOICES).parts]
+
+
+def german_words(text, kind="en"):
+    return " ".join(spoken for lang, spoken in parts(text, kind) if lang == "de")
+
+
+class SpeechTests(unittest.TestCase):
+    def test_german_text_is_never_split(self):
+        self.assertEqual(parts("stabil", "de"), [("de", "stabil")])
+        self.assertEqual(parts("Das Tolle daran ist, dass man es waschen kann.", "de"),
+                         [("de", "Das Tolle daran ist, dass man es waschen kann.")])
+
+    @NEEDS_DICTS
+    def test_german_words_inside_english_explanations(self):
+        self.assertEqual(german_words("Don't mix them up: with bevor the clause comes second; with während both run in parallel."),
+                         "bevor während")
+        self.assertIn("Genitiv", german_words("Give the reason with a noun (Genitiv)."))
+        self.assertTrue(german_words("als starts a subordinate clause.").startswith("als"))
+
+    @NEEDS_DICTS
+    def test_ambiguous_words_follow_their_clause(self):
+        self.assertIn("an, auf, in: Dativ", german_words("With an, auf, in: Dativ for a place."))
+        segs = parts("After der/die/das -e in the five basic forms.")
+        self.assertEqual(segs[1][0], "de")
+        self.assertTrue(segs[2][1].startswith("in the five"))
+        self.assertEqual(german_words("Inseparable prefixes (be-, ver-) never separate: Ich verstehe die Aufgabe."),
+                         "be-, ver- Ich verstehe die Aufgabe.")
+
+    def test_marked_narration_is_exact(self):
+        self.assertEqual(parts("Use «als» for the past and «wenn» for the present.", "marked"),
+                         [("en", "Use"), ("de", "als"), ("en", "for the past and"), ("de", "wenn"), ("en", "for the present.")])
+
+    @NEEDS_DICTS
+    def test_forms_lines_keep_english_glosses_english(self):
+        segs = parts("Plural: die Abschlüsse · abschließen = to complete", "mix-de")
+        self.assertEqual(segs[0][0], "de")
+        self.assertEqual(segs[-1], ("en", "to complete"))
+
+    @NEEDS_DICTS
+    def test_course_book_notation(self):
+        self.assertEqual(parts("Plural: die Bohnen · A: die Fisole", "mix-de"),
+                         [("de", "Plural: die Bohnen. in Österreich: die Fisole")])
+        self.assertIn("in der Schweiz auch: gratis", german_words("= kostenlos · A/CH also: gratis", "mix-de"))
+        self.assertIn("die Babysitter", german_words("Plural: die Babysitter · die Babysitterin, -nen", "mix-de"))
+        self.assertIn("vom Typ her", german_words("Plural: die Typen · vom Typ her = in terms of personality", "mix-de"))
+        self.assertEqual(parts("eine steile Karriere = a rapid rise · also: steep", "mix-de")[-1], ("en", "a rapid rise. also: steep"))
+        self.assertEqual(parts("die Gebühr, -en = fee", "mix-de")[-1], ("en", "fee"))
+        self.assertEqual(parts("ich schütt(e)le · den Kopf schütteln", "mix-de"), [("de", "ich schüttele. den Kopf schütteln")])
+        self.assertEqual(parts("mit etwas rechnen = expect sth", "mix-de")[-1], ("en", "expect something"))
+
+    @NEEDS_DICTS
+    def test_acronyms_compounds_and_names_in_english(self):
+        self.assertEqual(parts("I've saved the file on my USB stick."), [("en", "I've saved the file on my USB stick.")])
+        self.assertEqual(german_words("The S-Bahn is faster than the bus."), "S-Bahn")
+        self.assertEqual(german_words("Verb + -ung = noun (die)"), "Verb, ung die")
+
+    @NEEDS_DICTS
+    def test_context_names_cognates_and_numbers(self):
+        self.assertIn("Konjunktiv zwei", german_words("Konjunktiv II forms: hätte, wäre, würde"))
+        self.assertEqual(parts("Kind regards, Sara Weber")[0], ("en", "Kind regards, Sara"))
+        self.assertEqual(german_words("If I had more time, I would travel to Berlin more often."), "")
+        self.assertEqual(parts("regional = from the area · saisonal = in season", "mix-de"),
+                         [("de", "regional"), ("en", "from the area."), ("de", "saisonal"), ("en", "in season")])
+        self.assertEqual(german_words("Food words stay singular with amounts: 300 g Mehl"), "300 g Mehl")
+        self.assertEqual(german_words("Comparison forms: umlaut, irregular, am …sten"), "am, sten")
+        self.assertEqual(german_words("I can't imagine …ing at all"), "")
+        self.assertTrue(german_words("frisst auf · animals fressen, people essen", "mix-de").endswith("essen"))
+        self.assertEqual(german_words("hungrig (sein) = Hunger haben", "mix-de"), "hungrig, sein, Hunger haben")
+
+    def test_marked_german_parts_keep_their_spacing(self):
+        self.assertEqual(parts("«Ich gehe.» «Du bleibst.» Then English.", "marked"),
+                         [("de", "Ich gehe. Du bleibst."), ("en", "Then English.")])
+
+    @NEEDS_DICTS
+    def test_lint_finds_unmarked_german_in_narration(self):
+        self.assertEqual(speech.unmarked_german("Use «als» with the Genitiv, and I mean it."), ["Genitiv"])
+        self.assertEqual(speech.unmarked_german("Use «als» with the «Genitiv»."), [])
+
+    def test_clip_ids_depend_on_voices_and_text(self):
+        a = speech.make_clip("Hallo", "de", VOICES).clip_id
+        self.assertEqual(a, speech.make_clip("Hallo", "de", VOICES).clip_id)
+        self.assertNotEqual(a, speech.make_clip("Hallo", "de", {"de": "other", "en": "en-voice"}).clip_id)
+
+    def test_speakable_notation(self):
+        self.assertEqual(speech.speakable("Subjekt + werden + … + Partizip II", "de"), "Subjekt, werden, Partizip zwei")
+        self.assertEqual(speech.speakable("aussehen → das Aussehen", "de"), "aussehen wird zu das Aussehen")
+        self.assertEqual(speech.speakable("flat / thin", "en"), "flat or thin")
+
+
+if __name__ == "__main__":
+    unittest.main()

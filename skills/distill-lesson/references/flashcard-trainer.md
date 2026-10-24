@@ -24,12 +24,12 @@ The self-contained HTML must include:
 
 - lesson filter and category filters that match the sheet’s sections: Wortschatz, Grammatik, and Redemittel. Redemittel context may be a secondary filter, never a competing top-level section;
 - lesson/category filters over the same pedagogically selected cards as the study sheets;
-- flip on click and Space; previous/next on buttons and arrow keys;
+- one decision per card: "known" and "again" are visible from the start. "Known" moves on at once, with a brief undo; "again" opens the answer. Tapping the card or pressing Space only peeks. Arrow keys grade, and browse mode keeps previous/next;
 - visible filtered-card count and a calm empty state;
 - shuffle as an optional control; and
 - optional local `know it` / `still learning` state only when it stays unobtrusive. Explain that browser-local state does not sync or replace spaced repetition.
 
-Use the study-sheet colour tokens and text labels, but do not invent a second visual language. Keep the core loop—filter, recall, flip, next—usable with no setup and no network connection.
+Use the study-sheet colour tokens and text labels, but do not invent a second visual language. Keep the core loop (filter, recall, one tap) usable with no setup and no network connection. A learner who already knows a card should never need two taps for it.
 
 ## Local-first requirements
 
@@ -42,7 +42,7 @@ Use the study-sheet colour tokens and text labels, but do not invent a second vi
 Open the output directly from disk and test:
 
 1. all filter combinations, including an empty result;
-2. keyboard flip and navigation without focus becoming trapped;
+2. keyboard grading, peeking and navigation without focus becoming trapped;
 3. vocabulary, grammar, Redemittel and single-lesson passes;
 4. one card from every category against its original structured record; and
 5. offline behaviour with the browser network disabled if practical.

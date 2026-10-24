@@ -10,13 +10,14 @@ from __future__ import annotations
 import argparse
 import asyncio
 import base64
-from dataclasses import dataclass
-import hashlib
 import html
 import json
 from pathlib import Path
 import re
 import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import speech  # noqa: E402
 
 
 class AudioError(ValueError):
@@ -32,124 +33,101 @@ def esc(value):
     return html.escape(str(value), quote=True)
 
 
-def speakable(value):
-    """Turn visual lesson notation into text a voice can read naturally."""
-    text = str(value).strip()
-    substitutions = (
-        ("…", " "), ("...", " "), ("·", ". "), ("→", " wird zu "),
-        (" + ", ", "), (" / ", " oder "), ("Akk.", "Akkusativ"),
-        ("Dat.", "Dativ"), ("Nom.", "Nominativ"), ("Partizip II", "Partizip zwei"),
-    )
-    for old, new in substitutions:
-        text = text.replace(old, new)
-    text = re.sub(r"\s+", " ", text).strip(" .")
-    text = re.sub(r"(?:,\s*){2,}", ", ", text).strip(" ,")
-    return text
+def speakable(value, lang="de"):
+    """Turn visual lesson notation into text a voice can read naturally (see speech.speakable)."""
+    return speech.speakable(value, lang)
 
 
-@dataclass(frozen=True)
-class Clip:
-    clip_id: str
-    text: str
-    voice: str
+Clip = speech.Clip
 
 
-def build_plan(lesson, voice):
-    clips = {}
-    sequence = []
-    controls = {}
+def voices_of(voices):
+    """Accept a {"de": ..., "en": ...} mapping, or one voice name for both (tests, old callers)."""
+    if voices is None:
+        return dict(speech.DEFAULT_VOICES)
+    if isinstance(voices, str):
+        return {"de": voices, "en": voices}
+    require(set(voices) >= {"de", "en"}, "voices needs a German ('de') and an English ('en') voice")
+    return dict(voices)
 
-    def add(value, control=None):
-        text = speakable(value)
-        require(text, f"Empty audio text for {control or 'sequence item'}")
-        digest = hashlib.sha256((voice + "\0" + text).encode("utf-8")).hexdigest()[:20]
-        clip_id = "a_" + digest
-        clips.setdefault(clip_id, Clip(clip_id, text, voice))
-        sequence.append(clip_id)
+
+def build_plan(lesson, voices=None, narration=None):
+    """Clips, listening order, per-card controls and the spoken grammar explanations of one lesson.
+
+    German text goes to the German voice, English text to the English voice; German words inside English
+    text are detected and spoken in German. `narration` maps grammar ids to authored spoken explanations
+    (English with German marked «…»); without one, meaning, rule, patterns and contrast are read.
+    Returns (clips, sequence, controls, explain).
+    """
+    voices, narration = voices_of(voices), narration or {}
+    clips, sequence, controls, explain = {}, [], {}, {}
+
+    def add(value, kind, control=None):
+        clip = speech.make_clip(value, kind, voices)
+        clips.setdefault(clip.clip_id, clip)
+        sequence.append(clip.clip_id)
         if control:
             require(control not in controls, f"Duplicate audio control {control}")
-            controls[control] = clip_id
-        return clip_id
+            controls[control] = clip.clip_id
+        return clip.clip_id
 
-    add(lesson["title"])
-    add("Wortschatz")
+    add(lesson["title"], "de")
+    add("Wortschatz", "de")
     previous = None
     for record in lesson["vocabulary"]:
         if record["group"] != previous:
-            add(record["group"])
+            add(record["group"], "de")
             previous = record["group"]
         head = ((record.get("article", "") + " ") if record.get("article") else "") + record["lemma"]
-        add(head, f'{record["id"]}-head')
-        add(record["gloss"])
+        add(head, "de", f'{record["id"]}-head')
+        add(record["gloss"], "en")
         if record.get("forms", "").strip():
-            add(record["forms"])
+            add(record["forms"], "mix-de")
         for index, example in enumerate(record["examples"]):
-            add(example["de"], f'{record["id"]}-ex-{index}')
-            add(example["en"])
+            add(example["de"], "de", f'{record["id"]}-ex-{index}')
+            add(example["en"], "en")
 
-    add("Grammatik")
+    add("Grammatik", "de")
     for record in lesson["grammar"]:
-        add(record["title"], f'{record["id"]}-head')
-        add("Meaning. " + record["meaning"])
-        add("Rule. " + record["rule"])
-        for pattern in record["patterns"]:
-            add(pattern["label"] + ". " + pattern["form"])
-        if record.get("contrast"):
-            add("Important. " + record["contrast"])
+        gid = record["id"]
+        chain = [add(record["title"], "en", f"{gid}-head")]
+        if narration.get(gid):
+            chain.append(add(narration[gid], "marked"))
+        else:
+            chain.append(add(record["meaning"], "en"))
+            chain.append(add("How it works: " + record["rule"], "en"))
+            for pattern in record["patterns"]:
+                chain.append(add(pattern["label"] + ": " + pattern["form"], "en"))
+            if record.get("contrast"):
+                chain.append(add("Careful: " + record["contrast"], "en"))
+        explain[gid] = chain
         for index, example in enumerate(record["examples"]):
-            add(example["de"], f'{record["id"]}-ex-{index}')
-            add(example["en"])
+            add(example["de"], "de", f'{gid}-ex-{index}')
+            add(example["en"], "en")
 
-    add("Redemittel")
+    add("Redemittel", "de")
     previous = None
     for record in lesson["redemittel"]:
         if record["group"] != previous:
-            add(record["group"])
+            add(record["group"], "de")
             previous = record["group"]
-        add(record["frame"], f'{record["id"]}-head')
-        add(record["gloss"])
-        add(record["when"] + ((". " + record["register"]) if record.get("register") else ""))
+        add(record["frame"], "de", f'{record["id"]}-head')
+        add(record["gloss"], "en")
+        add(record["when"] + ((". " + record["register"]) if record.get("register") else ""), "en")
         for index, variant in enumerate(record.get("variants", [])):
-            add(variant["form"], f'{record["id"]}-variant-{index}')
-            add(variant["usage"])
+            add(variant["form"], "de", f'{record["id"]}-variant-{index}')
+            add(variant["usage"], "en")
         for index, example in enumerate(record["examples"]):
-            add(example["de"], f'{record["id"]}-ex-{index}')
-            add(example["en"])
-    return clips, sequence, controls
+            add(example["de"], "de", f'{record["id"]}-ex-{index}')
+            add(example["en"], "en")
+    return clips, sequence, controls, explain
 
 
-async def synthesize(clips, cache_dir, concurrency=4):
+async def synthesize(clips, cache_dir, voices=None, concurrency=4):
     try:
-        import edge_tts
-    except ImportError as error:
-        raise AudioError("edge-tts is required: py -3 -m pip install --user edge-tts") from error
-
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    semaphore = asyncio.Semaphore(concurrency)
-
-    async def one(clip):
-        path = cache_dir / f"{clip.clip_id}.mp3"
-        if path.exists() and path.stat().st_size > 256:
-            return path
-        async with semaphore:
-            last_error = None
-            for attempt in range(3):
-                try:
-                    temporary = path.with_suffix(f".attempt-{attempt}.mp3")
-                    if temporary.exists():
-                        temporary.unlink()
-                    await edge_tts.Communicate(text=clip.text, voice=clip.voice).save(str(temporary))
-                    require(temporary.exists() and temporary.stat().st_size > 256,
-                            f"TTS returned empty audio for {clip.clip_id}")
-                    temporary.replace(path)
-                    return path
-                except Exception as error:  # provider/network errors vary by release
-                    last_error = error
-                    await asyncio.sleep(0.75 * (attempt + 1))
-            raise AudioError(f"TTS failed for {clip.clip_id}: {last_error}")
-
-    paths = await asyncio.gather(*(one(clip) for clip in clips.values()))
-    return {clip_id: path for clip_id, path in zip(clips, paths)}
+        return await speech.synthesize(clips, cache_dir, voices_of(voices), concurrency)
+    except speech.SpeechError as error:
+        raise AudioError(str(error)) from error
 
 
 def play_button(clip_id, label="Play audio"):
@@ -361,7 +339,8 @@ def main(argv=None):
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--cache-dir", type=Path, required=True)
-    parser.add_argument("--voice", default="de-DE-SeraphinaMultilingualNeural")
+    parser.add_argument("--voice-de", default=speech.DEFAULT_VOICES["de"], help="German voice for all German text")
+    parser.add_argument("--voice-en", default=speech.DEFAULT_VOICES["en"], help="English voice for glosses and explanations")
     parser.add_argument("--concurrency", type=int, default=4)
     parser.add_argument("--confirm-external-tts", action="store_true",
                         help="Confirm that selected lesson text may be sent to the Edge TTS service")
@@ -379,9 +358,10 @@ def main(argv=None):
                 "Lesson must be German v2 lesson data")
         for key in ("title", "vocabulary", "grammar", "redemittel"):
             require(key in lesson, f"Lesson is missing {key}")
-        clips, sequence, controls = build_plan(lesson, args.voice)
-        print(f"AUDIO PLAN: {len(clips)} unique clips; {len(sequence)} listening steps; voice={args.voice}")
-        paths = asyncio.run(synthesize(clips, args.cache_dir, args.concurrency))
+        voices = {"de": args.voice_de, "en": args.voice_en}
+        clips, sequence, controls, _explain = build_plan(lesson, voices)
+        print(f"AUDIO PLAN: {len(clips)} unique clips; {len(sequence)} listening steps; voices={voices}")
+        paths = asyncio.run(synthesize(clips, args.cache_dir, voices, args.concurrency))
         payloads = {}
         for clip_id, path in paths.items():
             data = path.read_bytes()
@@ -397,7 +377,7 @@ def main(argv=None):
             stream.write(output)
         print(f"WROTE: {args.output} ({args.output.stat().st_size} bytes, fully embedded audio)")
         return 0
-    except (AudioError, OSError, json.JSONDecodeError) as error:
+    except (AudioError, speech.SpeechError, OSError, json.JSONDecodeError) as error:
         print("FAIL: " + str(error), file=sys.stderr)
         return 1
 

@@ -2,6 +2,7 @@
 import unittest
 
 import embed_audio
+import speech
 
 
 LESSON = {
@@ -37,8 +38,10 @@ HTML = """<!DOCTYPE html><html lang="de"><head><meta name="study-pack-status" co
 
 
 class EmbeddedAudioTests(unittest.TestCase):
+    @unittest.skipUnless(speech.dictionaries_available(), "pip install pyspellchecker")
     def test_plan_and_injection_are_self_contained(self):
-        clips, sequence, controls = embed_audio.build_plan(LESSON, "test-voice")
+        clips, sequence, controls, explain = embed_audio.build_plan(LESSON, "test-voice")
+        self.assertEqual(list(explain), ["g01"])
         result = embed_audio.inject_audio(
             HTML, LESSON, {clip_id: "AAAA" for clip_id in clips}, sequence, controls)
         self.assertEqual(result.count("<h2"), 3)

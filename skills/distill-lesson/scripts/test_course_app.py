@@ -11,6 +11,9 @@ import unittest
 import study_pack as pack
 import course_audio
 import build_course_app
+import speech
+
+NEEDS_DICTS = unittest.skipUnless(speech.dictionaries_available(), "pip install pyspellchecker")
 
 
 def bundle(root, lesson_id, title, word, article, grammar_title, frame):
@@ -74,6 +77,7 @@ class CourseAppTests(unittest.TestCase):
         self.course_path = self.root / "course.json"
         self.course_path.write_text(json.dumps({"title": "Test Kurs", "cache": "_work/audio", "units": units}), encoding="utf-8")
 
+    @NEEDS_DICTS
     def test_plan_is_offline_and_deterministic(self):
         course = course_audio.load_course(self.course_path)
         clips, plan = course_audio.build_course_plan(course)
@@ -83,8 +87,23 @@ class CourseAppTests(unittest.TestCase):
         unit = plan["units"]["U1"]
         for key in ("v1-head", "v1-ex-0", "g1-ex-0", "e1-head", "e1-variant-0", "e1-ex-0"):
             self.assertIn(key, unit["controls"])
-        self.assertEqual(set(unit["grammar"]["g1"]), {"title", "meaning", "rule", "contrast"})
+        self.assertEqual(len(unit["explain"]["g1"]), 5)   # title, meaning, rule, one pattern, contrast
         self.assertEqual(len(course_audio.missing(course, clips)), len(clips))  # nothing synthesized offline
+
+    @NEEDS_DICTS
+    def test_narration_replaces_the_generated_explanation(self):
+        (self.root / "narration.json").write_text(json.dumps(
+            {"U1": {"g1": "Use «trotz» when something happens anyway. It takes the Genitiv: «trotz des Regens»."}}), encoding="utf-8")
+        data = json.loads(self.course_path.read_text(encoding="utf-8"))
+        self.course_path.write_text(json.dumps({**data, "narration": "narration.json"}), encoding="utf-8")
+        course = course_audio.load_course(self.course_path)
+        clips, plan = course_audio.build_course_plan(course)
+        chain = plan["units"]["U1"]["explain"]["g1"]
+        self.assertEqual(len(chain), 2)                    # title + the authored explanation
+        self.assertEqual(len(plan["units"]["U2"]["explain"]["g1"]), 5)
+        parts = clips[chain[1]].parts
+        self.assertIn(("de", "trotz des Regens."), parts)
+        self.assertTrue(all(lang == "en" for lang, text in parts if "anyway" in text or "takes the" in text))
 
     def test_app_without_audio(self):
         out = self.root / "app.html"
@@ -101,7 +120,12 @@ class CourseAppTests(unittest.TestCase):
         self.assertEqual([c["k"] for c in cards], ["w", "g", "r", "w", "g", "r"])
         self.assertEqual({c["id"] for c in cards}, {"U1-v1", "U1-g1", "U1-e1", "U2-v1", "U2-g1", "U2-e1"})
         self.assertNotIn("<button", cards[1]["f"], "grammar front must not contain the audio button")
+        self.assertEqual([c["a"] for c in cards[:3]], ["der Termin = test word", "trotz + Genitiv", "Ich wollte fragen …"])
+        for action in ('data-a="good"', 'data-a="again"', 'data-a="go"', 'id="undo"'):
+            self.assertIn(action, page)
+        self.assertNotIn('id="skip"', page)
 
+    @NEEDS_DICTS
     def test_app_audio_controls_with_placeholder_payloads(self):
         out = self.root / "app_audio.html"
         build_course_app.build(course_audio.load_course(self.course_path), out, audio=True, placeholder_audio=True)
@@ -111,6 +135,17 @@ class CourseAppTests(unittest.TestCase):
         self.assertGreaterEqual(page.count('class="speak-button"'), 10)
         self.assertNotIn('type="text/plain" id="au-', page)   # placeholder: no payload blocks
         self.assertLess(page.index("<script>"), page.rindex("</main>") + 20)
+
+    @NEEDS_DICTS
+    def test_explanations_are_not_counted_as_german_clips(self):
+        course = course_audio.load_course(self.course_path)
+        unit_plan = course_audio.build_course_plan(course)[1]["units"]["U1"]
+        unit = course["units"][0]
+        used = set()
+        build_course_app.add_audio_buttons(unit["sheet"].read_text(encoding="utf-8"),
+                                           json.loads(unit["lesson"].read_text(encoding="utf-8")), unit_plan, used)
+        self.assertTrue(used)
+        self.assertFalse(used & set(unit_plan["explain"]["g1"]), "explanations get the smaller explain bitrate")
 
     def test_refuses_overwrite_and_unreviewed_sheets(self):
         out = self.root / "app.html"

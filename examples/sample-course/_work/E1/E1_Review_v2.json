@@ -6,13 +6,13 @@
  "reviewer": "sample author",
  "method": "author-second-pass",
  "checks": {
-  "source_inspection": "pass",
-  "selection_quality": "pass",
   "compression": "pass",
-  "redemittel_value": "pass",
+  "example_integration": "pass",
   "grammar_accuracy": "pass",
-  "vocabulary_quality": "pass",
-  "example_integration": "pass"
+  "redemittel_value": "pass",
+  "selection_quality": "pass",
+  "source_inspection": "pass",
+  "vocabulary_quality": "pass"
  },
  "findings": [],
  "scope_note": "Original sample content written for this repository; not taken from any book."

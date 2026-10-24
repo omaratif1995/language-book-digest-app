@@ -16,7 +16,7 @@ The whole-lesson sequence should cover the meaningful visible sheet in reading o
 
 ## Voice and privacy
 
-Prefer a clear neural voice intended for Standard German. A multilingual neural voice is useful when one continuous listening sequence alternates German and English. Keep the provider and voice configurable; do not imply the skill owns or guarantees a third-party service.
+Use two single-language neural voices: a Standard German voice for German and an English voice for English (defaults: `de-DE-KatjaNeural` and `en-US-AvaNeural`). Do not give mixed text to one multilingual voice. It guesses the language of each request and reads short German words inside English with English pronunciation. `scripts/speech.py` splits mixed text into German and English runs, speaks each with its own voice and joins them with natural pauses (see [course-app.md](course-app.md)). Keep the provider and voices configurable; do not imply the skill owns or guarantees a third-party service.
 
 Hosted synthesis sends the selected learner text to the provider. Obtain explicit user approval for that transmission before generating audio. Cache generated clips only under `_work` or `_skill_test`, never beside the learner HTML. The delivered HTML must work without the cache and without a network connection.
 
@@ -24,10 +24,10 @@ Hosted synthesis sends the selected learner text to the provider. Obtain explici
 
 `scripts/embed_audio.py` synthesizes a reviewed lesson's audio, embeds it in a newly named HTML copy, and adds both control types:
 
-```powershell
-py -3 <skill-dir>/scripts/embed_audio.py --lesson L24_Lesson_v2.json --input L24_Studysheet.html --output L24_Studysheet_AudioTest.html --cache-dir _work/audio/L24 --voice de-DE-SeraphinaMultilingualNeural
+```text
+python <skill-dir>/scripts/embed_audio.py --lesson L24_Lesson_v2.json --input L24_Studysheet.html --output L24_Studysheet_AudioTest.html --cache-dir _work/audio/L24 --confirm-external-tts
 ```
 
-The helper requires the `edge-tts` Python package and network access during generation. The resulting HTML does not. Never overwrite the input. Run the ordinary strict HTML validator and browser inspection on the output, then test real playback with `node scripts/inspect_audio.mjs BROWSER_EXE AUDIO_SHEET.html`.
+`--voice-de` and `--voice-en` change the voices. The helper requires `edge-tts`, `pyspellchecker`, ffmpeg (`imageio-ffmpeg` provides one) and network access during generation. The resulting HTML does not. Never overwrite the input. Run the ordinary strict HTML validator and browser inspection on the output, then test real playback with `node scripts/inspect_audio.mjs BROWSER_EXE AUDIO_SHEET.html`.
 
 For several units at once, the shared clip cache, spoken grammar explanations and MP3 listening episodes, use `course_audio.py` and `build_course_app.py` instead; see [course-app.md](course-app.md). Both tools use the same clip ids, so one cache serves sheets, app and episodes.

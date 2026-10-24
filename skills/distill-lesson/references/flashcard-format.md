@@ -41,12 +41,11 @@ Example: `L13 vocab-essen core`.
 
 ## Validate
 
-```powershell
-$rows = Import-Csv L13_Flashcards.csv -Delimiter ';'
-if ((Get-Content L13_Flashcards.csv | Where-Object { ($_ -split ';').Count -ne 3 })) {
-  'FAIL: malformed row'
-}
-$rows | Group-Object Tags | Select-Object Count, Name
+```python
+import collections
+rows = open("L13_Flashcards.csv", encoding="utf-8").read().splitlines()
+print("malformed rows:", [r for r in rows if r.count(";") != 2][:3] or "none")
+print(collections.Counter(r.rsplit(";", 1)[-1] for r in rows[1:]))   # cards per tag
 ```
 
 Manually inspect the source line count as well: quoted CSV fields are intentionally not used, so every non-header row must contain exactly two semicolons. Confirm every intended sheet card is represented once and no semicolon slipped into German or HTML content.

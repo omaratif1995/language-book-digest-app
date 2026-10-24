@@ -8,8 +8,8 @@
   "plugins": [
     {
       "name": "lesson-distiller",
-      "source": "./plugins/lesson-distiller",
-      "description": "Distill lessons into Wortschatz / Grammatik / Redemittel sheets, an offline study app (audio + spaced repetition) and MP3 listening episodes."
+      "source": "./",
+      "description": "Distill lessons into Wortschatz / Grammatik / Redemittel sheets, an offline study app (German audio that sounds German, one-tap spaced repetition) and MP3 listening episodes."
     }
   ]
 }

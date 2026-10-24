@@ -9,7 +9,7 @@ import copy, json, subprocess, sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-SCRIPTS = HERE.parents[1] / "plugins" / "lesson-distiller" / "skills" / "distill-lesson" / "scripts"
+SCRIPTS = HERE.parents[1] / "skills" / "distill-lesson" / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 import study_pack as pack  # noqa: E402
 
@@ -83,6 +83,19 @@ UNITS = [
           ex("Samstag passt mir gut, aber Sonntag passt mir leider nicht.", "Saturday suits me, but Sunday unfortunately doesn't.", "passt mir gut", "passt mir leider nicht"))]},
 ]
 
+# Spoken grammar explanations for the audio: conversational English, every German word marked «…».
+NARRATION = {
+    "E1": {"g1": "Many German verbs have a little prefix that breaks away in a normal sentence. The verb stays in "
+                 "position two, and the prefix jumps to the very end: «Die Besprechung fängt um neun Uhr an.» In the past "
+                 "tense, it becomes one word again: «hat angefangen». And with a modal verb, everything stays together at "
+                 "the end: «Ich muss heute früh anfangen.» Careful: some prefixes never separate, like the ones in "
+                 "«verstehen» and «bekommen». «Ich verstehe die Aufgabe.»"},
+    "E2": {"g1": "To make a suggestion sound open and friendly, use «könnten» or «wäre». «Wir könnten am Sonntag wandern "
+                 "gehen.» That sounds much softer than «wir müssen». You can also ask: «Wie wäre es mit einem Picknick im "
+                 "Park?» And to invite someone: «Hättest du Lust, mit ins Kino zu kommen?» Compare: «wir können» only says "
+                 "that something is possible. «Wir könnten» is a real suggestion."},
+}
+
 SOURCE_TEXT = """# Sample lessons (original content written for this repository)
 
 ## Einheit 1 – Der erste Arbeitstag
@@ -144,7 +157,7 @@ def bundle(unit):
     write(paths["Lesson"], lesson)
     review = {"schema_version": 2, "lesson_id": unit["id"], "inventory_sha256": pack.file_hash(paths["Inventory"]),
               "lesson_sha256": pack.file_hash(paths["Lesson"]), "reviewer": "sample author", "method": "author-second-pass",
-              "checks": dict.fromkeys(pack.CHECKS, "pass"), "findings": [],
+              "checks": dict.fromkeys(sorted(pack.CHECKS), "pass"), "findings": [],
               "scope_note": "Original sample content written for this repository; not taken from any book."}
     write(paths["Review"], review)
     return paths
@@ -162,8 +175,10 @@ def main():
         subprocess.run([sys.executable, str(SCRIPTS / "study_pack.py"), "render", *args, "--output", str(sheet)], check=True)
         units.append({"id": unit["id"], "label": unit["label"], "lesson": f"{unit['id']}/{unit['id']}_Lesson_v2.json",
                       "sheet": f"../{sheet.name}"})
+    write(HERE / "_work" / "narration.json", NARRATION)
     write(HERE / "_work" / "course.json", {"title": "Lesson Distiller Beispiel", "subtitle": "2 Einheiten · Wortschatz · Grammatik · Redemittel",
-                                           "cache": "audio", "episodes_dir": "../Audio", "new_per_day": 10, "units": units})
+                                           "narration": "narration.json", "cache": "audio", "episodes_dir": "../Audio",
+                                           "new_per_day": 10, "units": units})
     app = HERE / "Sample_Studienpaket_v1.html"
     app.unlink(missing_ok=True)
     subprocess.run([sys.executable, str(SCRIPTS / "build_course_app.py"), "--course", str(HERE / "_work" / "course.json"),
