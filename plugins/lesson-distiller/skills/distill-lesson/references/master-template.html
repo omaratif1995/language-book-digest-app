@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lektion {{NN}} — {{THEMA}}</title>
+<style>
+  :root{
+    --der:#7f9fbd; --das:#86ad9a; --die:#c58fa3;
+    --bg:#17191f; --card:#24272e; --ink:#ebe9e4; --muted:#b1b3b7;
+    --line:#3b4048; --accent:#b19ac8; --accent2:#d0b9d8;
+    --ex-bg:#29343a; --ex-bar:#83b1bd; --ex-ink:#d9e7e7;
+    --gram-bg:#302d35; --gram-bar:#b19ac8;
+    --phrase-bg:#145c4d; --phrase-bar:#34d399; --yellow:#f2d36b;
+  }
+  *{box-sizing:border-box;}
+  body{font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);margin:0;padding:24px 16px 52px;line-height:1.48;background-image:radial-gradient(1100px 350px at 70% -70px,#1e2740 0%,transparent 70%);}
+  .wrap{max-width:900px;margin:0 auto;overflow-wrap:anywhere;}
+  .hero{background:linear-gradient(135deg,#312e81 0%,#831843 100%);border-radius:16px;padding:18px 24px;margin-bottom:24px;box-shadow:0 8px 24px rgba(0,0,0,.35);}
+  .hero .lekt{font-size:12px;letter-spacing:2.6px;text-transform:uppercase;color:#f0abfc;font-weight:700;}
+  .hero h1{font-size:28px;margin:3px 0 0;color:#fff;}
+  h2{font-size:22px;margin:30px 0 4px;display:flex;align-items:center;gap:10px;}
+  h2 .num{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#1a1030;width:30px;height:30px;border-radius:9px;display:inline-grid;place-items:center;font-size:15px;font-weight:800;}
+  .rule-under{height:3px;background:linear-gradient(90deg,var(--accent),transparent);border-radius:3px;margin:6px 0 10px;}
+  h3{font-size:14px;margin:20px 0 8px;color:var(--accent2);font-weight:700;}
+  .grid{display:grid;grid-template-columns:1fr;gap:8px;}
+  .voc{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:10px 13px;}
+  .voc .top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
+  .voc .de{font-size:17px;font-weight:700;}
+  .voc .en{font-size:13.5px;color:var(--muted);}
+  .art-der{color:var(--der)} .art-das{color:var(--das)} .art-die{color:var(--die)}
+  .forms{font-size:13px;color:var(--muted);margin:5px 0 0;}
+  .ex{margin-top:7px;font-size:14px;background:var(--ex-bg);border-left:3px solid var(--ex-bar);border-radius:7px;padding:6px 10px;color:var(--ex-ink);}
+  .ex .tr{color:#7fb3d9;font-style:italic;}
+  mark{background:rgba(253,224,71,.22);color:var(--yellow);padding:0 3px;border-radius:3px;font-weight:700;}
+  .rule{background:var(--gram-bg);border:1px solid var(--line);border-left:5px solid var(--gram-bar);border-radius:11px;padding:14px 16px;margin:11px 0;}
+  .rule h3{margin:0 0 8px;font-size:17px;}
+  .rule p{margin:6px 0;font-size:14px;}
+  .patterns{margin:8px 0;padding:8px 11px;background:var(--card);border-radius:8px;}
+  .patterns p{margin:3px 0;}
+  .contrast{color:#f5d78e;}
+  .phrase{background:var(--phrase-bg);border:1px solid var(--line);border-left:5px solid var(--phrase-bar);border-radius:10px;padding:10px 13px;margin:7px 0;}
+  .phrase .head{font-size:16px;font-weight:700;color:#6ee7b7;}
+  .phrase .meaning{font-size:13.5px;margin:5px 0;}
+  .phrase .when{font-size:12.5px;color:#d1e5dc;margin-top:3px;}
+  .phrase .variant{font-size:13px;color:#d1e5dc;margin:4px 0;}
+  .phrase .ex{background:#303633;border-left-color:var(--phrase-bar);color:#dce8df;}
+  .phrase .ex .tr{color:#a9c2b0;}
+  @media(max-width:520px){body{padding:14px 9px 34px}.hero{padding:16px}.hero h1{font-size:24px}.rule{padding:12px}.voc,.phrase{padding:10px 11px}}
+  @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="hero"><div class="lekt">{{BUCH}} · {{LEVEL}} · {{LEKTION}}</div><h1>{{THEMA}}</h1></header>
+
+  <h2><span class="num">1</span> Wortschatz</h2><div class="rule-under"></div>
+  <h3>{{SEMANTISCHE GRUPPE}}</h3>
+  <div class="grid">
+    <article class="voc"><div class="top"><span class="de"><span class="art-der">der</span> {{NOMEN}}</span><span class="en">{{MEANING}}</span></div><p class="forms">Plural: {{PLURAL}}</p><div class="ex">{{NATURAL EXAMPLE WITH <mark>TARGET</mark>}} <span class="tr">— {{TRANSLATION}}</span></div></article>
+  </div>
+
+  <h2><span class="num">2</span> Grammatik</h2><div class="rule-under"></div>
+  <article class="rule"><h3>{{GRAMMAR}}</h3><p><b>Meaning:</b> {{PURPOSE}}</p><p><b>Rule:</b> {{CORE RULE}}</p><div class="patterns"><p><b>{{LABEL}}:</b> {{PATTERN}}</p></div><div class="ex">{{EXAMPLE WITH <mark>FORM</mark>}} <span class="tr">— {{TRANSLATION}}</span></div></article>
+
+  <h2><span class="num">3</span> Redemittel</h2><div class="rule-under"></div>
+  <h3>{{COMMUNICATIVE FUNCTION}}</h3>
+  <article class="phrase"><div class="head">{{REUSABLE TEMPLATE}}</div><p class="meaning">{{MEANING}}</p><div class="when">{{WHEN / REGISTER IF RELEVANT}}</div><div class="ex">{{NATURAL EXAMPLE WITH <mark>TEMPLATE CORE</mark>}} <span class="tr">— {{TRANSLATION}}</span></div></article>
+</main>
+</body>
+</html>

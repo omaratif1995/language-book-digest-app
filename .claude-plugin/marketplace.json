@@ -1,0 +1,15 @@
+{
+  "name": "lesson-distiller",
+  "description": "Turn German course-book lessons into compact study sheets, a phone study app with audio and flashcards, and listening episodes.",
+  "owner": {
+    "name": "omaratif1995",
+    "url": "https://github.com/omaratif1995"
+  },
+  "plugins": [
+    {
+      "name": "lesson-distiller",
+      "source": "./plugins/lesson-distiller",
+      "description": "Distill lessons into Wortschatz / Grammatik / Redemittel sheets, an offline study app (audio + spaced repetition) and MP3 listening episodes."
+    }
+  ]
+}

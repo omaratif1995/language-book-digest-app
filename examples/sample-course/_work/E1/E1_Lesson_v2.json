@@ -1,0 +1,218 @@
+{
+ "schema_version": 2,
+ "lesson_id": "E1",
+ "inventory_sha256": "3cbd86b938f1cdbaa538f630b0e908fe1168e94b340d975f79e39e5aa78a826f",
+ "title": "Der erste Arbeitstag – Im Büro",
+ "level": "A2–B1",
+ "target_language": "de",
+ "gloss_language": "en",
+ "vocabulary": [
+  {
+   "id": "v1",
+   "group": "Wortschatz der Einheit",
+   "lemma": "Kollege",
+   "pos": "noun",
+   "article": "der",
+   "forms": "die Kollegin, -nen · Plural: die Kollegen · n-noun: den / dem Kollegen",
+   "gloss": "colleague",
+   "examples": [
+    {
+     "de": "Mein Kollege zeigt mir am ersten Tag das ganze Büro.",
+     "en": "My colleague shows me the whole office on the first day.",
+     "targets": [
+      "Kollege"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "v2",
+   "group": "Wortschatz der Einheit",
+   "lemma": "Besprechung",
+   "pos": "noun",
+   "article": "die",
+   "forms": "Plural: die Besprechungen · eine Besprechung haben",
+   "gloss": "meeting",
+   "examples": [
+    {
+     "de": "Die Besprechung mit dem Team beginnt um neun Uhr.",
+     "en": "The meeting with the team starts at nine.",
+     "targets": [
+      "Besprechung"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "v3",
+   "group": "Wortschatz der Einheit",
+   "lemma": "Termin",
+   "pos": "noun",
+   "article": "der",
+   "forms": "Plural: die Termine · einen Termin vereinbaren / verschieben",
+   "gloss": "appointment",
+   "examples": [
+    {
+     "de": "Können wir den Termin auf Donnerstag verschieben?",
+     "en": "Can we move the appointment to Thursday?",
+     "targets": [
+      "Termin"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "v4",
+   "group": "Wortschatz der Einheit",
+   "lemma": "sich vorstellen",
+   "pos": "verb",
+   "forms": "stellt sich vor · hat sich vorgestellt · separable",
+   "gloss": "to introduce oneself",
+   "examples": [
+    {
+     "de": "Am ersten Tag stelle ich mich allen Kollegen vor.",
+     "en": "On the first day I introduce myself to all my colleagues.",
+     "targets": [
+      "stelle",
+      "vor"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "v5",
+   "group": "Wortschatz der Einheit",
+   "lemma": "erledigen",
+   "pos": "verb",
+   "forms": "erledigt · hat erledigt · eine Aufgabe erledigen",
+   "gloss": "to get done, take care of",
+   "examples": [
+    {
+     "de": "Diese Aufgabe erledige ich bis Freitag.",
+     "en": "I'll get this task done by Friday.",
+     "targets": [
+      "erledige"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "v6",
+   "group": "Wortschatz der Einheit",
+   "lemma": "pünktlich",
+   "pos": "adjective",
+   "forms": "↔ unpünktlich · die Pünktlichkeit",
+   "gloss": "on time, punctual",
+   "examples": [
+    {
+     "de": "Bitte sei morgen pünktlich, wir haben um acht eine Besprechung.",
+     "en": "Please be on time tomorrow, we have a meeting at eight.",
+     "targets": [
+      "pünktlich"
+     ]
+    }
+   ]
+  }
+ ],
+ "grammar": [
+  {
+   "id": "g1",
+   "title": "Separable verbs – the prefix goes to the end",
+   "meaning": "Many verbs have a prefix that separates from the verb in a main clause.",
+   "rule": "In a main clause the conjugated verb stands in position 2 and the prefix goes to the end. In the Perfekt, -ge- stands between prefix and verb. With a modal verb the infinitive stays together at the end.",
+   "patterns": [
+    {
+     "label": "present",
+     "form": "an|fangen → Die Besprechung fängt um neun an."
+    },
+    {
+     "label": "Perfekt",
+     "form": "an|fangen → hat angefangen"
+    },
+    {
+     "label": "modal verb",
+     "form": "Ich muss heute früh anfangen."
+    }
+   ],
+   "contrast": "Inseparable prefixes (be-, ver-, er-, ent-) never separate: Ich verstehe die Aufgabe.",
+   "examples": [
+    {
+     "de": "Die Besprechung fängt um neun Uhr an.",
+     "en": "The meeting starts at nine o'clock.",
+     "targets": [
+      "fängt",
+      "an"
+     ]
+    },
+    {
+     "de": "Ich rufe dich nach der Arbeit an.",
+     "en": "I'll call you after work.",
+     "targets": [
+      "rufe",
+      "an"
+     ]
+    },
+    {
+     "de": "Wir haben das Projekt gestern abgeschlossen.",
+     "en": "We finished the project yesterday.",
+     "targets": [
+      "abgeschlossen"
+     ]
+    }
+   ]
+  }
+ ],
+ "redemittel": [
+  {
+   "id": "e1",
+   "group": "Redemittel der Einheit",
+   "frame": "Darf ich mich kurz vorstellen? Ich bin … und arbeite als …",
+   "gloss": "May I briefly introduce myself? I'm … and I work as …",
+   "when": "Introduce yourself at a new workplace.",
+   "register": "polite",
+   "examples": [
+    {
+     "de": "Darf ich mich kurz vorstellen? Ich bin Sara und arbeite als Grafikerin.",
+     "en": "May I briefly introduce myself? I'm Sara and I work as a graphic designer.",
+     "targets": [
+      "Darf ich mich kurz vorstellen"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "e2",
+   "group": "Redemittel der Einheit",
+   "frame": "Könnten Sie mir bitte zeigen, wie …?",
+   "gloss": "Could you please show me how …?",
+   "when": "Ask a colleague for help.",
+   "register": "polite",
+   "examples": [
+    {
+     "de": "Könnten Sie mir bitte zeigen, wie der Drucker funktioniert?",
+     "en": "Could you please show me how the printer works?",
+     "targets": [
+      "Könnten Sie mir bitte zeigen, wie"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "e3",
+   "group": "Redemittel der Einheit",
+   "frame": "Bis wann soll ich … erledigen?",
+   "gloss": "By when should I get … done?",
+   "when": "Ask about a deadline.",
+   "examples": [
+    {
+     "de": "Bis wann soll ich den Bericht erledigen?",
+     "en": "By when should I get the report done?",
+     "targets": [
+      "Bis wann soll ich",
+      "erledigen"
+     ]
+    }
+   ]
+  }
+ ]
+}

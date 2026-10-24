@@ -1,0 +1,199 @@
+{
+ "schema_version": 2,
+ "lesson_id": "E2",
+ "inventory_sha256": "b72da57643fe6137f269c8e214208bbd45aadd939714e658c9c5185d74ffd4ea",
+ "title": "Pläne fürs Wochenende – Freizeit",
+ "level": "A2–B1",
+ "target_language": "de",
+ "gloss_language": "en",
+ "vocabulary": [
+  {
+   "id": "v1",
+   "group": "Wortschatz der Einheit",
+   "lemma": "Ausflug",
+   "pos": "noun",
+   "article": "der",
+   "forms": "Plural: die Ausflüge · einen Ausflug machen",
+   "gloss": "trip, outing",
+   "examples": [
+    {
+     "de": "Am Samstag machen wir einen Ausflug an den See.",
+     "en": "On Saturday we're going on a trip to the lake.",
+     "targets": [
+      "Ausflug"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "v2",
+   "group": "Wortschatz der Einheit",
+   "lemma": "Verabredung",
+   "pos": "noun",
+   "article": "die",
+   "forms": "Plural: die Verabredungen · sich verabreden",
+   "gloss": "arrangement to meet, date",
+   "examples": [
+    {
+     "de": "Ich habe heute Abend eine Verabredung mit Lena.",
+     "en": "I'm meeting Lena tonight.",
+     "targets": [
+      "Verabredung"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "v3",
+   "group": "Wortschatz der Einheit",
+   "lemma": "vorschlagen",
+   "pos": "verb",
+   "forms": "schlägt vor · hat vorgeschlagen (!) · separable",
+   "gloss": "to suggest",
+   "examples": [
+    {
+     "de": "Ich schlage vor, dass wir zusammen kochen.",
+     "en": "I suggest that we cook together.",
+     "targets": [
+      "schlage",
+      "vor"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "v4",
+   "group": "Wortschatz der Einheit",
+   "lemma": "spontan",
+   "pos": "adjective",
+   "forms": "sich spontan entscheiden",
+   "gloss": "spontaneous(ly)",
+   "examples": [
+    {
+     "de": "Wir haben uns ganz spontan für das Kino entschieden.",
+     "en": "We decided on the cinema quite spontaneously.",
+     "targets": [
+      "spontan"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "v5",
+   "group": "Wortschatz der Einheit",
+   "lemma": "Wetter",
+   "pos": "noun",
+   "article": "das",
+   "forms": "no plural · bei schönem Wetter",
+   "gloss": "weather",
+   "examples": [
+    {
+     "de": "Bei schönem Wetter fahren wir mit dem Rad.",
+     "en": "If the weather is nice, we'll go by bike.",
+     "targets": [
+      "Wetter"
+     ]
+    }
+   ]
+  }
+ ],
+ "grammar": [
+  {
+   "id": "g1",
+   "title": "Polite suggestions with könnte and wäre",
+   "meaning": "Konjunktiv II makes a suggestion sound open and friendly.",
+   "rule": "Use könnten + infinitive at the end, or Wie wäre es mit + Dativ. Wir könnten … is softer than Wir müssen …",
+   "patterns": [
+    {
+     "label": "könnte",
+     "form": "Wir könnten am Sonntag wandern gehen."
+    },
+    {
+     "label": "wäre",
+     "form": "Wie wäre es mit einem Picknick?"
+    },
+    {
+     "label": "Lust haben",
+     "form": "Hättest du Lust, … zu …?"
+    }
+   ],
+   "contrast": "Wir können … states that something is possible. Wir könnten … makes a suggestion.",
+   "examples": [
+    {
+     "de": "Wir könnten am Sonntag wandern gehen.",
+     "en": "We could go hiking on Sunday.",
+     "targets": [
+      "könnten"
+     ]
+    },
+    {
+     "de": "Wie wäre es mit einem Picknick im Park?",
+     "en": "How about a picnic in the park?",
+     "targets": [
+      "Wie wäre es mit"
+     ]
+    },
+    {
+     "de": "Hättest du Lust, mit ins Kino zu kommen?",
+     "en": "Would you like to come to the cinema?",
+     "targets": [
+      "Hättest du Lust"
+     ]
+    }
+   ]
+  }
+ ],
+ "redemittel": [
+  {
+   "id": "e1",
+   "group": "Redemittel der Einheit",
+   "frame": "Hast du Lust, … zu …?",
+   "gloss": "Do you feel like …ing?",
+   "when": "Invite a friend informally.",
+   "register": "informal",
+   "examples": [
+    {
+     "de": "Hast du Lust, am Samstag mit uns zu grillen?",
+     "en": "Do you feel like having a barbecue with us on Saturday?",
+     "targets": [
+      "Hast du Lust",
+      "zu"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "e2",
+   "group": "Redemittel der Einheit",
+   "frame": "Wie wäre es mit …?",
+   "gloss": "How about …?",
+   "when": "Make a suggestion.",
+   "examples": [
+    {
+     "de": "Wie wäre es mit einem Ausflug an den See?",
+     "en": "How about a trip to the lake?",
+     "targets": [
+      "Wie wäre es mit"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "e3",
+   "group": "Redemittel der Einheit",
+   "frame": "Das passt mir gut. / Das passt mir leider nicht.",
+   "gloss": "That suits me. / Unfortunately that doesn't suit me.",
+   "when": "Accept or decline a suggested time.",
+   "examples": [
+    {
+     "de": "Samstag passt mir gut, aber Sonntag passt mir leider nicht.",
+     "en": "Saturday suits me, but Sunday unfortunately doesn't.",
+     "targets": [
+      "passt mir gut",
+      "passt mir leider nicht"
+     ]
+    }
+   ]
+  }
+ ]
+}

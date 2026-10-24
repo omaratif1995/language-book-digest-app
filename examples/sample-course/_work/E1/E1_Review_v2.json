@@ -1,0 +1,19 @@
+{
+ "schema_version": 2,
+ "lesson_id": "E1",
+ "inventory_sha256": "3cbd86b938f1cdbaa538f630b0e908fe1168e94b340d975f79e39e5aa78a826f",
+ "lesson_sha256": "425f7ceab33d5ce5735a85f22aa73cf5c33f20e0150c7404daf02b05f253e340",
+ "reviewer": "sample author",
+ "method": "author-second-pass",
+ "checks": {
+  "source_inspection": "pass",
+  "selection_quality": "pass",
+  "compression": "pass",
+  "redemittel_value": "pass",
+  "grammar_accuracy": "pass",
+  "vocabulary_quality": "pass",
+  "example_integration": "pass"
+ },
+ "findings": [],
+ "scope_note": "Original sample content written for this repository; not taken from any book."
+}

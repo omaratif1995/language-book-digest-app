@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+# generated audio and caches never go into the repository
+**/_work/audio/
+Audio/
+*.mp3
+# local scratch and course books
+*.pdf
+.DS_Store
+Thumbs.db

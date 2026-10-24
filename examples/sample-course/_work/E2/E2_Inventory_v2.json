@@ -1,0 +1,187 @@
+{
+ "schema_version": 2,
+ "lesson_id": "E2",
+ "book": "Lesson Distiller sample",
+ "source_sha256": "52750b678524a227b97feb272c146e7c4761e5bffdd643b66e936f0e3571920a",
+ "scope_label": "Einheit 2 of the sample source",
+ "scope_pages": [
+  1
+ ],
+ "pages": [
+  {
+   "pdf_index": 1,
+   "folio": "2",
+   "regions": [
+    {
+     "id": "p1-lesson",
+     "label": "Pläne fürs Wochenende – Freizeit",
+     "status": "reviewed",
+     "method": "text",
+     "note": "Original sample text."
+    }
+   ]
+  }
+ ],
+ "items": [
+  {
+   "id": "i-v1",
+   "kind": "vocabulary",
+   "label": "der Ausflug",
+   "importance": "essential",
+   "sources": [
+    {
+     "pdf_index": 1,
+     "region": "p1-lesson",
+     "evidence": "Pläne fürs Wochenende – Freizeit"
+    }
+   ],
+   "decision": "standalone",
+   "home": "v1",
+   "reason": "Lesson word list."
+  },
+  {
+   "id": "i-v2",
+   "kind": "vocabulary",
+   "label": "die Verabredung",
+   "importance": "essential",
+   "sources": [
+    {
+     "pdf_index": 1,
+     "region": "p1-lesson",
+     "evidence": "Pläne fürs Wochenende – Freizeit"
+    }
+   ],
+   "decision": "standalone",
+   "home": "v2",
+   "reason": "Lesson word list."
+  },
+  {
+   "id": "i-v3",
+   "kind": "vocabulary",
+   "label": "vorschlagen",
+   "importance": "essential",
+   "sources": [
+    {
+     "pdf_index": 1,
+     "region": "p1-lesson",
+     "evidence": "Pläne fürs Wochenende – Freizeit"
+    }
+   ],
+   "decision": "standalone",
+   "home": "v3",
+   "reason": "Lesson word list."
+  },
+  {
+   "id": "i-v4",
+   "kind": "vocabulary",
+   "label": "spontan",
+   "importance": "essential",
+   "sources": [
+    {
+     "pdf_index": 1,
+     "region": "p1-lesson",
+     "evidence": "Pläne fürs Wochenende – Freizeit"
+    }
+   ],
+   "decision": "standalone",
+   "home": "v4",
+   "reason": "Lesson word list."
+  },
+  {
+   "id": "i-v5",
+   "kind": "vocabulary",
+   "label": "das Wetter",
+   "importance": "essential",
+   "sources": [
+    {
+     "pdf_index": 1,
+     "region": "p1-lesson",
+     "evidence": "Pläne fürs Wochenende – Freizeit"
+    }
+   ],
+   "decision": "standalone",
+   "home": "v5",
+   "reason": "Lesson word list."
+  },
+  {
+   "id": "i-g1",
+   "kind": "grammar",
+   "label": "Polite suggestions with könnte and wäre",
+   "importance": "essential",
+   "sources": [
+    {
+     "pdf_index": 1,
+     "region": "p1-lesson",
+     "evidence": "Pläne fürs Wochenende – Freizeit"
+    }
+   ],
+   "decision": "standalone",
+   "home": "g1",
+   "reason": "Explicit grammar of the unit."
+  },
+  {
+   "id": "i-e1",
+   "kind": "expression",
+   "label": "Hast du Lust, … zu …?",
+   "importance": "essential",
+   "sources": [
+    {
+     "pdf_index": 1,
+     "region": "p1-lesson",
+     "evidence": "Pläne fürs Wochenende – Freizeit"
+    }
+   ],
+   "decision": "standalone",
+   "home": "e1",
+   "reason": "Reusable phrase from the dialogue."
+  },
+  {
+   "id": "i-e2",
+   "kind": "expression",
+   "label": "Wie wäre es mit …?",
+   "importance": "essential",
+   "sources": [
+    {
+     "pdf_index": 1,
+     "region": "p1-lesson",
+     "evidence": "Pläne fürs Wochenende – Freizeit"
+    }
+   ],
+   "decision": "standalone",
+   "home": "e2",
+   "reason": "Reusable phrase from the dialogue."
+  },
+  {
+   "id": "i-e3",
+   "kind": "expression",
+   "label": "Das passt mir gut. / Das passt mir leider nicht.",
+   "importance": "essential",
+   "sources": [
+    {
+     "pdf_index": 1,
+     "region": "p1-lesson",
+     "evidence": "Pläne fürs Wochenende – Freizeit"
+    }
+   ],
+   "decision": "standalone",
+   "home": "e3",
+   "reason": "Reusable phrase from the dialogue."
+  },
+  {
+   "id": "i-names",
+   "kind": "source_only",
+   "label": "character names",
+   "importance": "incidental",
+   "sources": [
+    {
+     "pdf_index": 1,
+     "region": "p1-lesson",
+     "evidence": "Pläne fürs Wochenende – Freizeit"
+    }
+   ],
+   "decision": "exclude",
+   "reason": "Story identity, no learning value."
+  }
+ ],
+ "dependencies": []
+}

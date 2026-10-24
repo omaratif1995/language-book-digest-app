@@ -1,0 +1,203 @@
+{
+ "schema_version": 2,
+ "lesson_id": "E1",
+ "book": "Lesson Distiller sample",
+ "source_sha256": "52750b678524a227b97feb272c146e7c4761e5bffdd643b66e936f0e3571920a",
+ "scope_label": "Einheit 1 of the sample source",
+ "scope_pages": [
+  0
+ ],
+ "pages": [
+  {
+   "pdf_index": 0,
+   "folio": "1",
+   "regions": [
+    {
+     "id": "p0-lesson",
+     "label": "Der erste Arbeitstag – Im Büro",
+     "status": "reviewed",
+     "method": "text",
+     "note": "Original sample text."
+    }
+   ]
+  }
+ ],
+ "items": [
+  {
+   "id": "i-v1",
+   "kind": "vocabulary",
+   "label": "der Kollege",
+   "importance": "essential",
+   "sources": [
+    {
+     "pdf_index": 0,
+     "region": "p0-lesson",
+     "evidence": "Der erste Arbeitstag – Im Büro"
+    }
+   ],
+   "decision": "standalone",
+   "home": "v1",
+   "reason": "Lesson word list."
+  },
+  {
+   "id": "i-v2",
+   "kind": "vocabulary",
+   "label": "die Besprechung",
+   "importance": "essential",
+   "sources": [
+    {
+     "pdf_index": 0,
+     "region": "p0-lesson",
+     "evidence": "Der erste Arbeitstag – Im Büro"
+    }
+   ],
+   "decision": "standalone",
+   "home": "v2",
+   "reason": "Lesson word list."
+  },
+  {
+   "id": "i-v3",
+   "kind": "vocabulary",
+   "label": "der Termin",
+   "importance": "essential",
+   "sources": [
+    {
+     "pdf_index": 0,
+     "region": "p0-lesson",
+     "evidence": "Der erste Arbeitstag – Im Büro"
+    }
+   ],
+   "decision": "standalone",
+   "home": "v3",
+   "reason": "Lesson word list."
+  },
+  {
+   "id": "i-v4",
+   "kind": "vocabulary",
+   "label": "sich vorstellen",
+   "importance": "essential",
+   "sources": [
+    {
+     "pdf_index": 0,
+     "region": "p0-lesson",
+     "evidence": "Der erste Arbeitstag – Im Büro"
+    }
+   ],
+   "decision": "standalone",
+   "home": "v4",
+   "reason": "Lesson word list."
+  },
+  {
+   "id": "i-v5",
+   "kind": "vocabulary",
+   "label": "erledigen",
+   "importance": "essential",
+   "sources": [
+    {
+     "pdf_index": 0,
+     "region": "p0-lesson",
+     "evidence": "Der erste Arbeitstag – Im Büro"
+    }
+   ],
+   "decision": "standalone",
+   "home": "v5",
+   "reason": "Lesson word list."
+  },
+  {
+   "id": "i-v6",
+   "kind": "vocabulary",
+   "label": "pünktlich",
+   "importance": "essential",
+   "sources": [
+    {
+     "pdf_index": 0,
+     "region": "p0-lesson",
+     "evidence": "Der erste Arbeitstag – Im Büro"
+    }
+   ],
+   "decision": "standalone",
+   "home": "v6",
+   "reason": "Lesson word list."
+  },
+  {
+   "id": "i-g1",
+   "kind": "grammar",
+   "label": "Separable verbs – the prefix goes to the end",
+   "importance": "essential",
+   "sources": [
+    {
+     "pdf_index": 0,
+     "region": "p0-lesson",
+     "evidence": "Der erste Arbeitstag – Im Büro"
+    }
+   ],
+   "decision": "standalone",
+   "home": "g1",
+   "reason": "Explicit grammar of the unit."
+  },
+  {
+   "id": "i-e1",
+   "kind": "expression",
+   "label": "Darf ich mich kurz vorstellen? Ich bin … und arbeite als …",
+   "importance": "essential",
+   "sources": [
+    {
+     "pdf_index": 0,
+     "region": "p0-lesson",
+     "evidence": "Der erste Arbeitstag – Im Büro"
+    }
+   ],
+   "decision": "standalone",
+   "home": "e1",
+   "reason": "Reusable phrase from the dialogue."
+  },
+  {
+   "id": "i-e2",
+   "kind": "expression",
+   "label": "Könnten Sie mir bitte zeigen, wie …?",
+   "importance": "essential",
+   "sources": [
+    {
+     "pdf_index": 0,
+     "region": "p0-lesson",
+     "evidence": "Der erste Arbeitstag – Im Büro"
+    }
+   ],
+   "decision": "standalone",
+   "home": "e2",
+   "reason": "Reusable phrase from the dialogue."
+  },
+  {
+   "id": "i-e3",
+   "kind": "expression",
+   "label": "Bis wann soll ich … erledigen?",
+   "importance": "essential",
+   "sources": [
+    {
+     "pdf_index": 0,
+     "region": "p0-lesson",
+     "evidence": "Der erste Arbeitstag – Im Büro"
+    }
+   ],
+   "decision": "standalone",
+   "home": "e3",
+   "reason": "Reusable phrase from the dialogue."
+  },
+  {
+   "id": "i-names",
+   "kind": "source_only",
+   "label": "character names",
+   "importance": "incidental",
+   "sources": [
+    {
+     "pdf_index": 0,
+     "region": "p0-lesson",
+     "evidence": "Der erste Arbeitstag – Im Büro"
+    }
+   ],
+   "decision": "exclude",
+   "reason": "Story identity, no learning value."
+  }
+ ],
+ "dependencies": []
+}

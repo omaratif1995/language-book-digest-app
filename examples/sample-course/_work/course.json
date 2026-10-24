@@ -1,0 +1,21 @@
+{
+ "title": "Lesson Distiller Beispiel",
+ "subtitle": "2 Einheiten · Wortschatz · Grammatik · Redemittel",
+ "cache": "audio",
+ "episodes_dir": "../Audio",
+ "new_per_day": 10,
+ "units": [
+  {
+   "id": "E1",
+   "label": "Einheit 1",
+   "lesson": "E1/E1_Lesson_v2.json",
+   "sheet": "../E1_Studysheet_v1.html"
+  },
+  {
+   "id": "E2",
+   "label": "Einheit 2",
+   "lesson": "E2/E2_Lesson_v2.json",
+   "sheet": "../E2_Studysheet_v1.html"
+  }
+ ]
+}
