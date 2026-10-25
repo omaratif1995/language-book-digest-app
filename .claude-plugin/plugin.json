@@ -1,14 +1,14 @@
 {
-  "name": "lesson-distiller",
-  "displayName": "Lesson Distiller",
-  "version": "1.1.0",
-  "description": "Distill German course-book lessons into compact study sheets (Wortschatz, Grammatik, Redemittel), then into an offline phone study app with German and English neural voices, one-tap spaced-repetition flashcards and MP3 listening episodes.",
+  "name": "language-distiller",
+  "displayName": "Language Distiller",
+  "version": "1.2.0",
+  "description": "Distill German language-course material (course books, lecture slides, handouts, notes) into compact study sheets (Wortschatz, Grammatik, Redemittel), then into an offline phone study app with German and English neural voices, one-tap spaced-repetition flashcards and MP3 listening episodes.",
   "author": {
     "name": "omaratif1995",
     "url": "https://github.com/omaratif1995"
   },
-  "homepage": "https://github.com/omaratif1995/language-lesson-distiller",
-  "repository": "https://github.com/omaratif1995/language-lesson-distiller",
+  "homepage": "https://github.com/omaratif1995/language-distiller",
+  "repository": "https://github.com/omaratif1995/language-distiller",
   "license": "MIT",
   "keywords": ["german", "language-learning", "study", "flashcards", "spaced-repetition", "audio", "textbook"]
 }

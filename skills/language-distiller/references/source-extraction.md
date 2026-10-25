@@ -18,6 +18,16 @@ Text extraction is reconnaissance. Render and visually inspect regions where pic
 
 For a whole book, classify every page internally so shared module/reference material is not skipped. The map remains under `_work` or `_skill_test`, never in learner HTML.
 
+## Sources other than a course book
+
+The same inspection applies to any lesson material; only the unit of a "page" changes.
+
+- **Lecture slides (PPT, PPTX, Google Slides):** export them to PDF, so every slide gets a stable index (`pdf_index` = slide number − 1). Read the speaker notes too. Teachers often put the explanation or the example sentences there, while the slide carries only a keyword.
+- **Handouts and worksheets:** treat them like workbook pages. Fill-in tasks show which forms the teacher wants practised.
+- **Typed or handwritten notes:** number the pages or sections and use them as indexes. Mark anything you cannot read as `unreadable`; do not guess.
+
+A teacher's material is usually thinner than a book. Keep to the scope the lesson sets: the words, forms and uses it actually covers. When a slide only names a grammar point, still teach it fully and accurately on the sheet. Note internally which parts came from the material and which you supplied, so the review can check them.
+
 ## What inspection produces
 
 Record potential learning candidates with exact source locations before deciding what deserves learner attention. Inspection should be broad; selection should be strict. Do not turn every token in a reading into a candidate card.

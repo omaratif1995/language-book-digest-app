@@ -1,8 +1,8 @@
 {
  "schema_version": 2,
  "lesson_id": "E1",
- "inventory_sha256": "3cbd86b938f1cdbaa538f630b0e908fe1168e94b340d975f79e39e5aa78a826f",
- "lesson_sha256": "425f7ceab33d5ce5735a85f22aa73cf5c33f20e0150c7404daf02b05f253e340",
+ "inventory_sha256": "d7a49459d920926d675056f95ee458725ec66adda39796145dc858efe23c20e2",
+ "lesson_sha256": "be47dd59e7cd0afc89f50a7a94a88cee7b75b87ec50c69df8a4a73be53d87cfa",
  "reviewer": "sample author",
  "method": "author-second-pass",
  "checks": {
