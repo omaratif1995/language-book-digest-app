@@ -1,9 +1,9 @@
 ---
-name: language-distiller
+name: german-language-distiller
 description: Distill German language-course material (course-book or workbook pages, a teacher's lecture slides, handouts, scans or notes) into a compact learner sheet with only Wortschatz, Grammatik and Redemittel, then optionally turn the finished units into one offline study app (listening with neural audio, spaced-repetition flashcards) and MP3 listening episodes. Use when a learner wants a lesson's high-value language without the noise, wants to study it on the phone, or asks for audio or flashcards of their lessons.
 ---
 
-# Language Distiller
+# German Language Distiller
 
 Turn a supplied lesson into a psychologically manageable substitute for rereading it. A lesson can be course-book and workbook pages, a lecture's slides, a teacher's handout or the learner's own notes.
 

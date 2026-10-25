@@ -9,7 +9,7 @@ import copy, json, subprocess, sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-SCRIPTS = HERE.parents[1] / "skills" / "language-distiller" / "scripts"
+SCRIPTS = HERE.parents[1] / "skills" / "german-language-distiller" / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 import study_pack as pack  # noqa: E402
 
@@ -144,7 +144,7 @@ def bundle(unit):
                       "decision": "standalone", "home": eid, "reason": "Reusable phrase from the dialogue."})
     items.append({"id": "i-names", "kind": "source_only", "label": "character names", "importance": "incidental",
                   "sources": copy.deepcopy(src), "decision": "exclude", "reason": "Story identity, no learning value."})
-    inventory = {"schema_version": 2, "lesson_id": unit["id"], "book": "Language Distiller sample", "source_sha256": pack.file_hash(SOURCE),
+    inventory = {"schema_version": 2, "lesson_id": unit["id"], "book": "Beispielkurs", "source_sha256": pack.file_hash(SOURCE),
                  "scope_label": f"{unit['label']} of the sample source", "scope_pages": [unit["page"]],
                  "pages": [{"pdf_index": unit["page"], "folio": str(unit["page"] + 1), "regions": [
                      {"id": region, "label": unit["title"], "status": "reviewed", "method": "text", "note": "Original sample text."}]}],
@@ -176,7 +176,7 @@ def main():
         units.append({"id": unit["id"], "label": unit["label"], "lesson": f"{unit['id']}/{unit['id']}_Lesson_v2.json",
                       "sheet": f"../{sheet.name}"})
     write(HERE / "_work" / "narration.json", NARRATION)
-    write(HERE / "_work" / "course.json", {"title": "Language Distiller Beispiel", "subtitle": "2 Einheiten · Wortschatz · Grammatik · Redemittel",
+    write(HERE / "_work" / "course.json", {"title": "Beispielkurs Deutsch", "subtitle": "2 Einheiten · Wortschatz · Grammatik · Redemittel",
                                            "narration": "narration.json", "cache": "audio", "episodes_dir": "../Audio",
                                            "new_per_day": 10, "units": units})
     app = HERE / "Sample_Studienpaket_v1.html"

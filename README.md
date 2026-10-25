@@ -1,8 +1,8 @@
-# Language Distiller
+# German Language Distiller
 
 **Turn your German course material into something you can actually study on the go.**
 
-Language Distiller is an [Agent Skill](https://agentskills.io): a folder with instructions and Python scripts that an AI assistant follows. It works with Claude Code, OpenAI Codex, GitHub Copilot and other assistants that read the open Agent Skills format.
+German Language Distiller is an [Agent Skill](https://agentskills.io): a folder with instructions and Python scripts that an AI assistant follows. It works with Claude Code, OpenAI Codex, GitHub Copilot and other assistants that read the open Agent Skills format.
 
 You give it a lesson you're studying: pages from a course book you own, your teacher's lecture slides, a handout, or your own notes. It gives back:
 
@@ -21,7 +21,7 @@ You give it a lesson you're studying: pages from a course book you own, your tea
 
 ## Why it works
 
-Rereading a lesson feels productive but fades fast. Language Distiller reads the *whole* lesson: word lists, picture vocabulary, grammar boxes, model texts, exercises, and a slide's speaker notes. It keeps only what materially improves your German. Every card is checked for accuracy before it reaches you, so a lesson becomes a single page you can absorb.
+Rereading a lesson feels productive but fades fast. German Language Distiller reads the *whole* lesson: word lists, picture vocabulary, grammar boxes, model texts, exercises, and a slide's speaker notes. It keeps only what materially improves your German. Every card is checked for accuracy before it reaches you, so a lesson becomes a single page you can absorb.
 
 The app then does the remembering for you. Spaced repetition decides what comes back and when. Listening with pauses trains your ear and pronunciation. The Redemittel cards ask the way an exam does: the situation is shown in English and you produce the German phrase.
 
@@ -29,13 +29,13 @@ The app then does the remembering for you. Spaced repetition decides what comes 
 
 ## Install
 
-Pick the line for your assistant. Every option installs the same folder, [`skills/language-distiller/`](skills/language-distiller/).
+Pick the line for your assistant. Every option installs the same folder, [`skills/german-language-distiller/`](skills/german-language-distiller/).
 
 **Claude Code**
 
 ```text
-/plugin marketplace add omaratif1995/language-distiller
-/plugin install language-distiller@language-distiller
+/plugin marketplace add omaratif1995/german-language-distiller
+/plugin install german-language-distiller@german-language-distiller
 ```
 
 Or copy the folder to `~/.claude/skills/` (all projects) or `.claude/skills/` (one project).
@@ -45,11 +45,11 @@ Or copy the folder to `~/.claude/skills/` (all projects) or `.claude/skills/` (o
 Copy the folder to `~/.agents/skills/` (all projects) or `.agents/skills/` (one project):
 
 ```bash
-git clone https://github.com/omaratif1995/language-distiller
-mkdir -p ~/.agents/skills && cp -r language-distiller/skills/language-distiller ~/.agents/skills/
+git clone https://github.com/omaratif1995/german-language-distiller
+mkdir -p ~/.agents/skills && cp -r german-language-distiller/skills/german-language-distiller ~/.agents/skills/
 ```
 
-On Windows, run `Copy-Item -Recurse language-distiller\skills\language-distiller $HOME\.agents\skills\`. GitHub Copilot also reads `~/.copilot/skills/` and `.github/skills/`. If your assistant doesn't find the skill, check its documentation for its skills folder, then restart it.
+On Windows, run `Copy-Item -Recurse german-language-distiller\skills\german-language-distiller $HOME\.agents\skills\`. GitHub Copilot also reads `~/.copilot/skills/` and `.github/skills/`. If your assistant doesn't find the skill, check its documentation for its skills folder, then restart it.
 
 **Requirements:** Python 3.10 or newer. Audio also needs `pip install edge-tts pyspellchecker imageio-ffmpeg`.
 
@@ -67,12 +67,12 @@ The assistant inspects the pages or slides, writes the lesson data, validates it
 The scripts also run on their own. That's useful for rebuilding the app after you edit a lesson file:
 
 ```bash
-python skills/language-distiller/scripts/study_pack.py render --inventory … --lesson … --review … --source … --output L01_Studysheet_v2.html
-python skills/language-distiller/scripts/course_audio.py plan --course _work/course.json
-python skills/language-distiller/scripts/build_course_app.py --course _work/course.json --output Course_App_v2.html
+python skills/german-language-distiller/scripts/study_pack.py render --inventory … --lesson … --review … --source … --output L01_Studysheet_v2.html
+python skills/german-language-distiller/scripts/course_audio.py plan --course _work/course.json
+python skills/german-language-distiller/scripts/build_course_app.py --course _work/course.json --output Course_App_v2.html
 ```
 
-The skill's [references](skills/language-distiller/references/) document the data format, the audio rules and the app.
+The skill's [references](skills/german-language-distiller/references/) document the data format, the audio rules and the app.
 
 ## Privacy and copyright
 
@@ -82,16 +82,16 @@ The skill's [references](skills/language-distiller/references/) document the dat
 
 ## Good to know
 
-- **Languages:** today the sheets, the voices and the app are built for learners of German, tested with B1 material. The method itself is language-neutral; support for other target languages is planned.
+- **For German learners:** the sheets, the voices and the app are built for German, tested with B1 material.
 - **iPhone:** the Files and messenger previews don't run the app's buttons. Open the file in a browser that runs local files, or host it privately. The MP3s play everywhere.
 - **A study aid, not a guarantee.** A digest replaces rereading, not practice. Listening to real-speed German, speaking with a partner and timed exam practice are still on you.
 
 ## Repository layout
 
 ```text
-skills/language-distiller/SKILL.md         the skill: workflow and quality rules
-skills/language-distiller/references/      authoring rules, data contract, audio and app design
-skills/language-distiller/scripts/         validator, renderer, speech, audio and app builders, tests
+skills/german-language-distiller/SKILL.md         the skill: workflow and quality rules
+skills/german-language-distiller/references/      authoring rules, data contract, audio and app design
+skills/german-language-distiller/scripts/         validator, renderer, speech, audio and app builders, tests
 examples/sample-course/                    two original sample lessons, their sheets and the app
 .claude-plugin/                            Claude Code plugin and marketplace entry
 ```

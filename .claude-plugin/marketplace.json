@@ -1,5 +1,5 @@
 {
-  "name": "language-distiller",
+  "name": "german-language-distiller",
   "description": "Turn German language-course material (course books, lecture slides, handouts, notes) into compact study sheets, a phone study app with audio and flashcards, and listening episodes.",
   "owner": {
     "name": "omaratif1995",
@@ -7,7 +7,7 @@
   },
   "plugins": [
     {
-      "name": "language-distiller",
+      "name": "german-language-distiller",
       "source": "./",
       "description": "Distill lessons into Wortschatz / Grammatik / Redemittel sheets, an offline study app (German audio that sounds German, one-tap spaced repetition) and MP3 listening episodes."
     }
