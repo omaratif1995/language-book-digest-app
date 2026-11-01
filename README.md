@@ -4,7 +4,7 @@
 
 Language Distiller is an [Agent Skill](https://agentskills.io): a folder with instructions and Python scripts that an AI assistant follows. It works with Claude Code, OpenAI Codex, GitHub Copilot and other assistants that read the open Agent Skills format.
 
-**Languages:** German is the reference language: everything was built and tested with German B1 material. Spanish has a pilot profile. Any other language needs a short language profile first (its section names, articles, voice and a few word lists), which the assistant writes with you; see [languages.md](skills/language-distiller/references/languages.md).
+**Languages:** German is the reference language: everything was built and tested with German B1 material. Spanish has a profile and a [two-unit sample course](examples/sample-course-es/). Any other language needs a short language profile first (its section names, articles, voice and a few word lists), which the assistant writes with you; see [languages.md](skills/language-distiller/references/languages.md). It works for languages written left to right with spaces between words.
 
 You give it a lesson you're studying: pages from a course book you own, your teacher's lecture slides, a handout, or your own notes. It gives back:
 
@@ -88,7 +88,7 @@ The skill's [references](skills/language-distiller/references/) document the dat
 
 ## Good to know
 
-- **Languages:** German is tested with real B1 material. Spanish has a pilot profile that the tests build a lesson, sheet and app with. For any other language, the first lesson is also a test: check its examples and voice with a speaker of the language.
+- **Languages:** German is tested with real B1 material. Spanish has a complete sample course, reviewed by its author but not yet by a native speaker. For any other language, the first lesson is also a test: check its examples and voice with a speaker of the language. Right-to-left scripts and languages without spaces between words aren't supported yet.
 - **iPhone:** the Files and messenger previews don't run the app's buttons. Open the file in a browser that runs local files, or host it privately. The MP3s play everywhere.
 - **Screen off:** the app joins a listening session into one continuous audio track with lock-screen and headphone buttons (⏯ ⏮ ⏭), so playback keeps going when the screen turns off. The MP3 episodes also work in any music player.
 - **A study aid, not a guarantee.** A digest replaces rereading, not practice. Listening to real-speed speech, speaking with a partner and timed exam practice are still on you.
@@ -100,11 +100,12 @@ skills/language-distiller/SKILL.md         the skill: workflow and quality rules
 skills/language-distiller/languages/       one profile per target language (de, es)
 skills/language-distiller/references/      authoring rules, data contract, languages, audio and app design
 skills/language-distiller/scripts/         validator, renderer, speech, audio and app builders, tests
-examples/sample-course/                    two original sample lessons, their sheets and the app
+examples/sample-course/                    two original German sample lessons, their sheets and the app
+examples/sample-course-es/                 the same for Spanish
 .claude-plugin/                            Claude Code plugin and marketplace entry
 ```
 
-Run the tests with `python -m unittest` inside `scripts/`. The speech tests need `pyspellchecker` and are skipped without it.
+Run the tests with `python -m unittest` inside `scripts/`. The speech tests need `pyspellchecker` and are skipped without it. To check a built app's games in a real browser, run `node skills/language-distiller/scripts/inspect_games.mjs <chrome> <app.html>`.
 
 ## License
 

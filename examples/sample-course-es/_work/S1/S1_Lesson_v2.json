@@ -1,0 +1,287 @@
+{
+ "schema_version": 2,
+ "lesson_id": "S1",
+ "inventory_sha256": "94c17ab2e804e675009cf614406125948a40cbc24fc6f2da1f12f08c6c952d62",
+ "title": "En el mercado – Comprar comida fresca",
+ "level": "A2",
+ "target_language": "es",
+ "gloss_language": "en",
+ "vocabulary": [
+  {
+   "id": "v1",
+   "group": "Vocabulario de la unidad",
+   "lemma": "puesto",
+   "pos": "noun",
+   "article": "el",
+   "forms": "Plural: los puestos · el puesto de fruta",
+   "gloss": "(market) stall",
+   "examples": [
+    {
+     "de": "En el puesto de la esquina venden las mejores naranjas del barrio.",
+     "en": "The stall on the corner sells the best oranges in the neighbourhood.",
+     "targets": [
+      "puesto"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "v2",
+   "group": "Vocabulario de la unidad",
+   "lemma": "cesta",
+   "pos": "noun",
+   "article": "la",
+   "forms": "Plural: las cestas",
+   "gloss": "basket",
+   "examples": [
+    {
+     "de": "Siempre llevo mi propia cesta para no usar bolsas de plástico.",
+     "en": "I always take my own basket so that I don't use plastic bags.",
+     "targets": [
+      "cesta"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "v3",
+   "group": "Vocabulario de la unidad",
+   "lemma": "regatear",
+   "pos": "verb",
+   "forms": "regateo · he regateado",
+   "gloss": "to haggle",
+   "examples": [
+    {
+     "de": "En este mercado nadie regatea: los precios están en carteles.",
+     "en": "Nobody haggles at this market: the prices are on signs.",
+     "targets": [
+      "regatea"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "v4",
+   "group": "Vocabulario de la unidad",
+   "lemma": "fresco",
+   "pos": "adjective",
+   "forms": "fresca · frescos · frescas",
+   "gloss": "fresh",
+   "examples": [
+    {
+     "de": "El pescado está tan fresco que todavía huele a mar.",
+     "en": "The fish is so fresh that it still smells of the sea.",
+     "targets": [
+      "fresco"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "v5",
+   "group": "Vocabulario de la unidad",
+   "lemma": "oferta",
+   "pos": "noun",
+   "article": "la",
+   "forms": "Plural: las ofertas · estar de oferta",
+   "gloss": "special offer",
+   "examples": [
+    {
+     "de": "Las fresas están de oferta: dos kilos por cinco euros.",
+     "en": "Strawberries are on special offer: two kilos for five euros.",
+     "targets": [
+      "oferta"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "v6",
+   "group": "Vocabulario de la unidad",
+   "lemma": "probar",
+   "pos": "verb",
+   "forms": "pruebo · he probado (o → ue)",
+   "gloss": "to try, to taste",
+   "examples": [
+    {
+     "de": "¿Puedo probar un trozo de este queso antes de comprarlo?",
+     "en": "Can I try a piece of this cheese before I buy it?",
+     "targets": [
+      "probar"
+     ]
+    }
+   ]
+  }
+ ],
+ "grammar": [
+  {
+   "id": "g1",
+   "title": "Direct object pronouns: lo, la, los, las",
+   "meaning": "They replace a thing or person you have already mentioned, so you don't repeat the noun.",
+   "rule": "The pronoun goes right before the conjugated verb. With an infinitive it can also be attached to its end. It takes the gender and number of the noun it replaces.",
+   "patterns": [
+    {
+     "label": "before the verb",
+     "form": "Los compro."
+    },
+    {
+     "label": "with an infinitive",
+     "form": "Voy a probarlo. = Lo voy a probar."
+    },
+    {
+     "label": "feminine plural",
+     "form": "Las llevo en la cesta."
+    }
+   ],
+   "contrast": "le and les are for the person who receives something (indirect object): Le doy el dinero.",
+   "examples": [
+    {
+     "de": "Estos tomates están muy baratos; los compro todos.",
+     "en": "These tomatoes are very cheap; I'll buy them all.",
+     "targets": [
+      "los compro"
+     ]
+    },
+    {
+     "de": "¿El queso de cabra? Lo voy a probar ahora mismo.",
+     "en": "The goat's cheese? I'm going to try it right now.",
+     "targets": [
+      "Lo voy a probar"
+     ]
+    },
+    {
+     "de": "Las naranjas, las llevo yo en la cesta.",
+     "en": "I'll carry the oranges in the basket.",
+     "targets": [
+      "las llevo"
+     ]
+    }
+   ]
+  }
+ ],
+ "redemittel": [
+  {
+   "id": "e1",
+   "group": "Expresiones de la unidad",
+   "frame": "¿Cuánto cuesta …?",
+   "gloss": "How much is …?",
+   "when": "Ask the price of something.",
+   "examples": [
+    {
+     "de": "¿Cuánto cuesta un kilo de tomates?",
+     "en": "How much is a kilo of tomatoes?",
+     "targets": [
+      "Cuánto cuesta"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "e2",
+   "group": "Expresiones de la unidad",
+   "frame": "Me pone …, por favor.",
+   "gloss": "I'll have …, please.",
+   "when": "Order at a market stall or in a bar.",
+   "register": "Spain, everyday",
+   "examples": [
+    {
+     "de": "Me pone medio kilo de fresas, por favor.",
+     "en": "I'll have half a kilo of strawberries, please.",
+     "targets": [
+      "Me pone",
+      "por favor"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "e3",
+   "group": "Expresiones de la unidad",
+   "frame": "¿Algo más? – No, nada más, gracias.",
+   "gloss": "Anything else? – No, nothing else, thanks.",
+   "when": "Answer the seller at the end.",
+   "examples": [
+    {
+     "de": "¿Algo más? – No, nada más, gracias. ¿Cuánto es todo?",
+     "en": "Anything else? – No, nothing else, thanks. How much is it altogether?",
+     "targets": [
+      "No, nada más, gracias"
+     ]
+    }
+   ]
+  }
+ ],
+ "story": {
+  "title": "Un sábado en el mercado",
+  "paragraphs": [
+   {
+    "de": "El sábado por la mañana, Marta va al mercado con su cesta. En el primer puesto, las fresas están de oferta y huelen de maravilla.",
+    "en": "On Saturday morning Marta goes to the market with her basket. At the first stall the strawberries are on special offer and smell wonderful.",
+    "uses": [
+     {
+      "card": "v2",
+      "form": "cesta"
+     },
+     {
+      "card": "v1",
+      "form": "puesto"
+     },
+     {
+      "card": "v5",
+      "form": "oferta"
+     }
+    ]
+   },
+   {
+    "de": "—Me pone un kilo de fresas, por favor —dice Marta. —Están muy frescas, ¡pruébelas! —contesta el vendedor. Marta prueba una y las compra sin pensarlo.",
+    "en": "'I'll have a kilo of strawberries, please,' says Marta. 'They're very fresh, try them!' answers the seller. Marta tries one and buys them without a second thought.",
+    "uses": [
+     {
+      "card": "e2",
+      "form": "Me pone"
+     },
+     {
+      "card": "v4",
+      "form": "frescas"
+     },
+     {
+      "card": "v6",
+      "form": "prueba"
+     },
+     {
+      "card": "g1",
+      "form": "las compra"
+     }
+    ]
+   },
+   {
+    "de": "En el puesto de quesos, Marta pregunta: —¿Cuánto cuesta este queso de cabra? Es caro, y el vendedor no quiere regatear. —Bueno, lo voy a llevar igualmente —dice ella.",
+    "en": "At the cheese stall Marta asks: 'How much is this goat's cheese?' It is expensive, and the seller doesn't want to haggle. 'Well, I'll take it anyway,' she says.",
+    "uses": [
+     {
+      "card": "e1",
+      "form": "Cuánto cuesta"
+     },
+     {
+      "card": "v3",
+      "form": "regatear"
+     },
+     {
+      "card": "g1",
+      "form": "lo voy a llevar"
+     }
+    ]
+   },
+   {
+    "de": "—¿Algo más? —pregunta el vendedor. —No, nada más, gracias. En casa, Marta abre la cesta y sonríe: fresas, queso y el mejor plan para el domingo.",
+    "en": "'Anything else?' asks the seller. 'No, nothing else, thanks.' At home Marta opens the basket and smiles: strawberries, cheese and the best plan for Sunday.",
+    "uses": [
+     {
+      "card": "e3",
+      "form": "No, nada más, gracias"
+     }
+    ]
+   }
+  ]
+ }
+}

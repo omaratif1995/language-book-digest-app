@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="study-pack-app" content="course v2">
+<title>Curso de español</title>
+<style>
+  :root{
+    --der:#7f9fbd; --das:#86ad9a; --die:#c58fa3;
+    --bg:#17191f; --card:#24272e; --ink:#ebe9e4; --muted:#b1b3b7;
+    --line:#3b4048; --accent:#b19ac8; --accent2:#d0b9d8;
+    --ex-bg:#29343a; --ex-bar:#83b1bd; --ex-ink:#d9e7e7;
+    --gram-bg:#302d35; --gram-bar:#b19ac8;
+    --phrase-bg:#145c4d; --phrase-bar:#34d399; --yellow:#f2d36b;
+  }
+  *{box-sizing:border-box;}
+  body{font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);margin:0;padding:24px 16px 52px;line-height:1.48;background-image:radial-gradient(1100px 350px at 70% -70px,#1e2740 0%,transparent 70%);}
+  .wrap{max-width:900px;margin:0 auto;overflow-wrap:anywhere;}
+  .hero{background:linear-gradient(135deg,#312e81 0%,#831843 100%);border-radius:16px;padding:18px 24px;margin-bottom:24px;box-shadow:0 8px 24px rgba(0,0,0,.35);}
+  .hero .lekt{font-size:12px;letter-spacing:2.6px;text-transform:uppercase;color:#f0abfc;font-weight:700;}
+  .hero h1{font-size:28px;margin:3px 0 0;color:#fff;}
+  h2{font-size:22px;margin:30px 0 4px;display:flex;align-items:center;gap:10px;}
+  h2 .num{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#1a1030;width:30px;height:30px;border-radius:9px;display:inline-grid;place-items:center;font-size:15px;font-weight:800;}
+  .rule-under{height:3px;background:linear-gradient(90deg,var(--accent),transparent);border-radius:3px;margin:6px 0 10px;}
+  h3{font-size:14px;margin:20px 0 8px;color:var(--accent2);font-weight:700;}
+  .grid{display:grid;grid-template-columns:1fr;gap:8px;}
+  .voc{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:10px 13px;}
+  .voc .top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
+  .voc .de{font-size:17px;font-weight:700;}
+  .voc .en{font-size:13.5px;color:var(--muted);}
+  .art-der{color:var(--der)} .art-das{color:var(--das)} .art-die{color:var(--die)}
+  .forms{font-size:13px;color:var(--muted);margin:5px 0 0;}
+  .ex{margin-top:7px;font-size:14px;background:var(--ex-bg);border-left:3px solid var(--ex-bar);border-radius:7px;padding:6px 10px;color:var(--ex-ink);}
+  .ex .tr{color:#7fb3d9;font-style:italic;}
+  mark{background:rgba(253,224,71,.22);color:var(--yellow);padding:0 3px;border-radius:3px;font-weight:700;}
+  .rule{background:var(--gram-bg);border:1px solid var(--line);border-left:5px solid var(--gram-bar);border-radius:11px;padding:14px 16px;margin:11px 0;}
+  .rule h3{margin:0 0 8px;font-size:17px;}
+  .rule p{margin:6px 0;font-size:14px;}
+  .patterns{margin:8px 0;padding:8px 11px;background:var(--card);border-radius:8px;}
+  .patterns p{margin:3px 0;}
+  .contrast{color:#f5d78e;}
+  .phrase{background:var(--phrase-bg);border:1px solid var(--line);border-left:5px solid var(--phrase-bar);border-radius:10px;padding:10px 13px;margin:7px 0;}
+  .phrase .head{font-size:16px;font-weight:700;color:#6ee7b7;}
+  .phrase .meaning{font-size:13.5px;margin:5px 0;}
+  .phrase .when{font-size:12.5px;color:#d1e5dc;margin-top:3px;}
+  .phrase .variant{font-size:13px;color:#d1e5dc;margin:4px 0;}
+  .phrase .ex{background:#303633;border-left-color:var(--phrase-bar);color:#dce8df;}
+  .phrase .ex .tr{color:#a9c2b0;}
+  .story{background:linear-gradient(180deg,#2a2630 0%,#23212a 100%);border:1px solid var(--line);border-left:5px solid var(--yellow);border-radius:14px;padding:16px 18px 6px;margin:11px 0;}
+  .story h3{margin:0 0 12px;font-size:19px;color:#f5e6b3;}
+  .story-p{margin:0 0 14px;}
+  .story-p>p{margin:0;font-size:16.5px;line-height:1.75;}
+  .lw{border-bottom:2px dotted rgba(242,211,107,.75);}
+  .story-tr summary{cursor:pointer;color:var(--muted);font-size:12.5px;margin-top:5px;width:max-content;}
+  .story-tr p{margin:5px 0 0;color:#a9b8c9;font-style:italic;font-size:14px;line-height:1.6;}
+  @media(max-width:520px){body{padding:14px 9px 34px}.hero{padding:16px}.hero h1{font-size:24px}.rule{padding:12px}.voc,.phrase{padding:10px 11px}.story{padding:14px 13px 4px}}
+  @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+
+  .listen-row{display:flex;align-items:center;gap:9px;margin-top:13px;flex-wrap:wrap}
+  .listen-open,.story-play,.speak-button{border:1px solid rgba(255,255,255,.28);color:#fff;background:rgba(15,23,42,.55);font:inherit;cursor:pointer;box-shadow:none}
+  .listen-open{border-radius:999px;padding:8px 15px;font-size:14px;font-weight:700;min-height:38px}
+  .story-play{border-radius:999px;padding:6px 13px;font-size:13.5px;font-weight:700;min-height:34px;white-space:nowrap}
+  .speak-button{width:29px;height:29px;border-radius:50%;padding:0;display:inline-grid;place-items:center;font-size:14px;line-height:1;flex:0 0 auto;vertical-align:middle}
+  .speak-button:hover,.listen-open:hover,.story-play:hover,.speak-button:focus-visible,.listen-open:focus-visible,.story-play:focus-visible{background:#394151;outline:2px solid #f2d36b;outline-offset:2px}
+  .speak-button.is-playing,.listen-open.is-playing,.story-play.is-playing{background:#0f766e;border-color:#6ee7b7;animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{50%{box-shadow:0 0 0 6px rgba(110,231,183,.18)}}
+  .voc .top,.phrase .head,.rule h3,.story h3{align-items:center}
+  .phrase .head,.rule h3,.story h3{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap}
+  .ex>.speak-button,.story-p>.para-play{float:right;margin:-1px 0 4px 8px}
+  .variant>.speak-button{margin-left:7px}
+  .ss[data-audio]{cursor:pointer;border-radius:5px;transition:background .2s}
+  .ss.is-playing,.ss.follow{background:rgba(242,211,107,.16);outline:none}
+  .follow{outline:2px solid var(--yellow);outline-offset:3px;border-radius:10px}
+  .lp{margin:12px 0 4px;padding:12px;border:1px solid rgba(255,255,255,.2);border-radius:14px;background:rgba(15,23,42,.72)}
+  .lp-modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:10px}
+  .lp-modes button{font:inherit;font-size:15px;font-weight:700;min-height:46px;border-radius:12px;cursor:pointer;color:#1a1030;background:var(--accent2);border:0}
+  .lp-modes button[data-m="ex"]{background:#f2d36b}
+  .lp-modes button[data-m="story"]{background:#6ee7b7}
+  .lp-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:7px 0 0}
+  .lp-row>span{flex:0 0 92px;font-size:12.5px;color:#dbe2ea;letter-spacing:.3px}
+  .lp-row .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .lp-row .chips button{font:inherit;font-size:13.5px;min-height:34px;padding:4px 11px;border-radius:999px;cursor:pointer;color:#fff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22)}
+  .lp-row .chips button[aria-pressed="true"]{background:#f2d36b;color:#1a1030;border-color:#f2d36b;font-weight:700}
+  .lp-go{display:block;width:100%;margin:0 0 8px;font:inherit;font-size:15px;font-weight:700;min-height:46px;border-radius:12px;cursor:pointer;color:#064e3b;background:#ecfdf5;border:0}
+  .now{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:30;display:flex;align-items:center;gap:8px;
+       width:max-content;max-width:calc(100% - 24px);padding:6px 6px 6px 8px;border-radius:999px;background:#0f766e;color:#ecfdf5;box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:14px}
+  .now.paused{background:#334155}
+  .now-c{display:flex;gap:5px;flex:none}
+  .now-i{display:flex;flex-direction:column;min-width:0;line-height:1.25;padding:0 4px}
+  .now-i b,.now-i small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .now-i small{font-size:12px;opacity:.85}
+  .now button{font:inherit;font-size:14px;font-weight:700;border:0;border-radius:999px;padding:7px 13px;background:#ecfdf5;color:#064e3b;cursor:pointer;flex:none}
+  .now-c button,.now button.x{width:40px;height:40px;padding:0;display:grid;place-items:center;background:rgba(255,255,255,.16);color:#ecfdf5}
+  .now-c #now-p{background:#ecfdf5;color:#064e3b}
+  .now button.x{width:36px;height:36px;font-size:16px}
+  .now svg{width:20px;height:20px;fill:currentColor}
+  .now button:focus-visible{outline:2px solid #f2d36b;outline-offset:2px}
+  .tip{position:absolute;z-index:40;max-width:min(300px,calc(100% - 16px));padding:8px 11px;border-radius:10px;background:#0b1220;color:#f8fafc;
+       border:1px solid #f2d36b;font-size:14px;box-shadow:0 8px 22px rgba(0,0,0,.45)}
+  .lw{cursor:help}
+  [hidden]{display:none !important}
+  @media(max-width:520px){.speak-button{width:32px;height:32px}}
+  @media(prefers-reduced-motion:reduce){.speak-button.is-playing,.listen-open.is-playing{animation:none}}
+
+  [hidden]{display:none !important}
+  .bar{position:sticky;top:0;z-index:5;margin:-24px -16px 18px;padding:10px 16px;background:rgba(23,25,31,.95);
+       backdrop-filter:blur(8px);border-bottom:1px solid var(--line);display:none;gap:8px;flex-wrap:wrap;align-items:center}
+  .js .bar{display:flex}
+  @media(max-width:520px){.bar{margin:-14px -9px 14px;padding:10px 9px}}
+  .bar select,.bar input,.bar button,.pr select,.pr button{font:inherit;font-size:15px;color:var(--ink);background:var(--card);
+       border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-height:42px}
+  .tabs{display:flex;gap:6px;flex-basis:100%}
+  .tabs button{flex:1;font-weight:700;cursor:pointer}
+  .tabs button[aria-pressed="true"],.pr .chips button[aria-pressed="true"]{background:var(--accent);color:#1a1030;border-color:var(--accent)}
+  .bar select{flex:1 1 200px;min-width:0}
+  .bar input{flex:1 1 160px;min-width:0}
+  .bar .nav{width:44px;cursor:pointer}
+  .bar .hits{flex-basis:100%;font-size:13px;color:var(--muted);display:none}
+  .searching .bar .hits{display:block}
+  .cover{text-align:center;margin:8px 0 22px;color:var(--muted);font-size:14px}
+  .cover b{display:block;color:var(--ink);font-size:20px;margin-bottom:2px}
+  .js .unit{display:none}
+  .js .unit.on{display:block}
+  .searching .unit{display:block}
+  .searching article.miss,.searching .unit.empty{display:none !important}
+  .searching h2,.searching .rule-under{display:none}
+  section.unit + section.unit{margin-top:40px}
+  .explain-button{border:1px solid rgba(255,255,255,.28);color:#fff;background:rgba(15,23,42,.55);font:inherit;font-size:13px;
+       font-weight:700;border-radius:999px;padding:4px 10px;margin-left:8px;cursor:pointer;white-space:nowrap}
+  .explain-button.is-playing{background:#0f766e;border-color:#6ee7b7}
+  .mode-practice .lernen,.mode-games .lernen{display:none}
+  #practice,#games{display:none}
+  .mode-practice #practice,.mode-games #games{display:block}
+  .mode-practice .lern-only,.mode-games .search-only{display:none !important}
+  .mode-practice .now{bottom:calc(150px + env(safe-area-inset-bottom))}
+  .tr-top{display:flex;align-items:center;gap:10px;margin:2px 0 12px}
+  .tr-bar{flex:1;height:8px;border-radius:99px;background:var(--card);border:1px solid var(--line);overflow:hidden}
+  .tr-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),#34d399);transition:width .35s ease}
+  .tr-count{font-size:14px;color:var(--muted);white-space:nowrap}
+  .tr-streak{font-size:14px;white-space:nowrap}
+  .fc{position:relative;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px 18px;min-height:250px;
+      box-shadow:0 10px 28px rgba(0,0,0,.3);overflow-wrap:anywhere;touch-action:pan-y;user-select:none;-webkit-user-select:none;
+      transition:transform .22s ease,opacity .22s ease,border-color .15s}
+  .fc.dragging{transition:none}
+  .fc.hint-good{border-color:#34d399}
+  .fc.hint-again{border-color:#f87171}
+  .fc.fly-right{transform:translateX(120%) rotate(12deg);opacity:0}
+  .fc.fly-left{transform:translateX(-120%) rotate(-12deg);opacity:0}
+  .fc .tag{font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px}
+  .fc .front{font-size:26px;font-weight:700;line-height:1.3}
+  .fc .front .q-mean{display:block}
+  .fc .front .q-when{display:block;font-size:15px;font-weight:400;color:var(--muted);margin-top:10px}
+  .fc .peek{margin-top:28px;font-size:13px;color:var(--muted);text-align:center}
+  .fc.enter{animation:enter .22s ease}
+  @keyframes enter{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .fc .back{margin-top:16px;border-top:1px dashed var(--line);padding-top:12px;animation:reveal .25s ease}
+  .fc .back article{background:none;border:0;box-shadow:none;padding:0;margin:0}
+  .fc .msg{text-align:center;padding:26px 4px}
+  .fc .msg .big{font-size:40px;line-height:1.1;margin-bottom:8px}
+  .fc .msg h3{margin:0 0 6px;font-size:22px}
+  .fc .msg p{margin:4px 0;color:var(--muted)}
+  @keyframes reveal{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  body{background-repeat:no-repeat}
+  .dock{position:sticky;bottom:0;z-index:4;margin:0 -16px;padding:12px 16px env(safe-area-inset-bottom);
+        background:linear-gradient(rgba(23,25,31,0),var(--bg) 12px)}
+  @media(max-width:520px){.dock{margin:0 -9px;padding-left:9px;padding-right:9px}}
+  .acts{display:flex;gap:10px}
+  .acts button{flex:1;min-height:56px;font-size:17px;font-weight:700;border-radius:14px;cursor:pointer}
+  .acts .main{background:var(--accent);color:#1a1030;border-color:var(--accent)}
+  .acts .again{background:#5b2333;border-color:#9f3a55;color:#ffe4ea}
+  .acts .good{background:#145c4d;border-color:#34d399;color:#e7fff6}
+  .undo{display:flex;align-items:center;justify-content:center;gap:10px;min-height:44px;font-size:14px;color:var(--muted);visibility:hidden}
+  .undo.on{visibility:visible}
+  .undo span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pr .undo button{flex:none;min-height:32px;padding:3px 12px;font-size:13px;border-radius:999px;background:none;cursor:pointer}
+  .settings{margin-top:24px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:rgba(36,39,46,.55)}
+  .settings summary{cursor:pointer;color:var(--muted);font-size:14px;padding:4px 0}
+  .settings[open] summary{margin-bottom:12px}
+  .pr .group{margin:0 0 14px}
+  .pr .lab{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  .pr .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .pr .chips button{min-height:36px;padding:5px 10px;font-size:14px;cursor:pointer}
+  .pr .stat{font-size:13px;color:var(--muted)}
+  .pr .backup{display:flex;gap:8px;flex-wrap:wrap}
+  .pr .backup button,.pr .backup label{font:inherit;font-size:14px;cursor:pointer;color:var(--ink);background:var(--card);
+       border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+  .pr .backup input{display:none}
+  /* ---- Spielen ---- */
+  .g-menu{display:grid;gap:10px}
+  .g-lead{color:var(--muted);font-size:14px;margin:2px 0 8px}
+  .g-tile{display:grid;grid-template-columns:54px 1fr;column-gap:12px;align-items:center;text-align:left;padding:14px;border-radius:16px;cursor:pointer;
+          background:var(--card);border:1px solid var(--line);color:var(--ink);font:inherit;transition:transform .12s,border-color .2s}
+  .g-tile:hover{border-color:var(--accent)}
+  .g-tile:active{transform:scale(.98)}
+  .g-icon{grid-row:1 / span 3;font-size:36px;display:grid;place-items:center}
+  .g-name{font-size:18px;font-weight:800}
+  .g-desc{font-size:13.5px;color:var(--muted)}
+  .g-best{font-size:13px;color:var(--yellow);margin-top:2px}
+  .g-random{font:inherit;font-weight:800;font-size:16px;min-height:54px;border-radius:14px;cursor:pointer;background:var(--accent);color:#1a1030;border:0}
+  .g-head{display:flex;align-items:center;gap:10px;margin:0 0 10px}
+  .g-title{font-size:20px;font-weight:800;flex:1}
+  .g-info{color:var(--muted);font-size:14px;white-space:nowrap}
+  .g-close{font:inherit;width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+  .g-acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .g-acts button{flex:1;min-height:50px;font:inherit;font-weight:700;font-size:16px;border-radius:14px;cursor:pointer;background:var(--card);color:var(--ink);border:1px solid var(--line)}
+  .g-acts .main{background:var(--accent);color:#1a1030;border-color:var(--accent)}
+  .g-end{text-align:center;padding:16px 4px}
+  .g-end p{margin:6px 0;color:var(--muted)}
+  .g-big{font-size:58px;line-height:1.1}
+  .g-stars{font-size:32px;color:var(--yellow);letter-spacing:5px;margin:4px 0 8px}
+  .g-end .g-rec{color:#6ee7b7;font-weight:800}
+  .g-ok{color:#6ee7b7;font-weight:800}
+  .g-no{color:#fda4af;font-weight:800}
+  .b-call{display:flex;align-items:center;gap:10px;min-height:66px;padding:12px 14px;border-radius:14px;background:var(--ex-bg);border-left:4px solid var(--ex-bar);margin-bottom:12px}
+  .b-cue{flex:1;font-size:16.5px;line-height:1.45}
+  .b-cue mark{font-weight:700}
+  .b-ear{color:var(--muted)}
+  .b-again{font:inherit;font-size:14px;border-radius:999px;padding:7px 12px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;flex:none}
+  .b-grid{display:grid;gap:8px}
+  .b-cell{position:relative;min-height:76px;padding:8px;border-radius:14px;font:inherit;font-size:15.5px;font-weight:700;line-height:1.25;cursor:pointer;
+          background:var(--card);color:var(--ink);border:2px solid var(--line);overflow-wrap:anywhere;transition:background .2s,border-color .2s}
+  .b-cell.on{background:#145c4d;border-color:#34d399}
+  .b-cell.on::after{content:'✓';position:absolute;top:4px;right:8px;color:#6ee7b7;font-size:15px}
+  .b-cell.hint{animation:hint .6s ease 3}
+  .b-none{width:100%;margin-top:10px;min-height:50px;font:inherit;font-weight:700;border-radius:14px;cursor:pointer;background:transparent;color:var(--ink);border:2px dashed var(--muted)}
+  .b-fb{min-height:76px;margin-top:12px;font-size:14.5px;line-height:1.45}
+  .b-tr{color:#7fb3d9;font-style:italic;margin-top:2px}
+  .b-bingo{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%) rotate(-6deg);font-size:64px;font-weight:900;color:#f2d36b;
+           text-shadow:0 6px 24px rgba(0,0,0,.6);z-index:60;animation:pop .45s ease;pointer-events:none}
+  .gap{display:inline-block;min-width:3em;border-bottom:2px solid var(--yellow);color:transparent}
+  .s-prompt{font-size:17px;margin:4px 0 10px;font-style:italic;color:#c7d2fe}
+  .s-line{min-height:60px;padding:10px;border-radius:14px;border:2px dashed var(--line);display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:17px}
+  .s-word{background:var(--ex-bg);padding:5px 9px;border-radius:9px}
+  .s-tiles{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .s-tile{font:inherit;font-size:17px;padding:9px 13px;border-radius:12px;cursor:pointer;background:var(--card);color:var(--ink);border:1px solid var(--line);min-height:48px}
+  .s-tile.used{visibility:hidden}
+  .s-tile.hint{border-color:var(--yellow);box-shadow:0 0 0 3px rgba(242,211,107,.35)}
+  .s-fb{margin-top:10px;min-height:24px}
+  .a-time{height:9px;border-radius:99px;background:var(--card);overflow:hidden;margin-bottom:10px}
+  .a-time i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#34d399,#f2d36b);transition:width 1s linear}
+  .a-score{text-align:center;color:var(--muted);margin-bottom:8px;min-height:22px}
+  .a-card{min-height:156px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;border-radius:18px;
+          background:var(--card);border:2px solid var(--line);padding:16px;transition:border-color .15s}
+  .a-card.good{border-color:#34d399}
+  .a-card.bad{border-color:#f87171}
+  .a-word{font-size:32px;font-weight:800;overflow-wrap:anywhere}
+  .a-gloss{color:var(--muted);margin-top:6px}
+  .a-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+  .a-btns button{min-height:68px;font:inherit;font-size:22px;font-weight:800;border-radius:16px;cursor:pointer;border:0;color:#10141c}
+  .a-der{background:var(--der)} .a-die{background:var(--die)} .a-das{background:var(--das)}
+  .r-sit{padding:14px;border-radius:14px;background:var(--ex-bg);border-left:4px solid var(--phrase-bar);font-size:17px;margin-bottom:12px}
+  .r-reg{color:var(--muted);font-size:13px;margin-top:4px}
+  .r-opts{display:grid;gap:8px}
+  .r-opt{text-align:left;font:inherit;font-size:16px;padding:12px 14px;border-radius:14px;cursor:pointer;background:var(--card);color:#6ee7b7;border:2px solid var(--line);font-weight:700}
+  .r-opt.ok{border-color:#34d399;background:#145c4d;color:#e7fff6}
+  .r-opt.no{border-color:#f87171;background:#5b2333;color:#ffe4ea}
+  .r-fb{margin-top:12px;font-size:14.5px;line-height:1.45}
+  .p-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+  .p-col{display:grid;gap:8px;align-content:start}
+  .p-card{min-height:62px;padding:8px 10px;border-radius:14px;font:inherit;font-size:15.5px;font-weight:700;line-height:1.25;cursor:pointer;
+          background:var(--card);color:var(--ink);border:2px solid var(--line);overflow-wrap:anywhere}
+  .p-en{font-weight:600;font-size:14.5px;color:#c7d2fe}
+  .p-card.sel{border-color:var(--yellow);box-shadow:0 0 0 3px rgba(242,211,107,.3)}
+  .p-card.done{opacity:.3;border-color:#34d399;cursor:default}
+  .shake{animation:shake .35s}
+  @keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+  @keyframes hint{50%{box-shadow:0 0 0 5px rgba(242,211,107,.45)}}
+  @keyframes pop{from{transform:translate(-50%,-50%) scale(.4) rotate(-6deg)}}
+  .confetti{position:fixed;inset:0;pointer-events:none;z-index:55;overflow:hidden}
+  .confetti i{position:absolute;top:-14px;width:9px;height:14px;border-radius:2px;animation:fall linear forwards}
+  @keyframes fall{to{transform:translateY(108vh) rotate(600deg)}}
+  @media(prefers-reduced-motion:reduce){.fc,.fc.enter,.fc .back,.tr-bar i{transition:none;animation:none}.shake,.b-cell.hint,.b-bingo{animation:none}}
+</style>
+</head>
+<body><main class="wrap">
+<nav class="bar" aria-label="Navigation">
+<div class="tabs"><button type="button" id="tab-l" aria-pressed="true">Learn</button><button type="button" id="tab-p" aria-pressed="false">Practise</button><button type="button" id="tab-g" aria-pressed="false">Play</button></div>
+<button class="nav lern-only" id="prev" type="button" aria-label="Previous lesson">‹</button>
+<select class="lern-only" id="pick" aria-label="Choose a lesson"><option value="S1">Unidad 1 · En el mercado</option><option value="S2">Unidad 2 · Un piso nuevo</option></select>
+<button class="nav lern-only" id="next" type="button" aria-label="Next lesson">›</button>
+<input class="lern-only search-only" id="q" type="search" placeholder="Search…" aria-label="Search">
+<div class="hits lern-only search-only" id="hits"></div>
+</nav>
+<noscript><p class="cover">Audio, practice and games need a browser with JavaScript.</p></noscript>
+<div class="lernen">
+<div class="cover"><b>Curso de español</b>2 unidades · Vocabulario · Gramática · Expresiones útiles</div>
+<section class="unit" id="S1">
+<header class="hero"><div class="lekt">A2 · S1</div><h1>En el mercado – Comprar comida fresca</h1></header>
+<h2><span class="num">1</span> Vocabulario</h2><div class="rule-under"></div>
+<h3>Vocabulario de la unidad</h3><div class="grid">
+<article class="voc" id="S1-v1"><div class="top"><span class="de"><span class="art-der">el</span> puesto</span><span class="en">(market) stall</span></div><p class="forms">Plural: los puestos · el puesto de fruta</p><div class="ex" id="S1-v1-x0">En el <mark>puesto</mark> de la esquina venden las mejores naranjas del barrio. <span class="tr" lang="en">— The stall on the corner sells the best oranges in the neighbourhood.</span></div></article>
+<article class="voc" id="S1-v2"><div class="top"><span class="de"><span class="art-die">la</span> cesta</span><span class="en">basket</span></div><p class="forms">Plural: las cestas</p><div class="ex" id="S1-v2-x0">Siempre llevo mi propia <mark>cesta</mark> para no usar bolsas de plástico. <span class="tr" lang="en">— I always take my own basket so that I don&#x27;t use plastic bags.</span></div></article>
+<article class="voc" id="S1-v3"><div class="top"><span class="de">regatear</span><span class="en">to haggle</span></div><p class="forms">regateo · he regateado</p><div class="ex" id="S1-v3-x0">En este mercado nadie <mark>regatea</mark>: los precios están en carteles. <span class="tr" lang="en">— Nobody haggles at this market: the prices are on signs.</span></div></article>
+<article class="voc" id="S1-v4"><div class="top"><span class="de">fresco</span><span class="en">fresh</span></div><p class="forms">fresca · frescos · frescas</p><div class="ex" id="S1-v4-x0">El pescado está tan <mark>fresco</mark> que todavía huele a mar. <span class="tr" lang="en">— The fish is so fresh that it still smells of the sea.</span></div></article>
+<article class="voc" id="S1-v5"><div class="top"><span class="de"><span class="art-die">la</span> oferta</span><span class="en">special offer</span></div><p class="forms">Plural: las ofertas · estar de oferta</p><div class="ex" id="S1-v5-x0">Las fresas están de <mark>oferta</mark>: dos kilos por cinco euros. <span class="tr" lang="en">— Strawberries are on special offer: two kilos for five euros.</span></div></article>
+<article class="voc" id="S1-v6"><div class="top"><span class="de">probar</span><span class="en">to try, to taste</span></div><p class="forms">pruebo · he probado (o → ue)</p><div class="ex" id="S1-v6-x0">¿Puedo <mark>probar</mark> un trozo de este queso antes de comprarlo? <span class="tr" lang="en">— Can I try a piece of this cheese before I buy it?</span></div></article>
+</div>
+<h2><span class="num">2</span> Gramática</h2><div class="rule-under"></div>
+<article class="rule" id="S1-g1"><h3>Direct object pronouns: lo, la, los, las</h3><p><b>Meaning:</b> They replace a thing or person you have already mentioned, so you don&#x27;t repeat the noun.</p><p><b>Rule:</b> The pronoun goes right before the conjugated verb. With an infinitive it can also be attached to its end. It takes the gender and number of the noun it replaces.</p><div class="patterns"><p><b>before the verb:</b> Los compro.</p><p><b>with an infinitive:</b> Voy a probarlo. = Lo voy a probar.</p><p><b>feminine plural:</b> Las llevo en la cesta.</p></div><p class="contrast"><b>Important:</b> le and les are for the person who receives something (indirect object): Le doy el dinero.</p><div class="ex" id="S1-g1-x0">Estos tomates están muy baratos; <mark>los compro</mark> todos. <span class="tr" lang="en">— These tomatoes are very cheap; I&#x27;ll buy them all.</span></div>
+<div class="ex" id="S1-g1-x1">¿El queso de cabra? <mark>Lo voy a probar</mark> ahora mismo. <span class="tr" lang="en">— The goat&#x27;s cheese? I&#x27;m going to try it right now.</span></div>
+<div class="ex" id="S1-g1-x2">Las naranjas, <mark>las llevo</mark> yo en la cesta. <span class="tr" lang="en">— I&#x27;ll carry the oranges in the basket.</span></div></article>
+<h2><span class="num">3</span> Expresiones útiles</h2><div class="rule-under"></div>
+<h3>Expresiones de la unidad</h3>
+<article class="phrase" id="S1-e1"><div class="head">¿Cuánto cuesta …?</div><p class="meaning">How much is …?</p><div class="when">Ask the price of something.</div><div class="ex" id="S1-e1-x0">¿<mark>Cuánto cuesta</mark> un kilo de tomates? <span class="tr" lang="en">— How much is a kilo of tomatoes?</span></div></article>
+<article class="phrase" id="S1-e2"><div class="head">Me pone …, por favor.</div><p class="meaning">I&#x27;ll have …, please.</p><div class="when">Order at a market stall or in a bar. · Spain, everyday</div><div class="ex" id="S1-e2-x0"><mark>Me pone</mark> medio kilo de fresas, <mark>por favor</mark>. <span class="tr" lang="en">— I&#x27;ll have half a kilo of strawberries, please.</span></div></article>
+<article class="phrase" id="S1-e3"><div class="head">¿Algo más? – No, nada más, gracias.</div><p class="meaning">Anything else? – No, nothing else, thanks.</p><div class="when">Answer the seller at the end.</div><div class="ex" id="S1-e3-x0">¿Algo más? – <mark>No, nada más, gracias</mark>. ¿Cuánto es todo? <span class="tr" lang="en">— Anything else? – No, nothing else, thanks. How much is it altogether?</span></div></article>
+<h2><span class="num">4</span> Historia</h2><div class="rule-under"></div><article class="story" id="S1-story"><h3>Un sábado en el mercado</h3><div class="story-p" id="S1-story-p1"><p><span class="ss" id="S1-story-s1">El sábado por la mañana, Marta va al mercado con su <span class="lw" data-card="v2" title="la cesta: basket">cesta</span>.</span> <span class="ss" id="S1-story-s2">En el primer <span class="lw" data-card="v1" title="el puesto: (market) stall">puesto</span>, las fresas están de <span class="lw" data-card="v5" title="la oferta: special offer">oferta</span> y huelen de maravilla.</span></p><details class="story-tr"><summary>Traducción</summary><p lang="en">On Saturday morning Marta goes to the market with her basket. At the first stall the strawberries are on special offer and smell wonderful.</p></details></div><div class="story-p" id="S1-story-p2"><p><span class="ss" id="S1-story-s3">—<span class="lw" data-card="e2" title="Me pone …, por favor.: I&#x27;ll have …, please.">Me pone</span> un kilo de fresas, por favor —dice Marta. —Están muy <span class="lw" data-card="v4" title="fresco: fresh">frescas</span>, ¡pruébelas! —contesta el vendedor.</span> <span class="ss" id="S1-story-s4">Marta <span class="lw" data-card="v6" title="probar: to try, to taste">prueba</span> una y las compra sin pensarlo.</span></p><details class="story-tr"><summary>Traducción</summary><p lang="en">&#x27;I&#x27;ll have a kilo of strawberries, please,&#x27; says Marta. &#x27;They&#x27;re very fresh, try them!&#x27; answers the seller. Marta tries one and buys them without a second thought.</p></details></div><div class="story-p" id="S1-story-p3"><p><span class="ss" id="S1-story-s5">En el puesto de quesos, Marta pregunta: —¿<span class="lw" data-card="e1" title="¿Cuánto cuesta …?: How much is …?">Cuánto cuesta</span> este queso de cabra?</span> <span class="ss" id="S1-story-s6">Es caro, y el vendedor no quiere <span class="lw" data-card="v3" title="regatear: to haggle">regatear</span>. —Bueno, lo voy a llevar igualmente —dice ella.</span></p><details class="story-tr"><summary>Traducción</summary><p lang="en">At the cheese stall Marta asks: &#x27;How much is this goat&#x27;s cheese?&#x27; It is expensive, and the seller doesn&#x27;t want to haggle. &#x27;Well, I&#x27;ll take it anyway,&#x27; she says.</p></details></div><div class="story-p" id="S1-story-p4"><p><span class="ss" id="S1-story-s7">—¿Algo más? —pregunta el vendedor. —<span class="lw" data-card="e3" title="¿Algo más? – No, nada más, gracias.: Anything else? – No, nothing else, thanks.">No, nada más, gracias</span>.</span> <span class="ss" id="S1-story-s8">En casa, Marta abre la cesta y sonríe: fresas, queso y el mejor plan para el domingo.</span></p><details class="story-tr"><summary>Traducción</summary><p lang="en">&#x27;Anything else?&#x27; asks the seller. &#x27;No, nothing else, thanks.&#x27; At home Marta opens the basket and smiles: strawberries, cheese and the best plan for Sunday.</p></details></div></article>
+</section><section class="unit" id="S2">
+<header class="hero"><div class="lekt">A2 · S2</div><h1>Un piso nuevo – Buscar casa</h1></header>
+<h2><span class="num">1</span> Vocabulario</h2><div class="rule-under"></div>
+<h3>Vocabulario de la unidad</h3><div class="grid">
+<article class="voc" id="S2-v1"><div class="top"><span class="de"><span class="art-der">el</span> alquiler</span><span class="en">rent</span></div><p class="forms">Plural: los alquileres · pagar el alquiler</p><div class="ex" id="S2-v1-x0">El <mark>alquiler</mark> incluye la luz y el agua, pero no internet. <span class="tr" lang="en">— The rent includes electricity and water, but not the internet.</span></div></article>
+<article class="voc" id="S2-v2"><div class="top"><span class="de"><span class="art-die">la</span> fianza</span><span class="en">deposit</span></div><p class="forms">Plural: las fianzas</p><div class="ex" id="S2-v2-x0">Al firmar el contrato, pagamos dos meses de <mark>fianza</mark>. <span class="tr" lang="en">— When we signed the contract, we paid two months&#x27; deposit.</span></div></article>
+<article class="voc" id="S2-v3"><div class="top"><span class="de">compartir</span><span class="en">to share</span></div><p class="forms">comparto · he compartido</p><div class="ex" id="S2-v3-x0"><mark>Comparto</mark> el piso con dos estudiantes de Valencia. <span class="tr" lang="en">— I share the flat with two students from Valencia.</span></div></article>
+<article class="voc" id="S2-v4"><div class="top"><span class="de">luminoso</span><span class="en">bright, full of light</span></div><p class="forms">luminosa · luminosos · luminosas</p><div class="ex" id="S2-v4-x0">El salón es pequeño, pero muy <mark>luminoso</mark>. <span class="tr" lang="en">— The living room is small but very bright.</span></div></article>
+<article class="voc" id="S2-v5"><div class="top"><span class="de"><span class="art-die">la</span> mudanza</span><span class="en">move (to a new home)</span></div><p class="forms">Plural: las mudanzas · hacer la mudanza</p><div class="ex" id="S2-v5-x0">La <mark>mudanza</mark> fue un caos: tres días de cajas y escaleras. <span class="tr" lang="en">— The move was chaos: three days of boxes and stairs.</span></div></article>
+<article class="voc" id="S2-v6"><div class="top"><span class="de"><span class="art-der">el</span> vecino</span><span class="en">neighbour</span></div><p class="forms">la vecina · Plural: los vecinos</p><div class="ex" id="S2-v6-x0">Nuestro <mark>vecino</mark> del tercero toca el piano todas las noches. <span class="tr" lang="en">— Our neighbour on the third floor plays the piano every night.</span></div></article>
+</div>
+<h2><span class="num">2</span> Gramática</h2><div class="rule-under"></div>
+<article class="rule" id="S2-g1"><h3>Comparisons: más … que, tan … como</h3><p><b>Meaning:</b> Compare two things: one has more or less of a quality, or both have it equally.</p><p><b>Rule:</b> más / menos + adjective + que; tan + adjective + como. The adjective agrees with its noun. bueno and malo have short forms: mejor, peor.</p><div class="patterns"><p><b>more:</b> más caro que</p><p><b>equal:</b> tan grande como</p><p><b>better:</b> mejor que, not más bueno que</p></div><p class="contrast"><b>Important:</b> tanto / tanta + noun + como compares amounts: tanto ruido como antes.</p><div class="ex" id="S2-g1-x0">Este piso es <mark>más luminoso que</mark> el anterior. <span class="tr" lang="en">— This flat is brighter than the previous one.</span></div>
+<div class="ex" id="S2-g1-x1">Aquí el alquiler es <mark>tan caro como</mark> en el centro. <span class="tr" lang="en">— Here the rent is as expensive as in the centre.</span></div>
+<div class="ex" id="S2-g1-x2">Mi calle nueva es mucho <mark>más tranquila que</mark> la antigua. <span class="tr" lang="en">— My new street is much quieter than the old one.</span></div></article>
+<h2><span class="num">3</span> Expresiones útiles</h2><div class="rule-under"></div>
+<h3>Expresiones de la unidad</h3>
+<article class="phrase" id="S2-e1"><div class="head">Me interesa el piso de …</div><p class="meaning">I&#x27;m interested in the flat on …</p><div class="when">Answer a flat advert by phone or e-mail.</div><div class="ex" id="S2-e1-x0">Buenos días, <mark>me interesa el piso de</mark> la calle Mayor. ¿Sigue libre? <span class="tr" lang="en">— Good morning, I&#x27;m interested in the flat on Calle Mayor. Is it still available?</span></div></article>
+<article class="phrase" id="S2-e2"><div class="head">¿Se puede visitar …?</div><p class="meaning">Can I come and see …?</p><div class="when">Ask to view the flat.</div><div class="ex" id="S2-e2-x0">¿<mark>Se puede visitar</mark> el piso este jueves por la tarde? <span class="tr" lang="en">— Can I see the flat this Thursday afternoon?</span></div></article>
+<article class="phrase" id="S2-e3"><div class="head">¿Están incluidos los gastos?</div><p class="meaning">Are the bills included?</p><div class="when">Ask what the rent covers.</div><div class="ex" id="S2-e3-x0">Perdone, ¿<mark>están incluidos los gastos</mark> de agua y luz? <span class="tr" lang="en">— Excuse me, are the water and electricity bills included?</span></div></article>
+<h2><span class="num">4</span> Historia</h2><div class="rule-under"></div><article class="story" id="S2-story"><h3>Un piso con mucha luz</h3><div class="story-p" id="S2-story-p1"><p><span class="ss" id="S2-story-s1">Después de un mes buscando, Álvaro encuentra un anuncio: «Piso <span class="lw" data-card="v4" title="luminoso: bright, full of light">luminoso</span> cerca del metro».</span> <span class="ss" id="S2-story-s2">Llama enseguida: —Buenos días, <span class="lw" data-card="e1" title="Me interesa el piso de …: I&#x27;m interested in the flat on …">me interesa el piso de</span> la calle Olmo. ¿<span class="lw" data-card="e2" title="¿Se puede visitar …?: Can I come and see …?">Se puede visitar</span> mañana?</span></p><details class="story-tr"><summary>Traducción</summary><p lang="en">After a month of searching, Álvaro finds an advert: &#x27;Bright flat near the metro&#x27;. He calls straight away: &#x27;Good morning, I&#x27;m interested in the flat on Calle Olmo. Can I come and see it tomorrow?&#x27;</p></details></div><div class="story-p" id="S2-story-p2"><p><span class="ss" id="S2-story-s3">El piso es pequeño, pero más luminoso que todos los que ha visto.</span> <span class="ss" id="S2-story-s4">El <span class="lw" data-card="v1" title="el alquiler: rent">alquiler</span> es tan caro como en el centro, así que Álvaro pregunta: —¿<span class="lw" data-card="e3" title="¿Están incluidos los gastos?: Are the bills included?">Están incluidos los gastos</span>?</span></p><details class="story-tr"><summary>Traducción</summary><p lang="en">The flat is small, but brighter than all the ones he has seen. The rent is as expensive as in the centre, so Álvaro asks: &#x27;Are the bills included?&#x27;</p></details></div><div class="story-p" id="S2-story-p3"><p><span class="ss" id="S2-story-s5">La dueña dice que sí y le pide dos meses de <span class="lw" data-card="v2" title="la fianza: deposit">fianza</span>. Álvaro firma, llama a su amiga Nuria y le pregunta si quiere <span class="lw" data-card="v3" title="compartir: to share">compartir</span> el piso con él.</span></p><details class="story-tr"><summary>Traducción</summary><p lang="en">The landlady says yes and asks him for two months&#x27; deposit. Álvaro signs, calls his friend Nuria and asks her whether she wants to share the flat with him.</p></details></div><div class="story-p" id="S2-story-p4"><p><span class="ss" id="S2-story-s6">La <span class="lw" data-card="v5" title="la mudanza: move (to a new home)">mudanza</span> es un domingo de lluvia.</span> <span class="ss" id="S2-story-s7">Entre cajas y risas aparece el <span class="lw" data-card="v6" title="el vecino: neighbour">vecino</span> del cuarto con una tortilla: —¡Bienvenidos al edificio!</span> <span class="ss" id="S2-story-s8">Esa noche cenan en el suelo del salón, más felices que nunca.</span></p><details class="story-tr"><summary>Traducción</summary><p lang="en">The move is on a rainy Sunday. Between boxes and laughter, the neighbour from the fourth floor turns up with a tortilla: &#x27;Welcome to the building!&#x27; That night they have dinner on the living-room floor, happier than ever.</p></details></div></article>
+</section>
+</div>
+
+<section id="practice" class="pr" aria-label="Practise">
+<div class="tr-top"><div class="tr-bar"><i id="tr-fill"></i></div><span class="tr-count" id="tr-count"></span><span class="tr-streak" id="tr-streak"></span></div>
+<div class="fc" id="fc" aria-live="polite"></div>
+<div class="dock"><div class="acts" id="acts"></div><div class="undo" id="undo" aria-live="polite"></div></div>
+<details class="settings"><summary>Settings</summary>
+<div class="group"><div class="lab">Lessons <button type="button" id="all-u" style="min-height:28px;padding:2px 8px;font-size:12px;margin-left:6px">all / none</button></div><div class="chips" id="s-units"></div></div>
+<div class="group"><div class="lab">Parts</div><div class="chips" id="s-kinds"></div></div>
+<div class="group"><div class="lab">Direction (Vocabulario)</div><div class="chips" id="s-dir"></div></div>
+<div class="group"><div class="lab">New cards per day</div><div class="chips" id="s-new"></div></div>
+<div class="group"><div class="lab">Break after … cards</div><div class="chips" id="s-round"></div></div>
+<div class="group"><div class="lab">Mode</div><div class="chips" id="s-mode"></div></div>
+<div class="group"><div class="lab">Sound (pronunciation and games)</div><div class="chips" id="s-auto"></div></div>
+<div class="group"><div class="lab">Progress</div><p class="stat" id="s-stat"></p>
+<div class="backup"><button type="button" id="save-btn">Back up</button><label for="load-in">Load</label><input type="file" id="load-in" accept="application/json,.json"></div>
+<p class="stat">Your progress stays in this browser on this device. “Back up” lets you take it with you.</p></div>
+</details>
+</section>
+
+
+<section id="games" aria-label="Play">
+<div class="g-menu" id="g-menu"></div>
+<div class="g-box" id="g-box" hidden></div>
+</section>
+
+<div class="lp" id="lp" hidden data-unit="">
+<button type="button" class="lp-go" id="lp-go" hidden></button>
+<div class="lp-modes"><button type="button" data-m="all">▶ Whole lesson</button><button type="button" data-m="ex">▶ Examples only</button><button type="button" data-m="story">▶ Historia</button></div>
+<div class="lp-row"><span>Each sentence</span><div class="chips" id="lp-each"></div></div>
+<div class="lp-row"><span>At the end</span><div class="chips" id="lp-loop"></div></div>
+<div class="lp-row"><span>🔊 button</span><div class="chips" id="lp-one"></div></div>
+</div>
+<div class="now" id="now" hidden><div class="now-c" id="now-c">
+<button type="button" id="now-b" aria-label="Again" title="Again (at the start of a sentence: back)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2v14H6zm14 0v14L9 12z"/></svg></button>
+<button type="button" id="now-p" aria-label="Pause" title="Pause"></button>
+<button type="button" id="now-n" aria-label="Next sentence" title="Next sentence"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
+</div><span class="now-i"><b id="now-t"></b><small id="now-s"></small></span><button type="button" id="now-x">⏹ Stop</button></div>
+<div class="tip" id="tip" hidden></div>
+
+</main>
+<script>
+(function(){
+  'use strict';
+  var d=document, root=d.documentElement; root.classList.add('js');
+  var AU={}, IDX={}, SEQ={}, EXS={}, STO={}, CARDS=[{"u":"S1","l":"Unidad 1","id":"S1-v1","k":"w","b":"<div class=\"top\"><span class=\"de\"><span class=\"art-der\">el<\/span> puesto<\/span><span class=\"en\">(market) stall<\/span><\/div><p class=\"forms\">Plural: los puestos · el puesto de fruta<\/p><div class=\"ex\" id=\"v1-x0\">En el <mark>puesto<\/mark> de la esquina venden las mejores naranjas del barrio. <span class=\"tr\" lang=\"en\">— The stall on the corner sells the best oranges in the neighbourhood.<\/span><\/div>","f":"<span class=\"art-der\">el<\/span> puesto","r":"(market) stall","a":"el puesto = (market) stall"},{"u":"S1","l":"Unidad 1","id":"S1-v2","k":"w","b":"<div class=\"top\"><span class=\"de\"><span class=\"art-die\">la<\/span> cesta<\/span><span class=\"en\">basket<\/span><\/div><p class=\"forms\">Plural: las cestas<\/p><div class=\"ex\" id=\"v2-x0\">Siempre llevo mi propia <mark>cesta<\/mark> para no usar bolsas de plástico. <span class=\"tr\" lang=\"en\">— I always take my own basket so that I don&#x27;t use plastic bags.<\/span><\/div>","f":"<span class=\"art-die\">la<\/span> cesta","r":"basket","a":"la cesta = basket"},{"u":"S1","l":"Unidad 1","id":"S1-v3","k":"w","b":"<div class=\"top\"><span class=\"de\">regatear<\/span><span class=\"en\">to haggle<\/span><\/div><p class=\"forms\">regateo · he regateado<\/p><div class=\"ex\" id=\"v3-x0\">En este mercado nadie <mark>regatea<\/mark>: los precios están en carteles. <span class=\"tr\" lang=\"en\">— Nobody haggles at this market: the prices are on signs.<\/span><\/div>","f":"regatear","r":"to haggle","a":"regatear = to haggle"},{"u":"S1","l":"Unidad 1","id":"S1-v4","k":"w","b":"<div class=\"top\"><span class=\"de\">fresco<\/span><span class=\"en\">fresh<\/span><\/div><p class=\"forms\">fresca · frescos · frescas<\/p><div class=\"ex\" id=\"v4-x0\">El pescado está tan <mark>fresco<\/mark> que todavía huele a mar. <span class=\"tr\" lang=\"en\">— The fish is so fresh that it still smells of the sea.<\/span><\/div>","f":"fresco","r":"fresh","a":"fresco = fresh"},{"u":"S1","l":"Unidad 1","id":"S1-v5","k":"w","b":"<div class=\"top\"><span class=\"de\"><span class=\"art-die\">la<\/span> oferta<\/span><span class=\"en\">special offer<\/span><\/div><p class=\"forms\">Plural: las ofertas · estar de oferta<\/p><div class=\"ex\" id=\"v5-x0\">Las fresas están de <mark>oferta<\/mark>: dos kilos por cinco euros. <span class=\"tr\" lang=\"en\">— Strawberries are on special offer: two kilos for five euros.<\/span><\/div>","f":"<span class=\"art-die\">la<\/span> oferta","r":"special offer","a":"la oferta = special offer"},{"u":"S1","l":"Unidad 1","id":"S1-v6","k":"w","b":"<div class=\"top\"><span class=\"de\">probar<\/span><span class=\"en\">to try, to taste<\/span><\/div><p class=\"forms\">pruebo · he probado (o → ue)<\/p><div class=\"ex\" id=\"v6-x0\">¿Puedo <mark>probar<\/mark> un trozo de este queso antes de comprarlo? <span class=\"tr\" lang=\"en\">— Can I try a piece of this cheese before I buy it?<\/span><\/div>","f":"probar","r":"to try, to taste","a":"probar = to try, to taste"},{"u":"S1","l":"Unidad 1","id":"S1-g1","k":"g","b":"<h3>Direct object pronouns: lo, la, los, las<\/h3><p><b>Meaning:<\/b> They replace a thing or person you have already mentioned, so you don&#x27;t repeat the noun.<\/p><p><b>Rule:<\/b> The pronoun goes right before the conjugated verb. With an infinitive it can also be attached to its end. It takes the gender and number of the noun it replaces.<\/p><div class=\"patterns\"><p><b>before the verb:<\/b> Los compro.<\/p><p><b>with an infinitive:<\/b> Voy a probarlo. = Lo voy a probar.<\/p><p><b>feminine plural:<\/b> Las llevo en la cesta.<\/p><\/div><p class=\"contrast\"><b>Important:<\/b> le and les are for the person who receives something (indirect object): Le doy el dinero.<\/p><div class=\"ex\" id=\"g1-x0\">Estos tomates están muy baratos; <mark>los compro<\/mark> todos. <span class=\"tr\" lang=\"en\">— These tomatoes are very cheap; I&#x27;ll buy them all.<\/span><\/div>\n<div class=\"ex\" id=\"g1-x1\">¿El queso de cabra? <mark>Lo voy a probar<\/mark> ahora mismo. <span class=\"tr\" lang=\"en\">— The goat&#x27;s cheese? I&#x27;m going to try it right now.<\/span><\/div>\n<div class=\"ex\" id=\"g1-x2\">Las naranjas, <mark>las llevo<\/mark> yo en la cesta. <span class=\"tr\" lang=\"en\">— I&#x27;ll carry the oranges in the basket.<\/span><\/div>","f":"Direct object pronouns: lo, la, los, las","a":"Direct object pronouns: lo, la, los, las"},{"u":"S1","l":"Unidad 1","id":"S1-e1","k":"r","b":"<div class=\"head\">¿Cuánto cuesta …?<\/div><p class=\"meaning\">How much is …?<\/p><div class=\"when\">Ask the price of something.<\/div><div class=\"ex\" id=\"e1-x0\">¿<mark>Cuánto cuesta<\/mark> un kilo de tomates? <span class=\"tr\" lang=\"en\">— How much is a kilo of tomatoes?<\/span><\/div>","f":"<span class=\"q-mean\">How much is …?<\/span><span class=\"q-when\">Ask the price of something.<\/span>","a":"¿Cuánto cuesta …?"},{"u":"S1","l":"Unidad 1","id":"S1-e2","k":"r","b":"<div class=\"head\">Me pone …, por favor.<\/div><p class=\"meaning\">I&#x27;ll have …, please.<\/p><div class=\"when\">Order at a market stall or in a bar. · Spain, everyday<\/div><div class=\"ex\" id=\"e2-x0\"><mark>Me pone<\/mark> medio kilo de fresas, <mark>por favor<\/mark>. <span class=\"tr\" lang=\"en\">— I&#x27;ll have half a kilo of strawberries, please.<\/span><\/div>","f":"<span class=\"q-mean\">I&#x27;ll have …, please.<\/span><span class=\"q-when\">Order at a market stall or in a bar. · Spain, everyday<\/span>","a":"Me pone …, por favor."},{"u":"S1","l":"Unidad 1","id":"S1-e3","k":"r","b":"<div class=\"head\">¿Algo más? – No, nada más, gracias.<\/div><p class=\"meaning\">Anything else? – No, nothing else, thanks.<\/p><div class=\"when\">Answer the seller at the end.<\/div><div class=\"ex\" id=\"e3-x0\">¿Algo más? – <mark>No, nada más, gracias<\/mark>. ¿Cuánto es todo? <span class=\"tr\" lang=\"en\">— Anything else? – No, nothing else, thanks. How much is it altogether?<\/span><\/div>","f":"<span class=\"q-mean\">Anything else? – No, nothing else, thanks.<\/span><span class=\"q-when\">Answer the seller at the end.<\/span>","a":"¿Algo más? – No, nada más, gracias."},{"u":"S2","l":"Unidad 2","id":"S2-v1","k":"w","b":"<div class=\"top\"><span class=\"de\"><span class=\"art-der\">el<\/span> alquiler<\/span><span class=\"en\">rent<\/span><\/div><p class=\"forms\">Plural: los alquileres · pagar el alquiler<\/p><div class=\"ex\" id=\"v1-x0\">El <mark>alquiler<\/mark> incluye la luz y el agua, pero no internet. <span class=\"tr\" lang=\"en\">— The rent includes electricity and water, but not the internet.<\/span><\/div>","f":"<span class=\"art-der\">el<\/span> alquiler","r":"rent","a":"el alquiler = rent"},{"u":"S2","l":"Unidad 2","id":"S2-v2","k":"w","b":"<div class=\"top\"><span class=\"de\"><span class=\"art-die\">la<\/span> fianza<\/span><span class=\"en\">deposit<\/span><\/div><p class=\"forms\">Plural: las fianzas<\/p><div class=\"ex\" id=\"v2-x0\">Al firmar el contrato, pagamos dos meses de <mark>fianza<\/mark>. <span class=\"tr\" lang=\"en\">— When we signed the contract, we paid two months&#x27; deposit.<\/span><\/div>","f":"<span class=\"art-die\">la<\/span> fianza","r":"deposit","a":"la fianza = deposit"},{"u":"S2","l":"Unidad 2","id":"S2-v3","k":"w","b":"<div class=\"top\"><span class=\"de\">compartir<\/span><span class=\"en\">to share<\/span><\/div><p class=\"forms\">comparto · he compartido<\/p><div class=\"ex\" id=\"v3-x0\"><mark>Comparto<\/mark> el piso con dos estudiantes de Valencia. <span class=\"tr\" lang=\"en\">— I share the flat with two students from Valencia.<\/span><\/div>","f":"compartir","r":"to share","a":"compartir = to share"},{"u":"S2","l":"Unidad 2","id":"S2-v4","k":"w","b":"<div class=\"top\"><span class=\"de\">luminoso<\/span><span class=\"en\">bright, full of light<\/span><\/div><p class=\"forms\">luminosa · luminosos · luminosas<\/p><div class=\"ex\" id=\"v4-x0\">El salón es pequeño, pero muy <mark>luminoso<\/mark>. <span class=\"tr\" lang=\"en\">— The living room is small but very bright.<\/span><\/div>","f":"luminoso","r":"bright, full of light","a":"luminoso = bright, full of light"},{"u":"S2","l":"Unidad 2","id":"S2-v5","k":"w","b":"<div class=\"top\"><span class=\"de\"><span class=\"art-die\">la<\/span> mudanza<\/span><span class=\"en\">move (to a new home)<\/span><\/div><p class=\"forms\">Plural: las mudanzas · hacer la mudanza<\/p><div class=\"ex\" id=\"v5-x0\">La <mark>mudanza<\/mark> fue un caos: tres días de cajas y escaleras. <span class=\"tr\" lang=\"en\">— The move was chaos: three days of boxes and stairs.<\/span><\/div>","f":"<span class=\"art-die\">la<\/span> mudanza","r":"move (to a new home)","a":"la mudanza = move (to a new home)"},{"u":"S2","l":"Unidad 2","id":"S2-v6","k":"w","b":"<div class=\"top\"><span class=\"de\"><span class=\"art-der\">el<\/span> vecino<\/span><span class=\"en\">neighbour<\/span><\/div><p class=\"forms\">la vecina · Plural: los vecinos<\/p><div class=\"ex\" id=\"v6-x0\">Nuestro <mark>vecino<\/mark> del tercero toca el piano todas las noches. <span class=\"tr\" lang=\"en\">— Our neighbour on the third floor plays the piano every night.<\/span><\/div>","f":"<span class=\"art-der\">el<\/span> vecino","r":"neighbour","a":"el vecino = neighbour"},{"u":"S2","l":"Unidad 2","id":"S2-g1","k":"g","b":"<h3>Comparisons: más … que, tan … como<\/h3><p><b>Meaning:<\/b> Compare two things: one has more or less of a quality, or both have it equally.<\/p><p><b>Rule:<\/b> más / menos + adjective + que; tan + adjective + como. The adjective agrees with its noun. bueno and malo have short forms: mejor, peor.<\/p><div class=\"patterns\"><p><b>more:<\/b> más caro que<\/p><p><b>equal:<\/b> tan grande como<\/p><p><b>better:<\/b> mejor que, not más bueno que<\/p><\/div><p class=\"contrast\"><b>Important:<\/b> tanto / tanta + noun + como compares amounts: tanto ruido como antes.<\/p><div class=\"ex\" id=\"g1-x0\">Este piso es <mark>más luminoso que<\/mark> el anterior. <span class=\"tr\" lang=\"en\">— This flat is brighter than the previous one.<\/span><\/div>\n<div class=\"ex\" id=\"g1-x1\">Aquí el alquiler es <mark>tan caro como<\/mark> en el centro. <span class=\"tr\" lang=\"en\">— Here the rent is as expensive as in the centre.<\/span><\/div>\n<div class=\"ex\" id=\"g1-x2\">Mi calle nueva es mucho <mark>más tranquila que<\/mark> la antigua. <span class=\"tr\" lang=\"en\">— My new street is much quieter than the old one.<\/span><\/div>","f":"Comparisons: más … que, tan … como","a":"Comparisons: más … que, tan … como"},{"u":"S2","l":"Unidad 2","id":"S2-e1","k":"r","b":"<div class=\"head\">Me interesa el piso de …<\/div><p class=\"meaning\">I&#x27;m interested in the flat on …<\/p><div class=\"when\">Answer a flat advert by phone or e-mail.<\/div><div class=\"ex\" id=\"e1-x0\">Buenos días, <mark>me interesa el piso de<\/mark> la calle Mayor. ¿Sigue libre? <span class=\"tr\" lang=\"en\">— Good morning, I&#x27;m interested in the flat on Calle Mayor. Is it still available?<\/span><\/div>","f":"<span class=\"q-mean\">I&#x27;m interested in the flat on …<\/span><span class=\"q-when\">Answer a flat advert by phone or e-mail.<\/span>","a":"Me interesa el piso de …"},{"u":"S2","l":"Unidad 2","id":"S2-e2","k":"r","b":"<div class=\"head\">¿Se puede visitar …?<\/div><p class=\"meaning\">Can I come and see …?<\/p><div class=\"when\">Ask to view the flat.<\/div><div class=\"ex\" id=\"e2-x0\">¿<mark>Se puede visitar<\/mark> el piso este jueves por la tarde? <span class=\"tr\" lang=\"en\">— Can I see the flat this Thursday afternoon?<\/span><\/div>","f":"<span class=\"q-mean\">Can I come and see …?<\/span><span class=\"q-when\">Ask to view the flat.<\/span>","a":"¿Se puede visitar …?"},{"u":"S2","l":"Unidad 2","id":"S2-e3","k":"r","b":"<div class=\"head\">¿Están incluidos los gastos?<\/div><p class=\"meaning\">Are the bills included?<\/p><div class=\"when\">Ask what the rent covers.<\/div><div class=\"ex\" id=\"e3-x0\">Perdone, ¿<mark>están incluidos los gastos<\/mark> de agua y luz? <span class=\"tr\" lang=\"en\">— Excuse me, are the water and electricity bills included?<\/span><\/div>","f":"<span class=\"q-mean\">Are the bills included?<\/span><span class=\"q-when\">Ask what the rent covers.<\/span>","a":"¿Están incluidos los gastos?"}], ORDER=["S1", "S2"], CFG={"key":"curso-de-espa-ol","perDay":10,"units":[["S1","S1"],["S2","S2"]],"labels":{"S1":"Unidad 1","S2":"Unidad 2"},"arts":["el","la"],"col":{"el":"der","la":"die"}}, G={"S1":{"v":[{"a":"el","w":"puesto","g":"(market) stall","h":"","x":[{"de":"En el puesto de la esquina venden las mejores naranjas del barrio.","en":"The stall on the corner sells the best oranges in the neighbourhood.","au":"","t":[[6,12]],"m":[]}]},{"a":"la","w":"cesta","g":"basket","h":"","x":[{"de":"Siempre llevo mi propia cesta para no usar bolsas de plástico.","en":"I always take my own basket so that I don't use plastic bags.","au":"","t":[[24,29]],"m":[]}]},{"a":"","w":"regatear","g":"to haggle","h":"","x":[{"de":"En este mercado nadie regatea: los precios están en carteles.","en":"Nobody haggles at this market: the prices are on signs.","au":"","t":[[22,29]],"m":[]}]},{"a":"","w":"fresco","g":"fresh","h":"","x":[{"de":"El pescado está tan fresco que todavía huele a mar.","en":"The fish is so fresh that it still smells of the sea.","au":"","t":[[20,26]],"m":[]}]},{"a":"la","w":"oferta","g":"special offer","h":"","x":[{"de":"Las fresas están de oferta: dos kilos por cinco euros.","en":"Strawberries are on special offer: two kilos for five euros.","au":"","t":[[20,26]],"m":[]}]},{"a":"","w":"probar","g":"to try, to taste","h":"","x":[{"de":"¿Puedo probar un trozo de este queso antes de comprarlo?","en":"Can I try a piece of this cheese before I buy it?","au":"","t":[[7,13]],"m":[]}]}],"r":[{"f":"¿Cuánto cuesta …?","g":"How much is …?","w":"Ask the price of something.","reg":"","grp":"Expresiones de la unidad","au":"","x":{"de":"¿Cuánto cuesta un kilo de tomates?","en":"How much is a kilo of tomatoes?","au":"","t":[[1,14]]}},{"f":"Me pone …, por favor.","g":"I'll have …, please.","w":"Order at a market stall or in a bar.","reg":"Spain, everyday","grp":"Expresiones de la unidad","au":"","x":{"de":"Me pone medio kilo de fresas, por favor.","en":"I'll have half a kilo of strawberries, please.","au":"","t":[[0,7],[30,39]]}},{"f":"¿Algo más? – No, nada más, gracias.","g":"Anything else? – No, nothing else, thanks.","w":"Answer the seller at the end.","reg":"","grp":"Expresiones de la unidad","au":"","x":{"de":"¿Algo más? – No, nada más, gracias. ¿Cuánto es todo?","en":"Anything else? – No, nothing else, thanks. How much is it altogether?","au":"","t":[[13,34]]}}],"s":[{"de":"Las naranjas, las llevo yo en la cesta.","en":"I'll carry the oranges in the basket.","au":"","t":[[14,23]]},{"de":"¿Cuánto cuesta un kilo de tomates?","en":"How much is a kilo of tomatoes?","au":"","t":[[1,14]]},{"de":"Me pone medio kilo de fresas, por favor.","en":"I'll have half a kilo of strawberries, please.","au":"","t":[[0,7],[30,39]]}]},"S2":{"v":[{"a":"el","w":"alquiler","g":"rent","h":"","x":[{"de":"El alquiler incluye la luz y el agua, pero no internet.","en":"The rent includes electricity and water, but not the internet.","au":"","t":[[3,11]],"m":[]}]},{"a":"la","w":"fianza","g":"deposit","h":"","x":[{"de":"Al firmar el contrato, pagamos dos meses de fianza.","en":"When we signed the contract, we paid two months' deposit.","au":"","t":[[44,50]],"m":[]}]},{"a":"","w":"compartir","g":"to share","h":"","x":[{"de":"Comparto el piso con dos estudiantes de Valencia.","en":"I share the flat with two students from Valencia.","au":"","t":[[0,8]],"m":[]}]},{"a":"","w":"luminoso","g":"bright, full of light","h":"","x":[{"de":"El salón es pequeño, pero muy luminoso.","en":"The living room is small but very bright.","au":"","t":[[30,38]],"m":[]}]},{"a":"la","w":"mudanza","g":"move (to a new home)","h":"","x":[{"de":"La mudanza fue un caos: tres días de cajas y escaleras.","en":"The move was chaos: three days of boxes and stairs.","au":"","t":[[3,10]],"m":[]}]},{"a":"el","w":"vecino","g":"neighbour","h":"","x":[{"de":"Nuestro vecino del tercero toca el piano todas las noches.","en":"Our neighbour on the third floor plays the piano every night.","au":"","t":[[8,14]],"m":[]}]}],"r":[{"f":"Me interesa el piso de …","g":"I'm interested in the flat on …","w":"Answer a flat advert by phone or e-mail.","reg":"","grp":"Expresiones de la unidad","au":"","x":{"de":"Buenos días, me interesa el piso de la calle Mayor. ¿Sigue libre?","en":"Good morning, I'm interested in the flat on Calle Mayor. Is it still available?","au":"","t":[[13,35]]}},{"f":"¿Se puede visitar …?","g":"Can I come and see …?","w":"Ask to view the flat.","reg":"","grp":"Expresiones de la unidad","au":"","x":{"de":"¿Se puede visitar el piso este jueves por la tarde?","en":"Can I see the flat this Thursday afternoon?","au":"","t":[[1,17]]}},{"f":"¿Están incluidos los gastos?","g":"Are the bills included?","w":"Ask what the rent covers.","reg":"","grp":"Expresiones de la unidad","au":"","x":{"de":"Perdone, ¿están incluidos los gastos de agua y luz?","en":"Excuse me, are the water and electricity bills included?","au":"","t":[[10,36]]}}],"s":[{"de":"Al firmar el contrato, pagamos dos meses de fianza.","en":"When we signed the contract, we paid two months' deposit.","au":"","t":[[44,50]]},{"de":"Comparto el piso con dos estudiantes de Valencia.","en":"I share the flat with two students from Valencia.","au":"","t":[[0,8]]},{"de":"El salón es pequeño, pero muy luminoso.","en":"The living room is small but very bright.","au":"","t":[[30,38]]},{"de":"Este piso es más luminoso que el anterior.","en":"This flat is brighter than the previous one.","au":"","t":[[13,29]]},{"de":"Perdone, ¿están incluidos los gastos de agua y luz?","en":"Excuse me, are the water and electricity bills included?","au":"","t":[[10,36]]}]}};
+  var K=CFG.key, ARTS=CFG.arts||[], COL=CFG.col||{};                 /* the language's articles and their colours */
+  function load(k,dflt){try{var v=localStorage.getItem(K+':'+k);return v?JSON.parse(v):dflt;}catch(e){return dflt;}}
+  function save(k,v){try{localStorage.setItem(K+':'+k,JSON.stringify(v));}catch(e){}}
+  var ui=load('ui',{}), state=load('srs',{}), meta=load('meta',{day:0,fresh:0,extra:0,streak:0,last:-9,done:0,good:0});
+  function today(){var t=new Date();return Math.floor((t.getTime()-t.getTimezoneOffset()*60000)/86400000);}
+  /* audio sits in per-unit text blocks after this script; a unit's clips are unpacked on first use */
+  function need(id){ if(AU[id]!==undefined) return AU[id]; var k=IDX[id], el=k===undefined?null:d.getElementById('au-'+k);
+    if(el && !el.getAttribute('data-read')){ el.textContent.split(';').forEach(function(p){ var i=p.indexOf(':'); if(i>0) AU[p.slice(0,i)]=p.slice(i+1); }); el.setAttribute('data-read','1'); }
+    return AU[id]||''; }
+
+  /* ---------------- listening: every run plays as one audio track, so it goes on with the screen off ---------------- */
+  var A=load('listen',{one:0,each:2,loop:1});     /* one: plays per 🔊 tap (0 = until tapped again); each: plays of every German sentence in a session; loop: start again at the end */
+  var AT=load('listen-at',{});                     /* per unit, where a stopped session goes on: {m: mode, i: step, n: steps, c: first clip} */
+  var player=new Audio(), R=null, held=null, lastF=null, lock=null, tipT=null, unlocked=false;
+  var RATE=22050, PCM={}, cached=0, SIL={}, decoder=null;      /* clips decoded once, and silences, as small WAV blobs */
+  var SILENT='data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YQIAAAAAAA==';
+  var lp=d.getElementById('lp'), lpGo=d.getElementById('lp-go'), tip=d.getElementById('tip'), nowBar=d.getElementById('now'), nowB=d.getElementById('now-b'),
+      nowP=d.getElementById('now-p'), nowN=d.getElementById('now-n'), nowT=d.getElementById('now-t'), nowS=d.getElementById('now-s'), nowX=d.getElementById('now-x');
+  var LABEL={all:'Whole lesson',ex:'Examples only',story:'Historia'};
+  var ICON={play:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>',
+            pause:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zm6.5 0H17v14h-3.5z"/></svg>'};
+  /* the silence after a clip, in ms: a short breath before the same sentence again, a little more before the next one */
+  function gapAgain(dur){ return 550+250*Math.min(dur,3.2); }          /* 0.8 s after a word, 1.35 s after a sentence */
+  function gapNext(dur,f){ return 300+f*(gapAgain(dur)+400); }         /* f: the step's pause factor; 1.5–2 s after an example */
+  function stepsOf(m){ return m==='ex'?EXS:m==='story'?STO:SEQ; }
+  function mark(el,on){ if(el) el.classList.toggle('is-playing',on); }
+  function follow(el,stay){ if(lastF) lastF.classList.remove('follow'); lastF=el||null; if(!el) return; el.classList.add('follow'); if(stay) return;
+    var b=el.getBoundingClientRect(); if(b.top<90||b.bottom>innerHeight-90) el.scrollIntoView({block:'center',behavior:'smooth'}); }
+  function wake(on){ try{ if(on&&!lock&&navigator.wakeLock) navigator.wakeLock.request('screen').then(function(l){ if(R) lock=l; else l.release(); },function(){});
+    else if(!on&&lock){ lock.release(); lock=null; } }catch(e){} }
+  function spot(it){ return typeof it[2]==='string'?d.getElementById(it[2]):it[2]; }
+  /* ---- a run's track: its clips, decoded once, joined with their pauses into one WAV that the phone plays like music ---- */
+  function pageReady(){ return d.readyState!=='loading'?Promise.resolve():new Promise(function(ok){ d.addEventListener('DOMContentLoaded',function(){ ok(); },{once:true}); }); }
+  function pcm(id){ if(PCM[id]!==undefined) return Promise.resolve(PCM[id]);
+    var data=need(id); if(!data) return Promise.resolve(PCM[id]=null);
+    var bin=atob(data), raw=new Uint8Array(bin.length); for(var i=0;i<bin.length;i++) raw[i]=bin.charCodeAt(i);
+    if(!decoder){ var C=window.OfflineAudioContext||window.webkitOfflineAudioContext; decoder=new C(1,1,RATE); }
+    return new Promise(function(ok){ decoder.decodeAudioData(raw.buffer,function(a){ var f=a.getChannelData(0), s=new Int16Array(f.length);
+        for(var i=0;i<f.length;i++){ var v=f[i]; s[i]=v<=-1?-32768:v>=1?32767:v*32767; }
+        s=voiceOnly(s); cached+=s.length; ok(PCM[id]={b:new Blob([s]),n:s.length}); },function(){ ok(PCM[id]=null); }); }); }
+  /* a clip without the voice's own lead-in and tail (about a second at each join), so the pauses are what gapAgain and gapNext say */
+  function voiceOnly(s){ var a=0, z=s.length-1; while(a<z&&Math.abs(s[a])<330) a++; while(z>a&&Math.abs(s[z])<330) z--;
+    return z<=a?s:s.subarray(Math.max(0,a-Math.round(RATE*0.04)),Math.min(s.length,z+Math.round(RATE*0.1))); }
+  function quiet(ms){ var n=Math.round(ms*RATE/1000); return SIL[n]||(SIL[n]={b:new Blob([new Int16Array(n)]),n:n}); }
+  function decodeAll(list,k,fn){ var i=0, w=[]; function more(){ return i<list.length?fn(list[i++]).then(more):null; }
+    for(var j=0;j<k;j++) w.push(more()); return Promise.all(w); }
+  /* marks[k] = {i: step, at: its first sample, end: the sample after its last play}; an endless run is one round that loops */
+  function track(r){ var items=r.items, n=items.length, each=r.o.each||1, laps=r.o.laps||0, rounds=laps||1, ids={};
+    items.forEach(function(it){ ids[it[0]]=1; });
+    return pageReady().then(function(){ return decodeAll(Object.keys(ids),4,pcm); }).then(function(){
+      var parts=[], marks=[], at=0, lap, k, q;
+      function add(p){ parts.push(p.b); at+=p.n; }
+      for(lap=0;lap<rounds;lap++){
+        for(k=0;k<n;k++){ var it=items[k], c=PCM[it[0]], reps=it[3]?each:1, m={i:k,at:at,end:at}; marks.push(m); if(!c) continue;
+          var dur=c.n/RATE, last=laps&&lap===rounds-1&&k===n-1;                 /* a finite run ends right after its last sound */
+          for(q=0;q<reps;q++){ add(c); m.end=at; if(q<reps-1) add(quiet(gapAgain(dur))); }
+          if(!last) add(quiet(n>1?gapNext(dur,it[1]):gapAgain(dur))); }
+        if(n>1&&!(laps&&lap===rounds-1)) add(quiet(1000)); }                    /* a breath before the next round */
+      if(cached>RATE*1200){ PCM={}; cached=0; }                                  /* keep about 20 minutes decoded, no more */
+      if(!at) return null;
+      var h=new DataView(new ArrayBuffer(44));
+      [[0,'RIFF'],[8,'WAVE'],[12,'fmt '],[36,'data']].forEach(function(w){ for(var i=0;i<4;i++) h.setUint8(w[0]+i,w[1].charCodeAt(i)); });
+      h.setUint32(4,36+at*2,true); h.setUint32(16,16,true); h.setUint16(20,1,true); h.setUint16(22,1,true); h.setUint32(24,RATE,true);
+      h.setUint32(28,RATE*2,true); h.setUint16(32,2,true); h.setUint16(34,16,true); h.setUint32(40,at*2,true);
+      return {url:URL.createObjectURL(new Blob([h.buffer].concat(parts),{type:'audio/wav'})),marks:marks}; }); }
+  function markAt(r,t){ var M=r.t.marks, s=t*RATE+2, lo=0, hi=M.length-1;
+    while(lo<hi){ var mid=(lo+hi+1)>>1; if(M[mid].at<=s) lo=mid; else hi=mid-1; } return lo; }
+  /* ---- playing a run ---- */
+  function unlock(){ if(unlocked) return; unlocked=true; player.src=SILENT; var p=player.play();      /* a phone lets a page play later only after a tap */
+    if(p) p.then(function(){ if(player.src===SILENT) player.pause(); },function(){}); }
+  function go(){ var p=player.play(); if(p) p.catch(function(e){ var r=R; if(e&&e.name==='NotAllowedError'&&r){ r.paused=true; mark(r.o.btn,false); showBar(); } }); }
+  function clip(id){ var data=need(id); if(!data) return false; player.loop=false; player.src='data:audio/mpeg;base64,'+data; go(); return true; }
+  function attach(r,play){ player.loop=!r.o.laps; player.src=r.t.url; r.last=r.pos;
+    player.onloadedmetadata=function(){ player.onloadedmetadata=null; if(R!==r) return; player.currentTime=r.pos; if(play&&!r.paused) go(); }; }
+  function prepare(r,from){ r.ready=false; r.from=from; showBar();
+    track(r).then(function(t){ if(R!==r&&held!==r){ if(t) URL.revokeObjectURL(t.url); return; }
+      if(!t){ if(R===r) endRun(); return; }
+      var old=r.t, k=0; while(k<t.marks.length-1&&t.marks[k].i<from) k++;
+      r.t=t; r.pos=t.marks[k].at/RATE; r.cur=t.marks[k].i; r.ready=true;
+      if(R===r){ if(r.o.follow) follow(spot(r.items[r.cur])); attach(r,true); showBar(); } if(old) URL.revokeObjectURL(old.url); }); }
+  function remember(r,t){ var m=r.t.marks[markAt(r,t)], i=m.i+(t*RATE>=m.end&&m.end>m.at?1:0);
+    if(i>0&&i<r.items.length) AT[r.o.unit]={m:r.o.mode,i:i,n:r.items.length,c:r.items[0][0]}; }
+  function drop(r){ var live=R===r&&r.ready&&player.src===r.t.url, t=live?player.currentTime:(r.pos||0);
+    if(R===r){ player.pause(); player.removeAttribute('src'); try{ player.load(); }catch(e){} }
+    mark(r.o.btn,false); if(r.o.btn&&r.o.btn.getAttribute('data-l')){ r.o.btn.textContent=r.o.btn.getAttribute('data-l'); r.o.btn.removeAttribute('data-l'); }
+    if(r.o.mode){ if(r.done) delete AT[r.o.unit]; else if(r.ready) remember(r,t); save('listen-at',AT); }
+    if(r.t) URL.revokeObjectURL(r.t.url); r.t=null; r.ready=false; }
+  function stopAll(){ if(R) drop(R); if(held) drop(held); R=held=null; follow(null); wake(false); if(nowBar) nowBar.hidden=true; }
+  /* items: [clip id, pause factor, element (or its id) to highlight, repeatable]; o: {btn, each, laps (0 = endless), follow, stop, label},
+     and for a session from the panel also unit, mode and at (its first step) */
+  function run(items,o){ if(!items||!items.length) return;
+    if(!o.mode&&(held||R&&R.o.mode)){                      /* a 🔊 tap during a session holds the session: it waits in the bar, paused */
+      if(R&&R.o.mode){ held=R; if(held.ready&&player.src===held.t.url) held.pos=player.currentTime; held.paused=true; player.pause(); mark(held.o.btn,false); }
+      else if(R) drop(R); }
+    else stopAll();
+    var r=R={items:items,o:o,cur:-1,from:Math.min(o.at||0,items.length-1),lap:1,paused:false,ready:false};
+    if(o.mode&&AT[o.unit]){ delete AT[o.unit]; save('listen-at',AT); }
+    mark(o.btn,true); if(o.btn&&o.stop){ o.btn.setAttribute('data-l',o.btn.textContent); o.btn.textContent=o.stop; }
+    media(r); if(items.length>1||!o.laps) wake(true); prepare(r,r.from); }
+  function endRun(){ var r=R; if(!r) return;
+    if(!r.o.mode&&held){ drop(r); R=held; held=null; R.paused=true; follow(R.cur>=0?spot(R.items[R.cur]):null,true); wake(false); media(R);
+      if(R.ready) attach(R,false); showBar(); return; }                         /* back to the held session, paused */
+    stopAll(); }
+  function showBar(){ var r=R; if(!nowBar||!r) return; var n=r.items.length, many=n>1, s=[], icon=r.paused?'play':'pause';
+    nowBar.hidden=false; nowBar.classList.toggle('paused',!!r.paused); nowB.hidden=nowN.hidden=!many;
+    if(nowP.getAttribute('data-s')!==icon){ nowP.setAttribute('data-s',icon); nowP.innerHTML=ICON[icon];
+      nowP.setAttribute('aria-label',r.paused?'Continue':'Pause'); nowP.title=r.paused?'Continue':'Pause'; }
+    if(many) s.push((r.cur<0?r.from:r.cur)+1+' / '+n);
+    if(!r.ready) s.push('preparing …');
+    else{ if(many&&(r.o.each||1)>1) s.push('each '+r.o.each+'×');
+      if(r.o.laps!==1) s.push(r.o.laps?(r.lap+' / '+r.o.laps):(many?'⟳ Round '+r.lap:'⟳ '+r.lap+'×')); }
+    nowT.textContent=r.o.label||'Playback'; nowS.textContent=s.join(' · ');
+    nowX.textContent=many?'✕':'⏹ Stop'; nowX.classList.toggle('x',many); nowX.setAttribute('aria-label',many?'End':'Stop'); }
+  function pauseOrPlay(){ var r=R; if(!r) return;
+    if(!r.paused){ r.paused=true; player.pause(); mark(r.o.btn,false); wake(false); showBar(); return; }
+    r.paused=false; mark(r.o.btn,true); wake(true); showBar();
+    if(r.ready){ if(player.src===r.t.url) go(); else attach(r,true); } }
+  function skip(n){ var r=R; if(!r||!r.ready||player.src!==r.t.url||r.items.length<2) return;   /* ⏭ the next sentence now; ⏮ this one again, or right at its start the one before */
+    var M=r.t.marks, t=player.currentTime, k=markAt(r,t), m=M[k], j=n>0?k+1:(t-m.at/RATE>1.5||t*RATE>=m.end)?k:k-1;
+    if(j>=M.length){ if(r.o.laps){ r.done=true; endRun(); return; } j=0; r.lap++; }
+    j=Math.max(j,0); r.last=M[j].at/RATE; r.cur=M[j].i; player.currentTime=r.last; r.paused=false; mark(r.o.btn,true); if(r.o.follow) follow(spot(r.items[r.cur])); wake(true); showBar(); go(); }
+  /* the lock screen and headphone buttons: ⏯ always, ⏮ ⏭ for a run of several sentences */
+  function media(r){ var M=navigator.mediaSession; if(!M) return; var many=r.items.length>1,
+      box=(r.o.btn&&r.o.btn.closest('.unit'))||(r.o.unit&&d.getElementById(r.o.unit))||d, h=box.querySelector('h1');
+    try{ M.metadata=new MediaMetadata({title:(r.o.label||'Playback')+(h?' · '+h.textContent.trim():''),artist:d.title}); }catch(e){}
+    try{ M.setActionHandler('previoustrack',many?function(){ skip(-1); }:null); M.setActionHandler('nexttrack',many?function(){ skip(1); }:null); }catch(e){} }
+  if(navigator.mediaSession) [['play',function(){ if(R&&R.paused) pauseOrPlay(); }],['pause',function(){ if(R&&!R.paused) pauseOrPlay(); }],['stop',function(){ stopAll(); }]]
+    .forEach(function(h){ try{ navigator.mediaSession.setActionHandler(h[0],h[1]); }catch(e){} });
+  player.addEventListener('timeupdate',function(){ var r=R; if(!r||!r.ready||player.src!==r.t.url) return;
+    var t=player.currentTime, k=markAt(r,t), m=r.t.marks[k], lap=r.lap;
+    if(r.o.laps) r.lap=Math.floor(k/r.items.length)+1; else if(t+1<r.last) r.lap++;            /* an endless run counts its rounds */
+    r.last=t; if(m.i===r.cur){ if(lap!==r.lap) showBar(); return; }
+    r.cur=m.i; if(r.o.follow) follow(spot(r.items[m.i])); showBar();
+    if(r.o.mode){ remember(r,t); save('listen-at',AT); } });                                  /* even if the phone closes the page */
+  player.addEventListener('ended',function(){ var r=R; if(r&&r.ready&&player.src===r.t.url){ r.done=true; endRun(); } });
+  player.addEventListener('pause',function(){ var r=R; if(!r||r.paused||!r.ready||player.src!==r.t.url||player.ended) return;
+    r.paused=true; mark(r.o.btn,false); wake(false); showBar(); });                           /* paused from outside (a call, another app) */
+  player.addEventListener('play',function(){ var r=R; if(r&&r.paused&&r.ready&&player.src===r.t.url){ r.paused=false; mark(r.o.btn,true); showBar(); } });
+  /* ---- the panel ---- */
+  function chipRow(id,items,value,set){ var box=d.getElementById(id); box.innerHTML='';
+    items.forEach(function(it){ var b=d.createElement('button'); b.type='button'; b.textContent=it[1]; b.setAttribute('aria-pressed',String(it[0]===value));
+      b.addEventListener('click',function(){ set(it[0]); save('listen',A); liveSettings(); panel(); }); box.appendChild(b); }); }
+  function liveSettings(){ [R,held].forEach(function(r){ if(!r||!r.o.mode||r.o.each===A.each&&r.o.laps===(A.loop?0:1)) return;
+      var t=R===r&&r.ready&&player.src===r.t.url?player.currentTime:(r.pos||0), from=r.ready?r.t.marks[markAt(r,t)].i:r.from;
+      r.o.each=A.each; r.o.laps=A.loop?0:1; prepare(r,from); });              /* a running session follows the panel from its current sentence */
+    showBar(); }
+  function panel(){ chipRow('lp-each',[[1,'1×'],[2,'2×'],[3,'3×'],[5,'5×']],A.each,function(v){A.each=v;});
+    chipRow('lp-loop',[[0,'Once'],[1,'⟳ Endless']],A.loop,function(v){A.loop=v;});
+    chipRow('lp-one',[[1,'1×'],[3,'3×'],[0,'∞ until stop']],A.one,function(v){A.one=v;});
+    var u=lp.getAttribute('data-unit'), at=AT[u], steps=at&&stepsOf(at.m)[u], busy=[R,held].some(function(r){ return r&&r.o.mode&&r.o.unit===u; });
+    lp.querySelector('[data-m="story"]').hidden=!(STO[u]&&STO[u].length);
+    lpGo.hidden=busy||!(steps&&steps.length===at.n&&steps[0][0]===at.c&&at.i>0&&at.i<steps.length);    /* a stopped session goes on where it stopped */
+    if(!lpGo.hidden) lpGo.textContent='▶ Continue: '+LABEL[at.m]+' · '+(at.i+1)+' / '+steps.length; }
+  function openPanel(btn){ var u=btn.getAttribute('data-unit'), row=btn.closest('.listen-row');
+    if(!lp.hidden&&lp.getAttribute('data-unit')===u){ lp.hidden=true; return; }
+    row.parentNode.insertBefore(lp,row.nextSibling); lp.setAttribute('data-unit',u); lp.hidden=false; panel(); }
+  function session(u,m,at){ lp.hidden=true;
+    run(stepsOf(m)[u],{btn:d.querySelector('.listen-open[data-unit="'+u+'"]'),each:A.each,laps:A.loop?0:1,follow:true,label:LABEL[m],unit:u,mode:m,at:at||0}); }
+  function gloss(w){ var t=w.getAttribute('title')||w.getAttribute('data-t'); if(!t||!tip) return;
+    if(w.getAttribute('title')){ w.setAttribute('data-t',t); w.removeAttribute('title'); }      /* no native tooltip on top of ours */
+    tip.textContent=t; tip.hidden=false; var b=w.getBoundingClientRect();
+    tip.style.left=Math.max(8,Math.min(b.left+scrollX,scrollX+innerWidth-tip.offsetWidth-8))+'px'; tip.style.top=(b.bottom+scrollY+6)+'px';
+    clearTimeout(tipT); tipT=setTimeout(function(){ tip.hidden=true; },3200);
+    var h=w.getAttribute('data-h'); if(h) run([[h,0.4,null,0]],{laps:1,label:'Word'}); }
+  d.addEventListener('click',unlock,true);
+  lp.addEventListener('click',function(e){ var u=lp.getAttribute('data-unit'), b=e.target.closest('[data-m]');
+    if(b) session(u,b.getAttribute('data-m')); else if(e.target.closest('#lp-go')&&AT[u]) session(u,AT[u].m,AT[u].i); });
+  nowB.addEventListener('click',function(){ skip(-1); });
+  nowN.addEventListener('click',function(){ skip(1); });
+  nowP.addEventListener('click',pauseOrPlay); nowX.addEventListener('click',endRun);
+  d.addEventListener('click',function(e){
+    var b=e.target.closest('.speak-button,.explain-button,.listen-open,.story-play,.ss[data-audio],.lw'); if(!b) return;
+    if(b.classList.contains('lw')){ gloss(b); return; }
+    e.stopPropagation();
+    if(b.classList.contains('listen-open')){ openPanel(b); return; }        /* also during a session: its settings apply at once */
+    if(R&&R.o.btn===b){ endRun(); return; }
+    if(b.classList.contains('story-play')){ var u=b.closest('.unit')?b.closest('.unit').id:'L'; run(STO[u],{btn:b,each:1,laps:A.one,follow:true,stop:'⏹ Stop',label:'Historia'}); return; }
+    if(b.classList.contains('explain-button')){ run(b.getAttribute('data-chain').split(' ').map(function(id){ return [id,0.4,null,0]; }),{btn:b,laps:1,label:'Explanation'}); return; }
+    if(b.classList.contains('para-play')){ run([].map.call(b.closest('.story-p').querySelectorAll('.ss[data-audio]'),function(s){ return [s.getAttribute('data-audio'),0.3,s,0]; }),
+      {btn:b,laps:A.one,follow:true,label:'Paragraph'}); return; }
+    var sentence=b.classList.contains('ss');
+    run([[b.getAttribute('data-audio'),0.8,sentence?b:null,0]],{btn:b,laps:A.one,follow:sentence,label:sentence?'Sentence':'Repeat'});
+  },true);
+
+  /* ---------------- Lernen: unit picker and search ---------------- */
+  var units=[].slice.call(d.querySelectorAll('section.unit')), sel=d.getElementById('pick'), q=d.getElementById('q'), hits=d.getElementById('hits');
+  function show(id,scroll){ if(!units.some(function(u){return u.id===id;})) id=units[0].id;
+    units.forEach(function(u){u.classList.toggle('on',u.id===id);}); sel.value=id; ui.unit=id; save('ui',ui); if(scroll) window.scrollTo(0,0); }
+  function stepUnit(n){ var i=units.findIndex(function(u){return u.id===sel.value;}); i=Math.max(0,Math.min(units.length-1,i+n)); stopAll(); show(units[i].id,true); unitChanged(); }
+  function unitChanged(){ if(d.body.classList.contains('mode-games')) Games.open(); }
+  sel.addEventListener('change',function(){stopAll(); show(sel.value,true); unitChanged();});
+  d.getElementById('prev').addEventListener('click',function(){stepUnit(-1);});
+  d.getElementById('next').addEventListener('click',function(){stepUnit(1);});
+  function norm(s){return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/ß/g,'ss');}
+  var arts=[].slice.call(d.querySelectorAll('section.unit article')).map(function(a){return [a,norm(a.textContent)];}), tq;
+  q.addEventListener('input',function(){clearTimeout(tq); tq=setTimeout(search,150);});
+  function search(){ var v=norm(q.value.trim());
+    if(v.length<2){ d.body.classList.remove('searching'); arts.forEach(function(c){c[0].classList.remove('miss');}); units.forEach(function(u){u.classList.remove('empty');}); return; }
+    d.body.classList.add('searching'); var n=0;
+    arts.forEach(function(c){var m=c[1].indexOf(v)>=0; c[0].classList.toggle('miss',!m); if(m) n++;});
+    units.forEach(function(u){u.classList.toggle('empty',!u.querySelector('article:not(.miss)'));});
+    hits.textContent=n+(n===1?' card':' cards')+' found'; }
+
+  /* ---------------- tabs ---------------- */
+  var tabs={l:d.getElementById('tab-l'),p:d.getElementById('tab-p'),g:d.getElementById('tab-g')};
+  function mode(m){ stopAll(); Games.stop(); d.body.classList.toggle('mode-practice',m==='p'); d.body.classList.toggle('mode-games',m==='g');
+    Object.keys(tabs).forEach(function(k){ tabs[k].setAttribute('aria-pressed',String(k===m)); });
+    ui.tab=m; save('ui',ui); if(m==='p') start(); if(m==='g') Games.open(); window.scrollTo(0,0); }
+  Object.keys(tabs).forEach(function(k){ tabs[k].addEventListener('click',function(){ mode(k); }); });
+
+  /* ---------------- Üben: spaced repetition with rounds ---------------- */
+  var DAYS=[0,1,3,7,14,30,60], KIND={w:'Vocabulario',g:'Gramática',r:'Expresiones útiles'};
+  var S={units:ui.units||ORDER.slice(), kinds:ui.kinds||['w','g','r'], dir:ui.dir||'de', perDay:ui.perDay||CFG.perDay,
+         auto:ui.auto!==false, round:(ui.round===undefined?10:ui.round), browse:!!ui.browse};
+  var queue=[], cur=null, shown=false, missed=false, view='card', ses={inRound:0,rg:0,ra:0}, bList=[], bIdx=0;
+  var busy=false, readyAt=0, undo=null, undoTimer=null;
+  var fc=d.getElementById('fc'), acts=d.getElementById('acts'), undoBox=d.getElementById('undo');
+  function persist(){ ui.units=S.units; ui.kinds=S.kinds; ui.dir=S.dir; ui.perDay=S.perDay; ui.auto=S.auto; ui.round=S.round; ui.browse=S.browse; save('ui',ui); }
+  function pool(){ return CARDS.filter(function(c){return S.units.indexOf(c.u)>=0 && S.kinds.indexOf(c.k)>=0;}); }
+  function newDay(){ var T=today(); if(meta.day!==T){ meta.day=T; meta.fresh=0; meta.extra=0; meta.done=0; meta.good=0; save('meta',meta); } }
+  function start(){ newDay(); dropUndo(); renderSettings();
+    if(S.browse){ bList=pool(); bIdx=Math.min(bIdx,Math.max(0,bList.length-1)); cur=bList[bIdx]||null; shown=false; missed=false; view=cur?'card':'empty'; render(); return; }
+    var T=today(), p=pool();
+    var due=p.filter(function(c){var s=state[c.id]; return s && s[1]<=T;}).sort(function(a,b){return state[a.id][1]-state[b.id][1]||state[a.id][0]-state[b.id][0];});
+    var fresh=p.filter(function(c){return !state[c.id];}).slice(0,Math.max(0,S.perDay+meta.extra-meta.fresh));
+    queue=[]; var i=0,j=0; while(i<due.length||j<fresh.length){ if(i<due.length) queue.push(due[i++]); if(i<due.length) queue.push(due[i++]); if(j<fresh.length) queue.push(fresh[j++]); }
+    ses={inRound:0,rg:0,ra:0};
+    if(!p.length){ cur=null; view='empty'; render(); return; }
+    next(); }
+  function next(){ stopAll(); cur=queue.shift()||null; shown=false; missed=false; view=cur?'card':'done'; readyAt=Date.now()+250;   /* a double tap must not grade the next card */
+    fc.style.transition='none'; render(); void fc.offsetWidth; fc.style.transition=''; fc.classList.add('enter');
+    if(cur) autoFront(); }
+  function autoFront(){ if(S.auto && cur.k==='w' && S.dir==='de' && cur.fa) clip(cur.fa); }
+  function autoBack(){ if(!S.auto) return; if(cur.k==='w' && S.dir==='en' && cur.fa) clip(cur.fa); else if(cur.k==='r' && cur.ba) clip(cur.ba); }
+  function topbar(){ var t=d.getElementById('tr-count'), bar=d.getElementById('tr-fill'), st=d.getElementById('tr-streak');
+    if(S.browse){ t.textContent=(bList.length?(bIdx+1)+' / '+bList.length:'0'); bar.style.width=(bList.length?100*(bIdx+1)/bList.length:0)+'%'; }
+    else { var left=queue.length+(cur && view==='card'?1:0), all=(meta.done||0)+left; t.textContent='Today '+(meta.done||0)+' / '+all; bar.style.width=(all?100*(meta.done||0)/all:0)+'%'; }
+    st.textContent=meta.streak>0 && meta.last>=today()-1 ? '🔥 '+meta.streak : ''; }
+  function msg(big,title,lines){ return '<div class="msg"><div class="big">'+big+'</div><h3>'+title+'</h3>'+lines.map(function(l){return '<p>'+l+'</p>';}).join('')+'</div>'; }
+  function render(){ topbar(); fc.className='fc'; fc.style.transform='';
+    if(view==='empty'){ fc.innerHTML=msg('🗂️','No cards','<span>Choose lessons and parts in the settings.</span>'.split('|')); acts.innerHTML=''; return; }
+    if(view==='done'){ var more=pool().some(function(c){return !state[c.id];});
+      fc.innerHTML=msg('🎉','Done for today!',[meta.done?meta.done+' cards practised · '+meta.good+' known':'Nothing is due today.', meta.streak>1?'🔥 '+meta.streak+' days in a row':'See you tomorrow!']);
+      acts.innerHTML=(more?'<button type="button" class="main" data-a="extra">+10 new cards</button>':'')+'<button type="button" data-a="browse">Browse</button>'; return; }
+    if(view==='round'){ fc.innerHTML=msg('💪','Round done!',['✓ '+ses.rg+' known · ✗ '+ses.ra+' again','Still '+(queue.length+(cur?1:0))+' cards for today']);
+      acts.innerHTML='<button type="button" class="main" data-a="resume">Continue</button><button type="button" data-a="pause">Pause</button>'; return; }
+    if(view==='paused'){ fc.innerHTML=msg('☕','Enjoy your break!',['Your progress is saved.']); acts.innerHTML='<button type="button" class="main" data-a="resume">Keep learning</button>'; return; }
+    var reverse=(cur.k==='w' && S.dir==='en'), cls={w:'voc',g:'rule',r:'phrase'}[cur.k];
+    fc.innerHTML='<div class="tag">'+cur.l+' · '+KIND[cur.k]+'</div><div class="front">'+(reverse?cur.r:cur.f)+'</div>'+
+      (shown?'<div class="back"><article class="'+cls+'">'+cur.b+'</article></div>':'<div class="peek">Tap = see the answer</div>');
+    if(S.browse){ acts.innerHTML='<button type="button" data-a="prev" aria-label="Back">‹</button><button type="button" class="main" data-a="flip">'+(shown?'Hide':'Show answer')+'</button><button type="button" data-a="nxt" aria-label="Continue">›</button>'; return; }
+    acts.innerHTML=missed?'<button type="button" class="main" data-a="go">Next ›</button>'
+      :'<button type="button" class="again" data-a="again">✗ Again</button><button type="button" class="good" data-a="good">✓ Known</button>'; }
+
+  /* one tap per card: ✓ = known, next card (its answer stays below for a moment, with undo);
+     ✗ = not known, the answer opens, then Weiter; a tap on the card only peeks */
+  function peek(){ if(view!=='card'||!cur||missed) return; shown=!shown; render(); if(shown) autoBack(); }
+  function canGrade(){ return !busy && view==='card' && !!cur && !missed && !S.browse && Date.now()>=readyAt; }
+  function grade(ok){ var T=today(), s=state[cur.id], isNew=!s,
+      snap={card:cur, s:s?s.slice():null, meta:JSON.stringify(meta), ses:JSON.stringify(ses), queue:queue.slice()};
+    if(isNew){ meta.fresh++; }
+    if(meta.last!==T){ meta.streak=(meta.last===T-1?meta.streak:0)+1; meta.last=T; }
+    if(ok){ var box=isNew?2:Math.min((s[0]||0)+1,6); state[cur.id]=[box,T+DAYS[box]]; meta.good=(meta.good||0)+1; ses.rg++; }
+    else { state[cur.id]=[0,T]; ses.ra++; queue.splice(Math.min(3,queue.length),0,cur); }
+    meta.done=(meta.done||0)+1; ses.inRound++; save('srs',state); save('meta',meta); if(navigator.vibrate) navigator.vibrate(12);
+    return snap; }
+  function advance(){ if(S.round && ses.inRound>=S.round && queue.length){ ses.inRound=0; cur=null; view='round'; render(); ses.rg=0; ses.ra=0; return; }
+    next(); }
+  function fly(dir,then){ if(busy) return; busy=true; fc.style.transform=''; fc.classList.add(dir);
+    setTimeout(function(){ busy=false; then(); },200); }
+  function good(){ if(!canGrade()) return; var quick=!shown;
+    fly('fly-right',function(){ var snap=grade(true); if(quick) offerUndo(snap); else dropUndo(); advance(); }); }
+  function again(){ if(!canGrade()) return; dropUndo();
+    if(shown){ fly('fly-left',function(){ grade(false); advance(); }); return; }
+    grade(false); missed=true; shown=true; render(); autoBack(); }
+  function offerUndo(snap){ clearTimeout(undoTimer); undo=snap; undoBox.innerHTML='';
+    var t=d.createElement('span'); t.textContent='✓ '+(snap.card.a||''); undoBox.appendChild(t);
+    var b=d.createElement('button'); b.type='button'; b.textContent='Undo'; b.addEventListener('click',doUndo); undoBox.appendChild(b);
+    undoBox.classList.add('on'); undoTimer=setTimeout(dropUndo,6000); }
+  function dropUndo(){ clearTimeout(undoTimer); undo=null; if(undoBox) undoBox.classList.remove('on'); }
+  function doUndo(){ if(!undo) return; var u=undo; dropUndo(); stopAll();
+    if(u.s) state[u.card.id]=u.s; else delete state[u.card.id];
+    meta=JSON.parse(u.meta); ses=JSON.parse(u.ses); queue=u.queue; cur=u.card; shown=true; missed=false; view='card';
+    save('srs',state); save('meta',meta); render(); autoBack(); }
+  function browseMove(n){ bIdx=Math.max(0,Math.min(bList.length-1,bIdx+n)); cur=bList[bIdx]; shown=false; stopAll(); render(); }
+  acts.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; var a=b.getAttribute('data-a');
+    if(a==='good') good(); else if(a==='again') again(); else if(a==='go') advance(); else if(a==='flip') peek();
+    else if(a==='resume'){ next(); } else if(a==='pause'){ dropUndo(); view='paused'; render(); }
+    else if(a==='extra'){ meta.extra+=10; save('meta',meta); start(); }
+    else if(a==='browse'){ S.browse=true; persist(); start(); }
+    else if(a==='prev') browseMove(-1); else if(a==='nxt') browseMove(1); });
+  /* tap = peek, swipe right = ✓, swipe left = ✗; after ✗ a swipe either way = Weiter */
+  var sx=0, sy=0, dx=0, dragging=false;
+  fc.addEventListener('pointerdown',function(e){ if(e.target.closest('button')||view!=='card') return; dragging=true; sx=e.clientX; sy=e.clientY; dx=0; fc.classList.add('dragging');
+    try{ fc.setPointerCapture(e.pointerId); }catch(err){} });   /* a mouse swipe may leave the window */
+  fc.addEventListener('pointermove',function(e){ if(!dragging) return; dx=e.clientX-sx; var dy=e.clientY-sy;
+    if(!S.browse && Math.abs(dx)>Math.abs(dy)){ fc.style.transform='translateX('+dx+'px) rotate('+(dx/28)+'deg)';
+      if(!missed){ fc.classList.toggle('hint-good',dx>40); fc.classList.toggle('hint-again',dx<-40); } } });
+  function end(e){ if(!dragging) return; dragging=false; fc.classList.remove('dragging'); var dy=(e&&e.clientY!==undefined)?e.clientY-sy:0;
+    if(!S.browse && Math.abs(dx)>80){
+      if(missed && !busy){ fly(dx>0?'fly-right':'fly-left',advance); return; }
+      if(canGrade()){ if(dx>0) good(); else again(); return; } }
+    fc.style.transform=''; fc.classList.remove('hint-good','hint-again');
+    if(Math.abs(dx)<10 && Math.abs(dy)<10) peek(); }
+  fc.addEventListener('pointerup',end); fc.addEventListener('pointercancel',function(){ dragging=false; fc.classList.remove('dragging','hint-good','hint-again'); fc.style.transform=''; });
+  d.addEventListener('keydown',function(e){ if(!d.body.classList.contains('mode-practice')||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)||e.repeat||e.ctrlKey||e.metaKey||e.altKey) return;
+    var k=e.key, onButton=!!(e.target.closest && e.target.closest('button')), confirm=(k===' '||k==='Enter') && !onButton;
+    if((k==='Backspace'||k==='z'||k==='Z') && undo){ e.preventDefault(); doUndo(); return; }
+    if(view==='round'||view==='paused'){ if(confirm){ e.preventDefault(); next(); } return; }
+    if(view!=='card') return;
+    if(S.browse){ if(k==='ArrowRight') browseMove(1); else if(k==='ArrowLeft') browseMove(-1); else if(confirm){ e.preventDefault(); peek(); } return; }
+    if(missed){ if(confirm||k==='ArrowRight'||k==='2'){ e.preventDefault(); advance(); } return; }
+    if(k==='ArrowRight'||k==='2') good(); else if(k==='ArrowLeft'||k==='1') again();
+    else if(confirm){ e.preventDefault(); peek(); } });
+
+  /* ---------------- settings ---------------- */
+  function chips(id,items,active,toggle){ var box=d.getElementById(id); box.innerHTML='';
+    items.forEach(function(it){ var b=d.createElement('button'); b.type='button'; b.textContent=it[1]; b.setAttribute('aria-pressed',active.indexOf(it[0])>=0);
+      b.addEventListener('click',function(){ toggle(it[0]); }); box.appendChild(b); }); }
+  function renderSettings(){
+    chips('s-units',CFG.units,S.units,function(u){ var i=S.units.indexOf(u); if(i>=0) S.units.splice(i,1); else S.units.push(u); persist(); start(); });
+    chips('s-kinds',[['w','Vocabulario'],['g','Gramática'],['r','Expresiones útiles']],S.kinds,function(k){ var i=S.kinds.indexOf(k); if(i>=0) S.kinds.splice(i,1); else S.kinds.push(k); persist(); start(); });
+    chips('s-dir',[['de','Spanish → English'],['en','English → Spanish']],[S.dir],function(v){ S.dir=v; persist(); renderSettings(); render(); });
+    chips('s-new',[[5,'5'],[10,'10'],[15,'15'],[20,'20'],[25,'25'],[40,'40']],[S.perDay],function(v){ S.perDay=v; persist(); start(); });
+    chips('s-round',[[10,'10'],[20,'20'],[0,'no break']],[S.round],function(v){ S.round=v; persist(); renderSettings(); });
+    chips('s-mode',[[false,'Daily plan'],[true,'Browse']],[S.browse],function(v){ S.browse=v; persist(); start(); });
+    chips('s-auto',[[true,'Sound on'],[false,'Sound off']],[S.auto],function(v){ S.auto=v; persist(); renderSettings(); });
+    var p=pool(), n={neu:0,lern:0,sicher:0,fest:0};
+    p.forEach(function(c){ var s=state[c.id]; if(!s) n.neu++; else if(s[0]<=2) n.lern++; else if(s[0]<=4) n.sicher++; else n.fest++; });
+    d.getElementById('s-stat').textContent='New '+n.neu+' · Learning '+n.lern+' · Sure '+n.sicher+' · Mastered '+n.fest; }
+  d.getElementById('all-u').addEventListener('click',function(){ S.units=S.units.length===ORDER.length?[]:ORDER.slice(); persist(); start(); });
+  d.getElementById('save-btn').addEventListener('click',function(){
+    var blob=new Blob([JSON.stringify({v:2,key:K,state:state,meta:meta,games:load('games',{})})],{type:'application/json'}), a=d.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download=K+'-fortschritt-'+new Date().toISOString().slice(0,10)+'.json'; d.body.appendChild(a); a.click(); a.remove(); });
+  d.getElementById('load-in').addEventListener('change',function(e){ var f=e.target.files[0]; if(!f) return; var r=new FileReader();
+    r.onload=function(){ try{ var o=JSON.parse(r.result); if(o && o.state){ state=o.state; meta=o.meta||meta; save('srs',state); save('meta',meta); if(o.games) save('games',o.games); start(); alert('Progress loaded.'); } }catch(err){ alert('This file is not a backup.'); } };
+    r.readAsText(f); });
+
+  /* ---------------- Spielen: five short games per unit, made from its cards ---------------- */
+  var Games=(function(){
+    var box=d.getElementById('g-box'), menu=d.getElementById('g-menu'), best=load('games',{}), timers=[], live=null, ac=null;
+    var HAS_AUDIO=Object.keys(IDX).length>0;
+    function later(f,ms){ timers.push(setTimeout(f,ms)); }
+    function stop(){ timers.forEach(clearTimeout); timers=[]; if(live) live(); live=null; }
+    function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)), t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+    function pick(a,n){ return shuffle(a).slice(0,Math.max(0,n)); }
+    function esc(s){ return String(s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+    function el(tag,cls,markup){ var e=d.createElement(tag); if(cls) e.className=cls; if(markup!==undefined) e.innerHTML=markup; return e; }
+    function btn(cls,markup,fn){ var b=el('button',cls,markup); b.type='button'; b.addEventListener('click',function(){ fn(b); }); return b; }
+    function say(id){ if(HAS_AUDIO&&S.auto&&id){ stopAll(); clip(id); } }
+    function canHear(){ return HAS_AUDIO&&S.auto; }
+    function blip(ok){ if(navigator.vibrate) navigator.vibrate(ok?12:[30,40,30]); if(!S.auto) return;
+      try{ ac=ac||new (window.AudioContext||window.webkitAudioContext)(); var t=ac.currentTime, o=ac.createOscillator(), g=ac.createGain();
+        o.type=ok?'triangle':'sine'; o.frequency.setValueAtTime(ok?587:196,t); o.frequency.exponentialRampToValueAtTime(ok?880:150,t+0.14);
+        g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.12,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+0.28);
+        o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+0.3); }catch(e){} }
+    function confetti(){ if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      var c=el('div','confetti'), colors=['#f2d36b','#34d399','#b19ac8','#7f9fbd','#c58fa3'];
+      for(var i=0;i<46;i++){ var p=el('i'); p.style.left=(Math.random()*100)+'%'; p.style.background=colors[i%5];
+        p.style.animationDelay=(Math.random()*0.35)+'s'; p.style.animationDuration=(1.1+Math.random()*0.9)+'s'; c.appendChild(p); }
+      d.body.appendChild(c); setTimeout(function(){ c.remove(); },2600); }
+    function marked(x){ var s=x.de, out='', at=0; x.t.forEach(function(sp){ out+=esc(s.slice(at,sp[0]))+'<mark>'+esc(s.slice(sp[0],sp[1]))+'</mark>'; at=sp[1]; }); return out+esc(s.slice(at)); }
+    function cloze(x){ var s=x.de, out='', at=0; x.t.forEach(function(sp){ out+=esc(s.slice(at,sp[0]))+'<span class="gap">'+esc(s.slice(sp[0],sp[1]))+'</span>'; at=sp[1]; }); return out+esc(s.slice(at)); }
+    function artLabel(v){ return v.aa?v.aa.join('/'):v.a; }
+    function word(v){ return (v.a?'<span class="art-'+(COL[v.a]||v.a)+'">'+artLabel(v)+'</span> ':'')+esc(v.w); }
+    function unit(){ return sel.value; }
+    function data(){ return G[unit()]||{v:[],r:[],s:[]}; }
+    function head(title){ box.innerHTML=''; var h=el('div','g-head'); h.appendChild(el('div','g-title',title)); var info=el('div','g-info','');
+      h.appendChild(info); h.appendChild(btn('g-close','✕',function(){ open(); })); box.appendChild(h); return info; }
+    function stars(n){ return '★★★'.slice(0,n)+'☆☆☆'.slice(0,3-n); }
+    function finish(key,got,score,lines){ stop(); var u=unit(); best[u]=best[u]||{}; var old=best[u][key]||{s:0,p:0}, record=old.p>0&&score>old.p;
+      best[u][key]={s:Math.max(old.s,got),p:Math.max(old.p,score)}; save('games',best);
+      box.innerHTML=''; var m=el('div','g-end'); m.appendChild(el('div','g-big',got>=3?'🏆':got===2?'🎉':'👍'));
+      m.appendChild(el('div','g-stars',stars(got)));
+      lines.forEach(function(l){ var p=el('p'); p.textContent=l; m.appendChild(p); });
+      if(record) m.appendChild(el('p','g-rec','New record!'));
+      var a=el('div','g-acts'); a.appendChild(btn('main','Play again',function(){ play(key); })); a.appendChild(btn('','Other games',function(){ open(); }));
+      m.appendChild(a); box.appendChild(m); if(got>=3) confetti(); }
+    function toks(s){ return s.trim().split(/\s+/); }
+    function fill(s,o){ return s.replace(/\{(\w+)\}/g,function(m,k){ return o[k]; }); }      /* a sentence with numbers in it */
+    function satzPool(g){ return g.s; }                                     /* the build keeps plain sentences of 5–9 words */
+    function nouns(g){ return g.v.filter(function(v){ return v.a; }); }
+    function pairPool(g){ var seen={}; return g.v.filter(function(v){ var k=(v.g||'').toLowerCase(); if(!k||seen[k]) return false; seen[k]=1; return true; }); }
+    var LIST=[
+      {k:'bingo',icon:'🎱',name:'Listening Bingo',desc:'Hear a sentence and find its word on your card.',ok:function(g){ return g.v.length>=4; },go:bingo},
+      {k:'paare',icon:'🃏',name:'Word Pairs',desc:'Match every word with its meaning, as fast as you can.',ok:function(g){ return pairPool(g).length>=5; },go:paare},
+      {k:'satz',icon:'🧩',name:'Sentence Builder',desc:'Tap the words in the right order.',ok:function(g){ return satzPool(g).length>=3; },go:satz},
+      {k:'art',icon:'⚡',name:'El · La',desc:'60 seconds: which article fits?',ok:function(g){ return ARTS.length>1&&nouns(g).length>=3; },go:artikel},
+      {k:'red',icon:'💬',name:'What do you say?',desc:'Which phrase fits the situation?',ok:function(g){ return g.r.length>=3; },go:wendung}];
+    function open(){ stop(); stopAll(); box.hidden=true; menu.hidden=false; var g=data(), u=unit(); menu.innerHTML='';
+      menu.appendChild(el('p','g-lead',esc(CFG.labels[u]||u)+' as a game: a few minutes, no study stress.'));
+      var ready=LIST.filter(function(x){ return x.ok(g); });
+      ready.forEach(function(x){ var b=best[u]&&best[u][x.k];
+        menu.appendChild(btn('g-tile','<span class="g-icon">'+x.icon+'</span><span class="g-name">'+x.name+'</span><span class="g-desc">'+x.desc+'</span>'+
+          '<span class="g-best">'+(b?stars(b.s)+(x.k==='art'||x.k==='paare'?' · Record '+b.p:''):'New')+'</span>',function(){ play(x.k); })); });
+      if(ready.length>1) menu.appendChild(btn('g-random','🎲 Surprise me',function(){ play(ready[Math.floor(Math.random()*ready.length)].k); }));
+      if(!ready.length) menu.appendChild(el('p','g-lead','This lesson has too few cards for a game.')); }
+    function play(k){ stop(); stopAll(); var x=LIST.filter(function(y){ return y.k===k; })[0]; menu.hidden=true; box.hidden=false; window.scrollTo(0,0); x.go(data()); }
+
+    /* 🎱 Hör-Bingo: a sentence is played (or shown with a gap); tap a word of your card that it contains, or say none is there.
+       Every call has one clear answer: its sentence holds no other word of the card (the build lists the words each sentence holds). */
+    function bingo(g){
+      var vs=g.v.filter(function(v){ return v.x.length; }), n=vs.length>=12?9:vs.length>=8?6:4, cols=n===4?2:3, rows=n/cols;
+      var board, places, calls, tries=0, ci=-1, open_=false, miss=0, wrong=0, bingoDone=false, on={}, readyAt=0;
+      function holds(x){ return places.map(function(p,k){ return x.m.indexOf(p)>=0?k:-1; }).filter(function(k){ return k>=0; }); }
+      function call(v){ var own=board.indexOf(v), fit=v.x.filter(function(x){ return holds(x).every(function(k){ return k===own; }); });
+        return fit.length?{v:v,x:pick(fit,1)[0]}:null; }
+      do { board=pick(vs,n); places=board.map(function(v){ return g.v.indexOf(v); }); calls=board.map(call); }
+      while(calls.some(function(c){ return !c; })&&++tries<25);                   /* every word on the card can be called */
+      var decoys=shuffle(vs.filter(function(v){ return board.indexOf(v)<0; })).map(call).filter(Boolean);
+      calls=shuffle(calls.filter(Boolean).concat(decoys.slice(0,Math.ceil(n/2))));
+      var info=head('🎱 Listening Bingo');
+      box.appendChild(el('p','g-lead',canHear()?'Listen to the sentence. Is a word from your card in it? Tap it.':'Read the sentence. Which word is missing? Is it on your card?'));
+      var callBox=el('div','b-call'), cue=el('div','b-cue'); callBox.appendChild(cue);
+      if(canHear()) callBox.appendChild(btn('b-again','🔊 Again',function(){ if(ci>=0&&ci<calls.length) say(calls[ci].x.au); }));
+      box.appendChild(callBox);
+      var grid=el('div','b-grid'); grid.style.gridTemplateColumns='repeat('+cols+',1fr)';
+      board.forEach(function(v,i){ grid.appendChild(btn('b-cell',word(v),function(b){ tap(i,b); })); });
+      box.appendChild(grid); box.appendChild(btn('b-none','Not on my card',function(b){ tap(-1,b); }));
+      var fb=el('div','b-fb'), acts_=el('div','g-acts'); box.appendChild(fb); box.appendChild(acts_);
+      function nextCall(){ ci++; wrong=0; fb.innerHTML=''; acts_.innerHTML=''; if(ci>=calls.length) return end();
+        open_=true; readyAt=Date.now()+300; info.textContent=(ci+1)+' / '+calls.length;           /* a tap meant for the last call does not count */
+        var x=calls[ci].x; if(canHear()&&x.au){ cue.innerHTML='<span class="b-ear">👂 Listen carefully …</span>'; later(function(){ say(x.au); },300); } else cue.innerHTML=cloze(x); }
+      function reveal(ok,text){ var x=calls[ci].x; open_=false; cue.innerHTML=marked(x);
+        fb.innerHTML='<div class="'+(ok?'g-ok':'g-no')+'">'+text+'</div><div class="b-tr">'+esc(x.en)+'</div>';
+        if(ok) later(nextCall,1500); else acts_.appendChild(btn('main','Next ›',nextCall)); }         /* a mistake stays until you have read it */
+      function stamp(i){ on[i]=1; grid.children[i].classList.add('on'); if(bingoDone) return; var lines=[], r, c, k;
+        for(r=0;r<rows;r++){ var row=[]; for(c=0;c<cols;c++) row.push(r*cols+c); lines.push(row); }
+        if(rows>2) for(c=0;c<cols;c++){ var col=[]; for(r=0;r<rows;r++) col.push(r*cols+c); lines.push(col); }
+        if(rows===cols){ var a=[], b=[]; for(k=0;k<cols;k++){ a.push(k*cols+k); b.push(k*cols+cols-1-k); } lines.push(a,b); }
+        if(lines.some(function(line){ return line.every(function(j){ return on[j]; }); })){ bingoDone=true; var big=el('div','b-bingo','BINGO!'); d.body.appendChild(big); confetti(); later(function(){ big.remove(); },1500); } }
+      function shake(b){ b.classList.add('shake'); setTimeout(function(){ b.classList.remove('shake'); },400); }
+      function tap(i,b){ if(!open_||Date.now()<readyAt) return; var c=calls[ci], own=board.indexOf(c.v), hits=holds(c.x);
+        if(own>=0&&hits.indexOf(own)<0) hits.push(own);
+        if(i>=0&&hits.indexOf(i)>=0){ blip(true); stamp(i); reveal(true,'✓ '+word(board[i])); return; }       /* any word of the card it contains */
+        if(i<0&&!hits.length){ blip(true); reveal(true,'✓ Right, '+word(c.v)+' is not on your card.'); return; }
+        blip(false); miss++; shake(b);
+        if(i>=0&&hits.length&&++wrong<2) return;                                 /* another cell: look again, once */
+        hits.forEach(function(k){ var cell=grid.children[k]; cell.classList.add('hint'); later(function(){ cell.classList.remove('hint'); },2000); stamp(k); });
+        reveal(false,hits.length?'On your card: '+hits.map(function(k){ return word(board[k]); }).join(', '):'Not on your card: '+word(c.v)); }
+      function end(){ finish('bingo',miss===0?3:miss<=2?2:1,Math.max(0,n*10-miss*3),[(bingoDone?'Bingo! ':'')+'Mistakes: '+miss,
+        fill(canHear()?'You heard {n} sentences and found {w} words.':'You read {n} sentences and found {w} words.',{n:calls.length,w:n})]); }
+      nextCall(); }
+
+    /* 🧩 Satzbau: the English meaning is shown; tap the German words in order (a wrong tile just shakes) */
+    function satz(g){
+      var round=pick(satzPool(g),6), i=-1, clean=0, info=head('🧩 Sentence Builder');
+      box.appendChild(el('p','g-lead','Build the Spanish sentence: tap the words in order.'));
+      var prompt=el('div','s-prompt'), line=el('div','s-line'), tiles=el('div','s-tiles'), fb=el('div','s-fb'), acts_=el('div','g-acts');
+      [prompt,line,tiles,fb,acts_].forEach(function(e){ box.appendChild(e); });
+      function nextSentence(){ i++; if(i>=round.length) return finish('satz',clean===round.length?3:clean>=Math.ceil(round.length*0.6)?2:1,clean*10,['Without mistakes: '+clean+' of '+round.length+' sentences']);
+        var s=round[i], want=toks(s.de), at=0, errs=0, order; info.textContent=(i+1)+' / '+round.length;
+        prompt.textContent=s.en; line.innerHTML=''; tiles.innerHTML=''; fb.innerHTML=''; acts_.innerHTML='';
+        if(canHear()&&s.au) acts_.appendChild(btn('','🔊 Listen',function(){ say(s.au); }));
+        do { order=shuffle(want.map(function(w,k){ return k; })); } while(want.length>2&&order.every(function(k,j){ return want[k]===want[j]; }));
+        order.forEach(function(k){ var t=btn('s-tile',esc(want[k]),function(b){ choose(b); }); t.setAttribute('data-w',want[k]); tiles.appendChild(t); });
+        function choose(t){ if(t.disabled||at>=want.length) return;
+          if(t.getAttribute('data-w')===want[at]){ t.disabled=true; t.classList.add('used'); line.appendChild(el('span','s-word',esc(want[at]))); at++;
+            [].forEach.call(tiles.children,function(x){ x.classList.remove('hint'); });
+            if(at===want.length){ if(!errs) clean++; solved(s,errs); } return; }
+          errs++; blip(false); t.classList.add('shake'); setTimeout(function(){ t.classList.remove('shake'); },400);
+          if(errs>=2) [].some.call(tiles.children,function(x){ if(!x.disabled&&x.getAttribute('data-w')===want[at]){ x.classList.add('hint'); return true; } return false; }); } }
+      function solved(s,errs){ blip(true); line.innerHTML='<span>'+marked(s)+'</span>'; say(s.au);
+        fb.innerHTML=errs?'<span class="g-no">'+(errs>1?fill('Done, with {n} mistakes.',{n:errs}):'Done, with 1 mistake.')+'</span>':'<span class="g-ok">✓ Perfect!</span>';
+        acts_.innerHTML=''; if(canHear()&&s.au) acts_.appendChild(btn('','🔊 Again',function(){ say(s.au); })); acts_.appendChild(btn('main','Next ›',nextSentence)); }
+      nextSentence(); }
+
+    /* ⚡ Der · Die · Das: 60 seconds of nouns; a streak multiplies the points, a miss comes back soon */
+    function artikel(g){
+      var pool_=nouns(g); if(pool_.length<12){ var more=[]; ORDER.forEach(function(u){ if(u!==unit()&&G[u]) more=more.concat(nouns(G[u])); }); pool_=pool_.concat(pick(more,12-pool_.length)); }
+      var q_=shuffle(pool_), cur_=null, score=0, streak=0, top=0, misses=[], left=60, wait=false, readyAt=0, info=head('⚡ El · La');
+      var bar=el('div','a-time'), fill=el('i'); bar.appendChild(fill); box.appendChild(bar);
+      var sc=el('div','a-score'), card=el('div','a-card'); box.appendChild(sc); box.appendChild(card);
+      var row=el('div','a-btns'); row.style.gridTemplateColumns='repeat('+ARTS.length+',1fr)';
+      ARTS.forEach(function(a){ row.appendChild(btn('a-'+(COL[a]||a),a,function(){ answer(a); })); }); box.appendChild(row);
+      function key(e){ var a=ARTS[+e.key-1]; if(a&&!e.repeat){ e.preventDefault(); answer(a); } }
+      d.addEventListener('keydown',key);
+      var tm=setInterval(function(){ left--; fill.style.width=(left/60*100)+'%'; info.textContent=left+' s'; if(left<=0) over(); },1000);
+      live=function(){ clearInterval(tm); d.removeEventListener('keydown',key); };
+      function mult(){ return Math.min(4,1+Math.floor(streak/3)); }
+      function showNext(){ if(!q_.length) q_=shuffle(pool_); cur_=q_.shift();
+        card.innerHTML='<div class="a-word">'+esc(cur_.w)+'</div><div class="a-gloss">'+esc(cur_.g)+'</div>'; sc.textContent=score+' points'+(streak>=3?' · 🔥 ×'+mult():'');
+        readyAt=Date.now()+300; }                                                  /* a tap meant for the last word does not count */
+      function answer(a){ if(wait||left<=0||Date.now()<readyAt) return; wait=true;
+        if((cur_.aa||[cur_.a]).indexOf(a)>=0){ score+=10*mult(); streak++; top=Math.max(top,streak); blip(true); say(cur_.h); card.classList.add('good');
+          setTimeout(function(){ card.classList.remove('good'); wait=false; if(left>0) showNext(); },260); return; }
+        streak=0; blip(false); misses.push(cur_); q_.splice(Math.min(4,q_.length),0,cur_);
+        card.innerHTML='<div class="a-word">'+word(cur_)+'</div><div class="a-gloss">'+esc(cur_.g)+'</div>'; card.classList.add('bad'); say(cur_.h);
+        setTimeout(function(){ card.classList.remove('bad'); wait=false; if(left>0) showNext(); },1600); }
+      function over(){ var seen={}, list=misses.filter(function(v){ var k=v.a+' '+v.w; if(seen[k]) return false; seen[k]=1; return true; });
+        finish('art',score>=300?3:score>=150?2:1,score,[score+' points · best streak '+top].concat(list.length?['Remember: '+list.map(function(v){ return artLabel(v)+' '+v.w; }).join(', ')]:['Not a single mistake!'])); }
+      info.textContent='60 s'; showNext(); }
+
+    /* 💬 Was sagt man?: a situation, three phrases from the lesson; pick the one that fits */
+    function wendung(g){
+      var all=g.r, qs=pick(all,Math.min(8,all.length)), i=-1, right=0, info=head('💬 What do you say?');
+      box.appendChild(el('p','g-lead','Read the situation and choose the phrase that fits.'));
+      var sit=el('div','r-sit'), opts=el('div','r-opts'), fb=el('div','r-fb'), acts_=el('div','g-acts');
+      [sit,opts,fb,acts_].forEach(function(e){ box.appendChild(e); });
+      function others(r){ var seen={}; seen[r.f]=1;                             /* two other phrases, never the same words twice */
+        function fresh(x){ if(seen[x.f]) return false; seen[x.f]=1; return true; }
+        var o=shuffle(all.filter(function(x){ return x.grp!==r.grp; })).filter(fresh);
+        if(o.length<2) o=o.concat(shuffle(all.filter(function(x){ return x.grp===r.grp; })).filter(fresh));
+        if(o.length<2) ORDER.forEach(function(u){ if(u!==unit()&&G[u]) o=o.concat(shuffle(G[u].r).filter(fresh)); });
+        return o.slice(0,2); }
+      function ask(){ i++; if(i>=qs.length) return finish('red',right===qs.length?3:right>=Math.ceil(qs.length*0.6)?2:1,right*10,['Right: '+right+' of '+qs.length]);
+        var r=qs[i], answered=false; info.textContent=(i+1)+' / '+qs.length; fb.innerHTML=''; acts_.innerHTML='';
+        sit.innerHTML='<div>'+esc(r.w)+'</div>'+(r.reg?'<div class="r-reg">'+esc(r.reg)+'</div>':''); opts.innerHTML='';
+        shuffle([r].concat(others(r))).forEach(function(x){ opts.appendChild(btn('r-opt',esc(x.f),function(b){ if(answered) return; answered=true;
+          if(x===r){ right++; blip(true); b.classList.add('ok'); }
+          else { blip(false); b.classList.add('no'); [].forEach.call(opts.children,function(o,k){ if(o.textContent===r.f) o.classList.add('ok'); }); }
+          say(r.au); fb.innerHTML='<div class="'+(x===r?'g-ok':'g-no')+'">'+(x===r?'✓ Exactly!':'That\'s how you say it:')+' '+esc(r.g)+'</div><div>'+marked(r.x)+'</div><div class="b-tr">'+esc(r.x.en)+'</div>';
+          acts_.appendChild(btn('main','Next ›',ask)); })); }); }
+      ask(); }
+
+    /* 🃏 Wortpaare: tap a German word, then its meaning; up to three rounds of five pairs against the clock */
+    function paare(g){
+      var pool_=pick(pairPool(g),15), sets=[], k, round=-1, misses=0, t0=Date.now(), info=head('🃏 Word Pairs');
+      for(k=0;k+3<=pool_.length;k+=5) sets.push(pool_.slice(k,k+5));            /* a round has three to five pairs */
+      box.appendChild(el('p','g-lead','Tap a Spanish word, then its meaning.'));
+      var grid=el('div','p-grid'), left=el('div','p-col'), right=el('div','p-col'); grid.appendChild(left); grid.appendChild(right); box.appendChild(grid);
+      function deal(){ round++; if(round>=sets.length) return done(); var set=sets[round], picked=null, paired=0;
+        info.textContent='Round '+(round+1)+' / '+sets.length; left.innerHTML=''; right.innerHTML='';
+        shuffle(set).forEach(function(v){ left.appendChild(card(v,'de',word(v))); });
+        shuffle(set).forEach(function(v){ right.appendChild(card(v,'en',esc(v.g))); });
+        function card(v,side,markup){ var b=btn('p-card p-'+side,markup,function(){ choose(b,v,side); }); return b; }
+        function choose(b,v,side){ if(b.disabled) return;
+          if(!picked||picked.side===side){ if(picked) picked.b.classList.remove('sel'); picked={b:b,v:v,side:side}; b.classList.add('sel'); if(side==='de') say(v.h); return; }
+          var a=picked; picked=null;
+          if(a.v===v){ blip(true); [a.b,b].forEach(function(x){ x.classList.remove('sel'); x.classList.add('done'); x.disabled=true; });
+            if(++paired===set.length) later(deal,450); return; }
+          blip(false); misses++; [a.b,b].forEach(function(x){ x.classList.remove('sel'); x.classList.add('shake'); setTimeout(function(){ x.classList.remove('shake'); },400); }); } }
+      function done(){ var secs=Math.round((Date.now()-t0)/1000), n=pool_.length;
+        finish('paare',misses===0&&secs<=n*4?3:misses<=Math.ceil(n/5)?2:1,Math.max(10,n*20-secs*2-misses*10),['Time: '+secs+' s · Mistakes: '+misses]); }
+      deal(); }
+    return {open:open, stop:stop};
+  })();
+
+  show(ui.unit||units[0].id,false);
+  mode(ui.tab==='p'||ui.tab==='g'?ui.tab:'l');
+})();
+</script>
+
+</body></html>

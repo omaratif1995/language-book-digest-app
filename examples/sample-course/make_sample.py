@@ -4,6 +4,7 @@ usage: python make_sample.py
 Writes the lesson bundles to _work/, renders the two reviewed sheets with study_pack.py,
 writes _work/course.json and builds Sample_Studienpaket_v1.html (without audio).
 It doubles as a compact example of the data the skill authors for every real lesson.
+`build()` makes a sample course in another language too (see ../sample-course-es/make_sample.py).
 """
 import copy, json, subprocess, sys
 from pathlib import Path
@@ -14,6 +15,9 @@ sys.path.insert(0, str(SCRIPTS))
 import study_pack as pack  # noqa: E402
 
 SOURCE = HERE / "source" / "sample-lessons.md"
+# What differs between sample courses in different languages (the content aside).
+GERMAN = {"language": "de", "book": "Beispielkurs", "level": "A2–B1", "groups": ("Wortschatz der Einheit", "Redemittel der Einheit"),
+          "title": "Beispielkurs Deutsch", "subtitle": "2 Einheiten · Wortschatz · Grammatik · Redemittel", "app": "Sample_Studienpaket_v1.html"}
 
 
 def ex(de, en, *targets):
@@ -167,13 +171,13 @@ def write(path, data):
     path.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
 
 
-def bundle(unit):
-    work = HERE / "_work" / unit["id"]
+def bundle(unit, here=HERE, source=SOURCE, course=GERMAN):
+    work = here / "_work" / unit["id"]
     region = f"p{unit['page']}-lesson"
     src = [{"pdf_index": unit["page"], "region": region, "evidence": unit["title"]}]
     items, vocabulary, redemittel = [], [], []
     for vid, art, lemma, pos, forms, gloss, example in unit["vocabulary"]:
-        rec = {"id": vid, "group": "Wortschatz der Einheit", "lemma": lemma, "pos": pos}
+        rec = {"id": vid, "group": course["groups"][0], "lemma": lemma, "pos": pos}
         if art:
             rec["article"] = art
         rec.update(forms=forms, gloss=gloss, examples=[example])
@@ -186,7 +190,7 @@ def bundle(unit):
     items.append({"id": "i-g1", "kind": "grammar", "label": g["title"], "importance": "essential", "sources": copy.deepcopy(src),
                   "decision": "standalone", "home": "g1", "reason": "Explicit grammar of the unit."})
     for eid, frame, gloss, when, register, example in unit["redemittel"]:
-        rec = {"id": eid, "group": "Redemittel der Einheit", "frame": frame, "gloss": gloss, "when": when}
+        rec = {"id": eid, "group": course["groups"][1], "frame": frame, "gloss": gloss, "when": when}
         if register:
             rec["register"] = register
         rec["examples"] = [example]
@@ -195,7 +199,7 @@ def bundle(unit):
                       "decision": "standalone", "home": eid, "reason": "Reusable phrase from the dialogue."})
     items.append({"id": "i-names", "kind": "source_only", "label": "character names", "importance": "incidental",
                   "sources": copy.deepcopy(src), "decision": "exclude", "reason": "Story identity, no learning value."})
-    inventory = {"schema_version": 2, "lesson_id": unit["id"], "book": "Beispielkurs", "source_sha256": pack.file_hash(SOURCE),
+    inventory = {"schema_version": 2, "lesson_id": unit["id"], "book": course["book"], "source_sha256": pack.file_hash(source),
                  "scope_label": f"{unit['label']} of the sample source", "scope_pages": [unit["page"]],
                  "pages": [{"pdf_index": unit["page"], "folio": str(unit["page"] + 1), "regions": [
                      {"id": region, "label": unit["title"], "status": "reviewed", "method": "text", "note": "Original sample text."}]}],
@@ -203,7 +207,7 @@ def bundle(unit):
     paths = {n: work / f"{unit['id']}_{n}_v2.json" for n in ("Inventory", "Lesson", "Review")}
     write(paths["Inventory"], inventory)
     lesson = {"schema_version": 2, "lesson_id": unit["id"], "inventory_sha256": pack.file_hash(paths["Inventory"]),
-              "title": unit["title"], "level": "A2–B1", "target_language": "de", "gloss_language": "en",
+              "title": unit["title"], "level": course["level"], "target_language": course["language"], "gloss_language": "en",
               "vocabulary": vocabulary, "grammar": grammar, "redemittel": redemittel, "story": unit["story"]}
     write(paths["Lesson"], lesson)
     review = {"schema_version": 2, "lesson_id": unit["id"], "inventory_sha256": pack.file_hash(paths["Inventory"]),
@@ -214,26 +218,31 @@ def bundle(unit):
     return paths
 
 
-def main():
-    SOURCE.parent.mkdir(parents=True, exist_ok=True)
-    SOURCE.write_text(SOURCE_TEXT, encoding="utf-8")
+def build(units_data, narration, source_text, here=HERE, source=SOURCE, course=GERMAN):
+    """Bundles, reviewed sheets, course.json and the app (without audio) of one sample course."""
+    source.parent.mkdir(parents=True, exist_ok=True)
+    source.write_text(source_text, encoding="utf-8")
     units = []
-    for unit in UNITS:
-        paths = bundle(unit)
-        sheet = HERE / f"{unit['id']}_Studysheet_v1.html"
+    for unit in units_data:
+        paths = bundle(unit, here, source, course)
+        sheet = here / f"{unit['id']}_Studysheet_v1.html"
         sheet.unlink(missing_ok=True)
-        args = ["--inventory", str(paths["Inventory"]), "--lesson", str(paths["Lesson"]), "--review", str(paths["Review"]), "--source", str(SOURCE)]
+        args = ["--inventory", str(paths["Inventory"]), "--lesson", str(paths["Lesson"]), "--review", str(paths["Review"]), "--source", str(source)]
         subprocess.run([sys.executable, str(SCRIPTS / "study_pack.py"), "render", *args, "--output", str(sheet)], check=True)
         units.append({"id": unit["id"], "label": unit["label"], "lesson": f"{unit['id']}/{unit['id']}_Lesson_v2.json",
                       "sheet": f"../{sheet.name}"})
-    write(HERE / "_work" / "narration.json", NARRATION)
-    write(HERE / "_work" / "course.json", {"title": "Beispielkurs Deutsch", "subtitle": "2 Einheiten · Wortschatz · Grammatik · Redemittel",
+    write(here / "_work" / "narration.json", narration)
+    write(here / "_work" / "course.json", {"title": course["title"], "subtitle": course["subtitle"],
                                            "narration": "narration.json", "cache": "audio", "episodes_dir": "../Audio",
                                            "new_per_day": 10, "units": units})
-    app = HERE / "Sample_Studienpaket_v1.html"
+    app = here / course["app"]
     app.unlink(missing_ok=True)
-    subprocess.run([sys.executable, str(SCRIPTS / "build_course_app.py"), "--course", str(HERE / "_work" / "course.json"),
+    subprocess.run([sys.executable, str(SCRIPTS / "build_course_app.py"), "--course", str(here / "_work" / "course.json"),
                     "--output", str(app), "--no-audio"], check=True)
+
+
+def main():
+    build(UNITS, NARRATION, SOURCE_TEXT)
 
 
 if __name__ == "__main__":

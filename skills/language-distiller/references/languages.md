@@ -3,7 +3,7 @@
 Everything the skill does is the same for every language, except what is in the language's profile, `languages/<code>.json`. The lesson's `target_language` (`de`, `de-DE`, `es` …) picks it; a course needs one language for all its units. The scripts refuse a language without a profile and say which ones exist.
 
 - **German (`de.json`)** is the reference. Every rule of this skill was built and tested with German.
-- **Spanish (`es.json`)** is a pilot. The tests build a Spanish lesson, sheet and app with it, but no real Spanish course has been made yet.
+- **Spanish (`es.json`)** has a complete two-unit sample course, `examples/sample-course-es` in the skill's repository (sheets and app, built with `make_sample.py`), reviewed by its author but not yet by a native speaker.
 
 ## What a profile holds
 
@@ -40,6 +40,10 @@ Everything the skill does is the same for every language, except what is in the 
 4. Add a test like `test_language.py` builds for Spanish, then call the language supported.
 
 What stays the same for every language: the selection rules, the data contract, the story rules, the originality check, the listening engine, the games and the app.
+
+## Limits
+
+It works for languages written left to right with spaces between words. Right-to-left scripts (Arabic, Hebrew) and languages without spaces (Chinese, Japanese, Thai) need more work first: the sheet has no right-to-left layout, and Satzbau and Hör-Bingo split sentences at spaces. A profile could add both later: a `direction` for the sheet and a word splitter for the games.
 
 ## What the learner sees
 

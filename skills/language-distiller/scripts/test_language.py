@@ -21,8 +21,9 @@ TEMPLATES = (build_course_app.APP_JS + build_course_app.PRACTICE + build_course_
              + embed_audio.LISTEN_JS + embed_audio.LISTEN_HTML)
 
 
-def spanish_lesson(root, lesson_id="S1"):
-    """A tiny reviewed Spanish lesson with a story, rendered with the normal sheet renderer."""
+def spanish_lesson(root, lesson_id="S1", target="es", article="el"):
+    """A tiny reviewed Spanish lesson with a story, rendered with the normal sheet renderer (`target` and `article`
+    can turn it into a lesson of another profile, or one whose nouns carry no article)."""
     source = root / "source.txt"
     source.write_text("synthetic course source", encoding="utf-8")
     src = [{"pdf_index": 0, "region": "p0", "evidence": "synthetic"}]
@@ -41,8 +42,8 @@ def spanish_lesson(root, lesson_id="S1"):
         "dependencies": []}
     lesson = {
         "schema_version": 2, "lesson_id": lesson_id, "inventory_sha256": "0" * 64, "title": "En el mercado", "level": "A2",
-        "target_language": "es", "gloss_language": "en",
-        "vocabulary": [{"id": "v1", "group": "Compras", "lemma": "mercado", "pos": "noun", "article": "el",
+        "target_language": target, "gloss_language": "en",
+        "vocabulary": [{"id": "v1", "group": "Compras", "lemma": "mercado", "pos": "noun", **({"article": article} if article else {}),
                         "forms": "Plural: los mercados", "gloss": "market",
                         "examples": [{"de": "Los sábados compro fruta fresca en el mercado.", "en": "On Saturdays I buy fresh fruit at the market.",
                                       "targets": ["mercado"]}]}],
@@ -135,6 +136,22 @@ class LanguageTests(unittest.TestCase):
                          [("en", "Use "), ("de", "mercado"), ("en", " for the market")])
         clip = speech.make_clip("The word mañana means tomorrow.", "en", {"de": "es-ES-ElviraNeural", "en": "en-US-AvaNeural"})
         self.assertIn(("de", "mañana"), clip.parts)
+
+    def test_a_language_without_articles(self):
+        # nouns need no article there, the sheet shows none and the app offers no article game
+        language._cache["xa"] = dict(language.profile("es"), code="xa", name="Testish", articles=[], article_colours={})
+        self.addCleanup(language._cache.pop, "xa", None)
+        lesson, sheet = spanish_lesson(self.root, target="xa", article=None)
+        page = sheet.read_text(encoding="utf-8")
+        self.assertIn('<html lang="xa">', page)
+        self.assertIn('<span class="de">mercado</span>', page)
+        self.assertEqual(validate_study_pack.main([str(sheet)]), 0)
+        course = self.root / "course.json"
+        course.write_text(json.dumps({"title": "Test", "units": [{"id": "S1", "label": "1", "lesson": lesson.name, "sheet": sheet.name}]}),
+                          encoding="utf-8")
+        out = self.root / "app.html"
+        build_course_app.build(course_audio.load_course(course), out, audio=False)
+        self.assertIn('"arts":[]', out.read_text(encoding="utf-8"))          # ARTS.length>1 fails: no article game
 
     def test_an_unknown_language_says_how_to_add_one(self):
         with self.assertRaisesRegex(language.LanguageError, r"languages/xx\.json.*available: de, es"):

@@ -1,0 +1,22 @@
+{
+ "title": "Curso de español",
+ "subtitle": "2 unidades · Vocabulario · Gramática · Expresiones útiles",
+ "narration": "narration.json",
+ "cache": "audio",
+ "episodes_dir": "../Audio",
+ "new_per_day": 10,
+ "units": [
+  {
+   "id": "S1",
+   "label": "Unidad 1",
+   "lesson": "S1/S1_Lesson_v2.json",
+   "sheet": "../S1_Studysheet_v1.html"
+  },
+  {
+   "id": "S2",
+   "label": "Unidad 2",
+   "lesson": "S2/S2_Lesson_v2.json",
+   "sheet": "../S2_Studysheet_v1.html"
+  }
+ ]
+}

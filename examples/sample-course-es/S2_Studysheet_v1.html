@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="study-pack-status" content="reviewed">
+<title>S2 — Un piso nuevo – Buscar casa</title>
+<style>
+  :root{
+    --der:#7f9fbd; --das:#86ad9a; --die:#c58fa3;
+    --bg:#17191f; --card:#24272e; --ink:#ebe9e4; --muted:#b1b3b7;
+    --line:#3b4048; --accent:#b19ac8; --accent2:#d0b9d8;
+    --ex-bg:#29343a; --ex-bar:#83b1bd; --ex-ink:#d9e7e7;
+    --gram-bg:#302d35; --gram-bar:#b19ac8;
+    --phrase-bg:#145c4d; --phrase-bar:#34d399; --yellow:#f2d36b;
+  }
+  *{box-sizing:border-box;}
+  body{font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);margin:0;padding:24px 16px 52px;line-height:1.48;background-image:radial-gradient(1100px 350px at 70% -70px,#1e2740 0%,transparent 70%);}
+  .wrap{max-width:900px;margin:0 auto;overflow-wrap:anywhere;}
+  .hero{background:linear-gradient(135deg,#312e81 0%,#831843 100%);border-radius:16px;padding:18px 24px;margin-bottom:24px;box-shadow:0 8px 24px rgba(0,0,0,.35);}
+  .hero .lekt{font-size:12px;letter-spacing:2.6px;text-transform:uppercase;color:#f0abfc;font-weight:700;}
+  .hero h1{font-size:28px;margin:3px 0 0;color:#fff;}
+  h2{font-size:22px;margin:30px 0 4px;display:flex;align-items:center;gap:10px;}
+  h2 .num{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#1a1030;width:30px;height:30px;border-radius:9px;display:inline-grid;place-items:center;font-size:15px;font-weight:800;}
+  .rule-under{height:3px;background:linear-gradient(90deg,var(--accent),transparent);border-radius:3px;margin:6px 0 10px;}
+  h3{font-size:14px;margin:20px 0 8px;color:var(--accent2);font-weight:700;}
+  .grid{display:grid;grid-template-columns:1fr;gap:8px;}
+  .voc{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:10px 13px;}
+  .voc .top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
+  .voc .de{font-size:17px;font-weight:700;}
+  .voc .en{font-size:13.5px;color:var(--muted);}
+  .art-der{color:var(--der)} .art-das{color:var(--das)} .art-die{color:var(--die)}
+  .forms{font-size:13px;color:var(--muted);margin:5px 0 0;}
+  .ex{margin-top:7px;font-size:14px;background:var(--ex-bg);border-left:3px solid var(--ex-bar);border-radius:7px;padding:6px 10px;color:var(--ex-ink);}
+  .ex .tr{color:#7fb3d9;font-style:italic;}
+  mark{background:rgba(253,224,71,.22);color:var(--yellow);padding:0 3px;border-radius:3px;font-weight:700;}
+  .rule{background:var(--gram-bg);border:1px solid var(--line);border-left:5px solid var(--gram-bar);border-radius:11px;padding:14px 16px;margin:11px 0;}
+  .rule h3{margin:0 0 8px;font-size:17px;}
+  .rule p{margin:6px 0;font-size:14px;}
+  .patterns{margin:8px 0;padding:8px 11px;background:var(--card);border-radius:8px;}
+  .patterns p{margin:3px 0;}
+  .contrast{color:#f5d78e;}
+  .phrase{background:var(--phrase-bg);border:1px solid var(--line);border-left:5px solid var(--phrase-bar);border-radius:10px;padding:10px 13px;margin:7px 0;}
+  .phrase .head{font-size:16px;font-weight:700;color:#6ee7b7;}
+  .phrase .meaning{font-size:13.5px;margin:5px 0;}
+  .phrase .when{font-size:12.5px;color:#d1e5dc;margin-top:3px;}
+  .phrase .variant{font-size:13px;color:#d1e5dc;margin:4px 0;}
+  .phrase .ex{background:#303633;border-left-color:var(--phrase-bar);color:#dce8df;}
+  .phrase .ex .tr{color:#a9c2b0;}
+  .story{background:linear-gradient(180deg,#2a2630 0%,#23212a 100%);border:1px solid var(--line);border-left:5px solid var(--yellow);border-radius:14px;padding:16px 18px 6px;margin:11px 0;}
+  .story h3{margin:0 0 12px;font-size:19px;color:#f5e6b3;}
+  .story-p{margin:0 0 14px;}
+  .story-p>p{margin:0;font-size:16.5px;line-height:1.75;}
+  .lw{border-bottom:2px dotted rgba(242,211,107,.75);}
+  .story-tr summary{cursor:pointer;color:var(--muted);font-size:12.5px;margin-top:5px;width:max-content;}
+  .story-tr p{margin:5px 0 0;color:#a9b8c9;font-style:italic;font-size:14px;line-height:1.6;}
+  @media(max-width:520px){body{padding:14px 9px 34px}.hero{padding:16px}.hero h1{font-size:24px}.rule{padding:12px}.voc,.phrase{padding:10px 11px}.story{padding:14px 13px 4px}}
+  @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head><body><main class="wrap">
+<header class="hero"><div class="lekt">A2 · S2</div><h1>Un piso nuevo – Buscar casa</h1></header>
+<h2><span class="num">1</span> Vocabulario</h2><div class="rule-under"></div>
+<h3>Vocabulario de la unidad</h3><div class="grid">
+<article class="voc" id="v1"><div class="top"><span class="de"><span class="art-der">el</span> alquiler</span><span class="en">rent</span></div><p class="forms">Plural: los alquileres · pagar el alquiler</p><div class="ex">El <mark>alquiler</mark> incluye la luz y el agua, pero no internet. <span class="tr" lang="en">— The rent includes electricity and water, but not the internet.</span></div></article>
+<article class="voc" id="v2"><div class="top"><span class="de"><span class="art-die">la</span> fianza</span><span class="en">deposit</span></div><p class="forms">Plural: las fianzas</p><div class="ex">Al firmar el contrato, pagamos dos meses de <mark>fianza</mark>. <span class="tr" lang="en">— When we signed the contract, we paid two months&#x27; deposit.</span></div></article>
+<article class="voc" id="v3"><div class="top"><span class="de">compartir</span><span class="en">to share</span></div><p class="forms">comparto · he compartido</p><div class="ex"><mark>Comparto</mark> el piso con dos estudiantes de Valencia. <span class="tr" lang="en">— I share the flat with two students from Valencia.</span></div></article>
+<article class="voc" id="v4"><div class="top"><span class="de">luminoso</span><span class="en">bright, full of light</span></div><p class="forms">luminosa · luminosos · luminosas</p><div class="ex">El salón es pequeño, pero muy <mark>luminoso</mark>. <span class="tr" lang="en">— The living room is small but very bright.</span></div></article>
+<article class="voc" id="v5"><div class="top"><span class="de"><span class="art-die">la</span> mudanza</span><span class="en">move (to a new home)</span></div><p class="forms">Plural: las mudanzas · hacer la mudanza</p><div class="ex">La <mark>mudanza</mark> fue un caos: tres días de cajas y escaleras. <span class="tr" lang="en">— The move was chaos: three days of boxes and stairs.</span></div></article>
+<article class="voc" id="v6"><div class="top"><span class="de"><span class="art-der">el</span> vecino</span><span class="en">neighbour</span></div><p class="forms">la vecina · Plural: los vecinos</p><div class="ex">Nuestro <mark>vecino</mark> del tercero toca el piano todas las noches. <span class="tr" lang="en">— Our neighbour on the third floor plays the piano every night.</span></div></article>
+</div>
+<h2><span class="num">2</span> Gramática</h2><div class="rule-under"></div>
+<article class="rule" id="g1"><h3>Comparisons: más … que, tan … como</h3><p><b>Meaning:</b> Compare two things: one has more or less of a quality, or both have it equally.</p><p><b>Rule:</b> más / menos + adjective + que; tan + adjective + como. The adjective agrees with its noun. bueno and malo have short forms: mejor, peor.</p><div class="patterns"><p><b>more:</b> más caro que</p><p><b>equal:</b> tan grande como</p><p><b>better:</b> mejor que, not más bueno que</p></div><p class="contrast"><b>Important:</b> tanto / tanta + noun + como compares amounts: tanto ruido como antes.</p><div class="ex">Este piso es <mark>más luminoso que</mark> el anterior. <span class="tr" lang="en">— This flat is brighter than the previous one.</span></div>
+<div class="ex">Aquí el alquiler es <mark>tan caro como</mark> en el centro. <span class="tr" lang="en">— Here the rent is as expensive as in the centre.</span></div>
+<div class="ex">Mi calle nueva es mucho <mark>más tranquila que</mark> la antigua. <span class="tr" lang="en">— My new street is much quieter than the old one.</span></div></article>
+<h2><span class="num">3</span> Expresiones útiles</h2><div class="rule-under"></div>
+<h3>Expresiones de la unidad</h3>
+<article class="phrase" id="e1"><div class="head">Me interesa el piso de …</div><p class="meaning">I&#x27;m interested in the flat on …</p><div class="when">Answer a flat advert by phone or e-mail.</div><div class="ex">Buenos días, <mark>me interesa el piso de</mark> la calle Mayor. ¿Sigue libre? <span class="tr" lang="en">— Good morning, I&#x27;m interested in the flat on Calle Mayor. Is it still available?</span></div></article>
+<article class="phrase" id="e2"><div class="head">¿Se puede visitar …?</div><p class="meaning">Can I come and see …?</p><div class="when">Ask to view the flat.</div><div class="ex">¿<mark>Se puede visitar</mark> el piso este jueves por la tarde? <span class="tr" lang="en">— Can I see the flat this Thursday afternoon?</span></div></article>
+<article class="phrase" id="e3"><div class="head">¿Están incluidos los gastos?</div><p class="meaning">Are the bills included?</p><div class="when">Ask what the rent covers.</div><div class="ex">Perdone, ¿<mark>están incluidos los gastos</mark> de agua y luz? <span class="tr" lang="en">— Excuse me, are the water and electricity bills included?</span></div></article>
+<h2><span class="num">4</span> Historia</h2><div class="rule-under"></div><article class="story" id="story"><h3>Un piso con mucha luz</h3><div class="story-p" id="story-p1"><p><span class="ss" id="story-s1">Después de un mes buscando, Álvaro encuentra un anuncio: «Piso <span class="lw" data-card="v4" title="luminoso: bright, full of light">luminoso</span> cerca del metro».</span> <span class="ss" id="story-s2">Llama enseguida: —Buenos días, <span class="lw" data-card="e1" title="Me interesa el piso de …: I&#x27;m interested in the flat on …">me interesa el piso de</span> la calle Olmo. ¿<span class="lw" data-card="e2" title="¿Se puede visitar …?: Can I come and see …?">Se puede visitar</span> mañana?</span></p><details class="story-tr"><summary>Traducción</summary><p lang="en">After a month of searching, Álvaro finds an advert: &#x27;Bright flat near the metro&#x27;. He calls straight away: &#x27;Good morning, I&#x27;m interested in the flat on Calle Olmo. Can I come and see it tomorrow?&#x27;</p></details></div><div class="story-p" id="story-p2"><p><span class="ss" id="story-s3">El piso es pequeño, pero más luminoso que todos los que ha visto.</span> <span class="ss" id="story-s4">El <span class="lw" data-card="v1" title="el alquiler: rent">alquiler</span> es tan caro como en el centro, así que Álvaro pregunta: —¿<span class="lw" data-card="e3" title="¿Están incluidos los gastos?: Are the bills included?">Están incluidos los gastos</span>?</span></p><details class="story-tr"><summary>Traducción</summary><p lang="en">The flat is small, but brighter than all the ones he has seen. The rent is as expensive as in the centre, so Álvaro asks: &#x27;Are the bills included?&#x27;</p></details></div><div class="story-p" id="story-p3"><p><span class="ss" id="story-s5">La dueña dice que sí y le pide dos meses de <span class="lw" data-card="v2" title="la fianza: deposit">fianza</span>. Álvaro firma, llama a su amiga Nuria y le pregunta si quiere <span class="lw" data-card="v3" title="compartir: to share">compartir</span> el piso con él.</span></p><details class="story-tr"><summary>Traducción</summary><p lang="en">The landlady says yes and asks him for two months&#x27; deposit. Álvaro signs, calls his friend Nuria and asks her whether she wants to share the flat with him.</p></details></div><div class="story-p" id="story-p4"><p><span class="ss" id="story-s6">La <span class="lw" data-card="v5" title="la mudanza: move (to a new home)">mudanza</span> es un domingo de lluvia.</span> <span class="ss" id="story-s7">Entre cajas y risas aparece el <span class="lw" data-card="v6" title="el vecino: neighbour">vecino</span> del cuarto con una tortilla: —¡Bienvenidos al edificio!</span> <span class="ss" id="story-s8">Esa noche cenan en el suelo del salón, más felices que nunca.</span></p><details class="story-tr"><summary>Traducción</summary><p lang="en">The move is on a rainy Sunday. Between boxes and laughter, the neighbour from the fourth floor turns up with a tortilla: &#x27;Welcome to the building!&#x27; That night they have dinner on the living-room floor, happier than ever.</p></details></div></article>
+</main></body></html>
