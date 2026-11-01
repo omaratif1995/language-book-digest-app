@@ -1,0 +1,71 @@
+{
+  "code": "ja",
+  "name": "Japanese",
+  "native": "日本語",
+  "voice": "ja-JP-NanamiNeural",
+  "spaces": false,
+  "sections": {
+    "vocabulary": "語彙",
+    "grammar": "文法",
+    "redemittel": "便利な表現",
+    "story": "物語"
+  },
+  "translation": "翻訳",
+  "articles": [],
+  "article_colours": {},
+  "adjective_nouns": false,
+  "noun_plural": false,
+  "first_person": "私",
+  "verb_hint": null,
+  "ui": "en",
+  "sentence_start": "ぁ-ゖゝ-ゟァ-ヺー-ヿ㐀-䶿一-鿿々〆「『A-Z",
+  "abbreviations": [],
+  "bingo": {
+    "function_words": "は が を に で と も の へ や か ね よ から まで より です ます",
+    "verb_endings": [
+      "う",
+      "く",
+      "ぐ",
+      "す",
+      "つ",
+      "ぬ",
+      "ぶ",
+      "む",
+      "る"
+    ]
+  },
+  "speech": {
+    "spellchecker": null,
+    "letters": "A-Za-zぁ-ゖゝ-ゟァ-ヺー-ヿ㐀-䶿一-鿿々〆",
+    "upper": "A-Z",
+    "lower": "a-z",
+    "special": "ぁ-ゖゝ-ゟァ-ヺー-ヿ㐀-䶿一-鿿々〆",
+    "german_notation": false,
+    "words": "",
+    "ambiguous": "",
+    "articles": "",
+    "lone": [],
+    "speakable": [
+      [
+        "→",
+        "、"
+      ],
+      [
+        "↔",
+        "、反対は "
+      ],
+      [
+        "≈",
+        "、だいたい "
+      ],
+      [
+        " + ",
+        "、"
+      ],
+      [
+        " / ",
+        "、または "
+      ]
+    ]
+  }
+}

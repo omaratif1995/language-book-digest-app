@@ -15,6 +15,7 @@ import html
 import json
 from pathlib import Path
 import re
+import unicodedata
 
 FOLDER = Path(__file__).resolve().parents[1] / "languages"
 REQUIRED = {"code", "name", "native", "voice", "sections", "translation", "articles", "article_colours", "ui", "bingo",
@@ -56,8 +57,71 @@ def profile(tag="de"):
         require(set(data["article_colours"]) == set(data["articles"])
                 and set(data["article_colours"].values()) <= {"der", "die", "das"},
                 f"languages/{code}.json: every article needs a colour, one of der, die or das")
+        require(data.get("direction", "ltr") in ("ltr", "rtl"), f"languages/{code}.json: direction is ltr or rtl")
+        require(data.get("spaces", True) in (True, False), f"languages/{code}.json: spaces is true or false")
         _cache[code] = data
     return _cache[code]
+
+
+# ---------------------------------------------------------------- words and sentences ---
+WORD_CHARS = 2          # without spaces between words (Japanese, Chinese), about two characters make a word
+_rules = {}
+
+
+def spaced(prof):
+    """Whether the language puts spaces between its words (Japanese, Chinese and Thai do not)."""
+    return prof.get("spaces", True)
+
+
+def _in_word(char):
+    return char.isalnum() or unicodedata.category(char)[0] == "M"      # letters, digits and the marks on them (ً, ि)
+
+
+def word_spans(prof, text):
+    """The words of a text, casefolded, with where each one stands: runs of letters and digits, or in a language
+    without spaces every single character (WORD_CHARS of them count as one word)."""
+    text = text.casefold()
+    if not spaced(prof):
+        return [(char, at, at + 1) for at, char in enumerate(text) if char.isalnum()]
+    spans, start = [], None
+    for at, char in enumerate(text + " "):
+        if _in_word(char):
+            start = at if start is None else start
+        elif start is not None:
+            spans.append((text[start:at], start, at))
+            start = None
+    return spans
+
+
+def words(prof, text):
+    return [word for word, _, _ in word_spans(prof, text)]
+
+
+def word_count(prof, text):
+    """How many words a text has: what stands between spaces, or its letters / WORD_CHARS without spaces."""
+    return len(text.split()) if spaced(prof) else round(len(word_spans(prof, text)) / WORD_CHARS)
+
+
+def run_length(prof, n):
+    """n words, counted the way word_spans counts them."""
+    return n if spaced(prof) else n * WORD_CHARS
+
+
+def sentence_rules(prof):
+    """(end, not_end) for story sentences: a sentence ends at . ! ? … ؟ before the next sentence's first letter
+    (`sentence_start` of the profile: capitals in German, also ¿ ¡ — in Spanish, any letter in Arabic), or at 。！？
+    in a language without spaces; a full stop after an abbreviation of the profile, a single letter or a day's number
+    (am 3. Mai) ends none."""
+    code = prof["code"]
+    if code not in _rules:
+        letters = prof["speech"]["letters"]
+        others = "".join("|" + re.escape(word) for word in prof.get("abbreviations", []))
+        end = r"[.!?…؟]+[“”\"»«’)]*(?=\s+[„“\"«»(" + prof.get("sentence_start", prof["speech"]["upper"]) + r"0-9–-])"
+        if not spaced(prof):
+            end = r"[。！？]+[」』）)]*|" + end
+        not_end = rf"(?:(?<![{letters}])[{letters}]|(?<!\d)\d{{1,2}}{others})\.\Z"
+        _rules[code] = (re.compile(end), re.compile(not_end))
+    return _rules[code]
 
 
 def article_class(prof, article):
@@ -131,6 +195,8 @@ UI_EN = {
     "Richtig:": "Right:", "✓ Genau!": "✓ Exactly!", "So sagt man es:": "That's how you say it:",
     "Tippe ein deutsches Wort und dann seine Bedeutung.": "Tap a {name} word, then its meaning.", "Runde": "Round",
     "Zeit:": "Time:", "s · Fehler:": "s · Mistakes:",
+    "★ {n} von {m} Sternen": "★ {n} of {m} stars", "Fehler üben ({n})": "Practise mistakes ({n})",
+    "Nur deine Fehler aus der letzten Runde.": "Only your mistakes from the last round.", "🔥 Beste Serie:": "🔥 Best streak:",
     # listening
     "Ganze Lektion": "Whole lesson", "Nur Beispiele": "Examples only", "▶ Ganze Lektion": "▶ Whole lesson",
     "▶ Nur Beispiele": "▶ Examples only", "wird vorbereitet …": "preparing …", "⟳ Runde": "⟳ Round",

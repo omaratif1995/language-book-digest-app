@@ -134,7 +134,7 @@ def build_plan(lesson, voices=None, narration=None):
         add(story["title"], "de", "story-title")
         number = 0
         for paragraph in story["paragraphs"]:
-            for sentence in story_sentences(paragraph["de"]):
+            for sentence in story_sentences(paragraph["de"], language.profile(lesson.get("target_language", "de"))):
                 number += 1
                 add(sentence, "de", f"story-s{number}")
     return clips, sequence, controls, explain
@@ -159,7 +159,7 @@ def lesson_plan(lesson, voices=None, narration=None):
     number = 0
     for paragraph in (lesson.get("story") or {}).get("paragraphs", []):
         ids = []
-        for _sentence in story_sentences(paragraph["de"]):
+        for _sentence in story_sentences(paragraph["de"], language.profile(lesson.get("target_language", "de"))):
             number += 1
             ids.append(controls[f"story-s{number}"])
         plan["story"].append(ids)

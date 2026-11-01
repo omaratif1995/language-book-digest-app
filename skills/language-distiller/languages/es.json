@@ -22,6 +22,21 @@
   "first_person": "yo",
   "verb_hint": null,
   "ui": "en",
+  "sentence_start": "¿¡—A-ZÁÉÍÓÚÜÑ",
+  "abbreviations": [
+    "Sr",
+    "Sra",
+    "Srta",
+    "Dr",
+    "Dra",
+    "Ud",
+    "Uds",
+    "Avda",
+    "etc",
+    "pág",
+    "núm",
+    "aprox"
+  ],
   "bingo": {
     "function_words": "a al algo algunas algunos allí ante antes aquí bien como con contra cual cuando de del desde donde durante e el ella ellas ellos en entre era eres es esa ese eso esta estamos estar estas este esto estos estoy está están estás fue ha han has hasta hay he hemos la las le les lo los me mi mis mucho muchos muy más mí nada ni no nos nosotros o os otra otras otro otros para pero poco por porque que quien quienes qué se ser sin sobre somos son soy su sus sí también tanto te ti todo todos tu tus tú un una uno unos y ya yo él",
     "verb_endings": [

@@ -296,8 +296,8 @@ class Clip:
 
 def _pause_after(chunk):
     """A join should sound like one speaker: a breath inside a sentence, a real pause after it."""
-    end = chunk.rstrip(" «»\"'")[-1:]
-    return 0.45 if end in ".!?" else 0.3 if end in ":;" else 0.2 if end in ",–—" else 0.08
+    end = chunk.rstrip(" «»\"'」』")[-1:]
+    return 0.45 if end in ".!?。！？؟" else 0.3 if end in ":;：；؛" else 0.2 if end in ",–—、，،" else 0.08
 
 
 def make_clip(text, kind, voices):

@@ -1,0 +1,61 @@
+{
+  "code": "ar",
+  "name": "Arabic",
+  "native": "العربية",
+  "voice": "ar-SA-ZariyahNeural",
+  "direction": "rtl",
+  "sections": {
+    "vocabulary": "المفردات",
+    "grammar": "القواعد",
+    "redemittel": "عبارات مفيدة",
+    "story": "القصة"
+  },
+  "translation": "الترجمة",
+  "articles": [],
+  "article_colours": {},
+  "adjective_nouns": false,
+  "first_person": "أنا",
+  "verb_hint": null,
+  "ui": "en",
+  "sentence_start": "ؠ-ٟٮ-ۓە٠-٩A-Z",
+  "abbreviations": [],
+  "bingo": {
+    "function_words": "في من إلى على عن مع أو ثم لا لم لن ما هل قد هو هي هم أنا أنت نحن هذا هذه ذلك تلك التي الذي كل بعد قبل عند",
+    "verb_endings": [],
+    "inside_words": true
+  },
+  "speech": {
+    "spellchecker": "ar",
+    "letters": "A-Za-zؠ-ٟٮ-ۓە",
+    "upper": "A-Z",
+    "lower": "a-z",
+    "special": "ؠ-ٟٮ-ۓە",
+    "german_notation": false,
+    "words": "في من إلى على عن مع هذا هذه ذلك هو هي أنا أنت نحن هم كان كانت لا لم لن ما ماذا أين متى كيف لماذا هل نعم أو ثم لكن قد كل بعض",
+    "ambiguous": "",
+    "articles": "",
+    "lone": [],
+    "speakable": [
+      [
+        "→",
+        " يصبح "
+      ],
+      [
+        "↔",
+        "، عكسه "
+      ],
+      [
+        "≈",
+        "، تقريبًا "
+      ],
+      [
+        " + ",
+        "، "
+      ],
+      [
+        " / ",
+        " أو "
+      ]
+    ]
+  }
+}

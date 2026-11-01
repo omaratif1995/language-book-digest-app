@@ -27,6 +27,27 @@
     "note": "Verb cards without a Perfekt form (hat/ist + Partizip II)"
   },
   "ui": "de",
+  "sentence_start": "A-ZÄÖÜ",
+  "abbreviations": [
+    "Dr",
+    "Fr",
+    "Hr",
+    "Nr",
+    "Str",
+    "Prof",
+    "St",
+    "ca",
+    "bzw",
+    "usw",
+    "etc",
+    "evtl",
+    "ggf",
+    "inkl",
+    "vgl",
+    "Tel",
+    "Mio",
+    "Mrd"
+  ],
   "bingo": {
     "function_words": "aber als am an ans auch auf aus bei beim bin bis bist darf das dass dein deine dem den denn der des dich die dir du durch dürfen ein eine einem einen einer eines er es etwas euch euer für gegen habe haben hast hat hatte ich ihm ihn ihnen ihr im in ins ist jemand kann kein keine keinem keinen keiner können mag man mein meine mich mir mit muss möchte müssen nach nicht noch nur ob oder ohne schon sehr sein seine seit sich sie sind so soll sollen um und uns unser unter vom von vor war waren wenn werden wie will wir wird wollen wurde zu zum zur über",
     "verb_endings": [

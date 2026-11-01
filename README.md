@@ -4,7 +4,7 @@
 
 Language Distiller is an [Agent Skill](https://agentskills.io): a folder with instructions and Python scripts that an AI assistant follows. It works with Claude Code, OpenAI Codex, GitHub Copilot and other assistants that read the open Agent Skills format.
 
-**Languages:** German is the reference language: everything was built and tested with German B1 material. Spanish has a profile and a [two-unit sample course](examples/sample-course-es/). Any other language needs a short language profile first (its section names, articles, voice and a few word lists), which the assistant writes with you; see [languages.md](skills/language-distiller/references/languages.md). It works for languages written left to right with spaces between words.
+**Languages:** German is the reference language: everything was built and tested with German B1 material. Spanish has a profile and a [two-unit sample course](examples/sample-course-es/). Arabic (written right to left) and Japanese (no spaces between words) have profiles, each tested with a small lesson. Any other language needs a short language profile first (its section names, articles, voice and a few word lists), which the assistant writes with you; see [languages.md](skills/language-distiller/references/languages.md).
 
 You give it a lesson you're studying: pages from a course book you own, your teacher's lecture slides, a handout, or your own notes. It gives back:
 
@@ -16,7 +16,7 @@ You give it a lesson you're studying: pages from a course book you own, your tea
 2. **One offline study app for the whole course**, a single HTML file that runs on your phone (in German for a German course, in English for other languages):
    - **Lernen:** every sheet and story, with 🔊 neural audio on every word, example, phrase and story sentence. A 🔊 tap **repeats the sentence until you tap again**, so it can sink in. "🎧 Anhören" plays the whole lesson, **only the examples**, or the story, each sentence 1–5 times, once or endlessly, while the app follows along on screen. Pause, go back or skip ahead at any time, and pick up where you stopped. Listening keeps going with the screen off, with ⏯ ⏮ ⏭ on the lock screen and your headphones.
    - **Üben:** flashcards with spaced repetition and one tap per card. Tap ✓ when you know it, and the next card appears; tap ✗ when you don't, and the answer opens. Practise in short rounds of 10, with a daily goal and a streak.
-   - **Spielen:** five quick games per lesson for days without motivation: **Hör-Bingo** (hear a sentence, find a word of your card in it), **Wortpaare** (match words and meanings against the clock), **Satzbau** (put the words in order), **Der · Die · Das** (60-second article sprint, for languages with articles) and **Was sagt man?** (pick the phrase that fits the situation). Every round has one clear right answer, and a mistake stays on screen until you have read it.
+   - **Spielen:** five quick games per lesson for days without motivation: **Hör-Bingo** (hear a sentence, find a word of your card in it), **Wortpaare** (match words and meanings against the clock), **Satzbau** (put the words in order), **Der · Die · Das** (60-second article sprint, for languages with articles) and **Was sagt man?** (pick the phrase that fits the situation). Every round has one clear right answer, and a mistake stays on screen until you have read it. Each game shows your progress and your 🔥 streak, and ends with **Fehler üben**: a quick round of just the ones you missed.
 3. **MP3 listening episodes**, one per lesson (15–30 minutes): the lesson, a pause to repeat, English, and the story at the end. An optional examples-only set repeats every example sentence for the commute.
 
 ![The study app: lesson view, grammar with spoken explanation, flashcard, answer](docs/app-screens.png)
@@ -88,7 +88,7 @@ The skill's [references](skills/language-distiller/references/) document the dat
 
 ## Good to know
 
-- **Languages:** German is tested with real B1 material. Spanish has a complete sample course, reviewed by its author but not yet by a native speaker. For any other language, the first lesson is also a test: check its examples and voice with a speaker of the language. Right-to-left scripts and languages without spaces between words aren't supported yet.
+- **Languages:** German is tested with real B1 material. Spanish has a complete sample course, reviewed by its author but not yet by a native speaker. Arabic and Japanese are tested with one small lesson each, not yet with a real course. For any other language, the first lesson is also a test: check its examples and voice with a speaker of the language. Thai and other languages without sentence punctuation aren't supported yet.
 - **iPhone:** the Files and messenger previews don't run the app's buttons. Open the file in a browser that runs local files, or host it privately. The MP3s play everywhere.
 - **Screen off:** the app joins a listening session into one continuous audio track with lock-screen and headphone buttons (⏯ ⏮ ⏭), so playback keeps going when the screen turns off. The MP3 episodes also work in any music player.
 - **A study aid, not a guarantee.** A digest replaces rereading, not practice. Listening to real-speed speech, speaking with a partner and timed exam practice are still on you.
@@ -97,7 +97,7 @@ The skill's [references](skills/language-distiller/references/) document the dat
 
 ```text
 skills/language-distiller/SKILL.md         the skill: workflow and quality rules
-skills/language-distiller/languages/       one profile per target language (de, es)
+skills/language-distiller/languages/       one profile per target language (de, es, ar, ja)
 skills/language-distiller/references/      authoring rules, data contract, languages, audio and app design
 skills/language-distiller/scripts/         validator, renderer, speech, audio and app builders, tests
 examples/sample-course/                    two original German sample lessons, their sheets and the app
@@ -105,7 +105,7 @@ examples/sample-course-es/                 the same for Spanish
 .claude-plugin/                            Claude Code plugin and marketplace entry
 ```
 
-Run the tests with `python -m unittest` inside `scripts/`. The speech tests need `pyspellchecker` and are skipped without it. To check a built app's games in a real browser, run `node skills/language-distiller/scripts/inspect_games.mjs <chrome> <app.html>`.
+Run the tests with `python -m unittest` inside `scripts/`. The speech tests need `pyspellchecker` and are skipped without it. To check a built app's games in a real browser, run `node skills/language-distiller/scripts/inspect_games.mjs <chrome> <app.html>`, or paste `check_games.js` into the browser console with the app open.
 
 ## License
 

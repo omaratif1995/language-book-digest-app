@@ -186,16 +186,14 @@ def learner_strings(value):
                 yield from learner_strings(item)
 
 
-# A sentence ends at . ! ? or … (plus closing quotes) before the next sentence's capital, digit, quote or dash.
-_SENTENCE_END = re.compile(r"[.!?…]+[“”\"»«’)]*(?=\s+[„“\"«»(A-ZÄÖÜ0-9–-])")
-_NO_SENTENCE_END = re.compile(r"(?:(?<![A-Za-zÄÖÜäöüß])[A-Za-zÄÖÜäöüß]|(?<!\d)\d{1,2}|Dr|Fr|Hr|Nr|Str|Prof|St|ca|bzw|usw|etc|evtl|ggf|inkl|vgl|Tel|Mio|Mrd)\.\Z")
-
-
-def story_sentences(text):
-    """Split one story paragraph into sentences (stable, so audio clips and highlights line up)."""
+def story_sentences(text, prof=None):
+    """Split one story paragraph into sentences (stable, so audio clips and highlights line up). A sentence ends at
+    . ! ? or … (plus closing quotes) before the next sentence's first letter, digit, quote or dash; the language's
+    profile says which letters start a sentence and which abbreviations end none (language.sentence_rules)."""
+    end, not_end = language.sentence_rules(prof or language.profile("de"))
     sentences, start = [], 0
-    for match in _SENTENCE_END.finditer(text):
-        if _NO_SENTENCE_END.search(text[start:match.end()]):
+    for match in end.finditer(text):
+        if not_end.search(text[start:match.end()]):
             continue                                  # z. B., Dr., am 3. Mai: not the end of a sentence
         sentences.append(text[start:match.end()].strip())
         start = match.end()
@@ -204,10 +202,10 @@ def story_sentences(text):
     return sentences
 
 
-def sentence_spans(text):
+def sentence_spans(text, prof=None):
     """(start, end) of each story sentence inside its paragraph."""
     spans, cursor = [], 0
-    for sentence in story_sentences(text):
+    for sentence in story_sentences(text, prof):
         start = text.index(sentence, cursor)
         spans.append((start, start + len(sentence)))
         cursor = start + len(sentence)
@@ -229,15 +227,15 @@ def validate_story(lesson, nodes, node_sections, blockers, notes):
     require(set(story) <= {"title", "paragraphs"}, "lesson.story accepts only title and paragraphs")
     field(story, "title", "lesson.story")
     paragraphs = seq(story.get("paragraphs"), "lesson.story.paragraphs", STORY_MIN_PARAGRAPHS)
-    used, words = {}, 0
+    used, words, prof = {}, 0, language.profile(lesson["target_language"])
     for index, paragraph in enumerate(paragraphs, 1):
         where = f"story paragraph {index}"
         obj(paragraph, where)
         require(set(paragraph) <= {"de", "en", "uses"}, f"{where}: accepts only de, en and uses")
         text = field(paragraph, "de", where)
         field(paragraph, "en", where)
-        words += len(text.split())
-        bounds = sentence_spans(text)
+        words += language.word_count(prof, text)
+        bounds = sentence_spans(text, prof)
         for use_index, use in enumerate(seq(paragraph.get("uses", []), f"{where}.uses")):
             obj(use, f"{where}.uses[{use_index}]")
             card, form = field(use, "card", where), field(use, "form", where)
@@ -272,33 +270,37 @@ def validate_story(lesson, nodes, node_sections, blockers, notes):
         notes.append(f"Story has {words} words; 250-600 usually reads well in one sitting")
 
 
-def _words(text):
-    return re.findall(r"[a-zäöüß0-9]+", text.casefold())
+def runs(words, n):
+    """Every run of n words in a row."""
+    return {tuple(words[i:i + n]) for i in range(len(words) - n + 1)}
 
 
 def example_notes(lesson, inventory, notes):
-    """Hints for the language review: flat or copied examples, verbs without Perfekt. Never blockers."""
+    """Hints for the language review: flat or copied examples, verbs without Perfekt. Never blockers.
+    Words are counted the language's way (language.words): in Japanese or Chinese two characters make a word."""
+    prof = language.profile(lesson["target_language"])
+    n, first = language.run_length(prof, 6), prof.get("first_person")
     evidence = set()
     for item in inventory.get("items", []):
         for source in item.get("sources", []):
-            words = _words(source.get("evidence", ""))
-            evidence.update(tuple(words[i:i + 6]) for i in range(len(words) - 5))
+            evidence |= runs(language.words(prof, source.get("evidence", "")), n)
     short, copied, starts = [], [], []
     for section in ("vocabulary", "grammar", "redemittel"):
         for record in lesson[section]:
             for example in record["examples"]:
-                words = _words(example["de"])
-                starts.append(words[0] if words else "")
-                if len(words) < 5:
+                words = language.words(prof, example["de"])
+                if language.spaced(prof):
+                    starts.append(words[0] if words else "")
+                else:
+                    starts.append(first if first and example["de"].strip().startswith(first) else "")
+                if language.word_count(prof, example["de"]) < 5:
                     short.append(record["id"])
-                if section != "redemittel" and any(tuple(words[i:i + 6]) in evidence for i in range(len(words) - 5)):
+                if section != "redemittel" and runs(words, n) & evidence:
                     copied.append(record["id"])
     if short:
         notes.append("Very short examples (check they are not too simple): " + ", ".join(sorted(set(short))))
     if copied:
         notes.append("Examples that repeat six or more source words in a row (write your own): " + ", ".join(sorted(set(copied))))
-    prof = language.profile(lesson["target_language"])
-    first = prof.get("first_person")
     if first and starts and starts.count(first) / len(starts) > 0.4:
         notes.append(f"{starts.count(first)} of {len(starts)} examples start with «{first.capitalize()}»; vary the subjects")
     hint = prof.get("verb_hint")                  # German: the Perfekt belongs on every verb card
@@ -308,33 +310,36 @@ def example_notes(lesson, inventory, notes):
         notes.append(hint["note"] + ": " + ", ".join(missing))
 
 
-def copied_run(text, protected, source, n=6):
-    """The first run of n words that `text` shares with the source, unless it is mostly the card's own target phrase.
+def copied_run(text, protected, source, prof=None):
+    """The first run of six words that `text` shares with the source, unless it is mostly the card's own target phrase.
     Only phrases of three or more words count as protected (a Redemittel frame); single target words do not."""
-    words = [(m.group(0), m.start(), m.end()) for m in re.finditer(r"[a-zäöüß0-9]+", text.casefold())]
-    phrases = [phrase for phrase in protected if len(re.findall(r"\w+", phrase)) >= 3]
+    prof = prof or language.profile("de")
+    n, joiner = language.run_length(prof, 6), " " if language.spaced(prof) else ""
+    words = language.word_spans(prof, text)
+    phrases = [phrase for phrase in protected if language.word_count(prof, phrase) >= 3]
     spans = [(m.start(), m.end()) for phrase in phrases for m in re.finditer(re.escape(phrase.casefold()), text.casefold())]
     for i in range(len(words) - n + 1):
         run = words[i:i + n]
         if tuple(w for w, _, _ in run) in source:
-            if sum(any(a <= s and e <= b for a, b in spans) for _, s, e in run) < 4:
-                return " ".join(w for w, _, _ in run)
+            if sum(any(a <= s and e <= b for a, b in spans) for _, s, e in run) < n * 2 // 3:
+                return joiner.join(w for w, _, _ in run)
     return None
 
 
 def source_copy_notes(lesson, source_text, notes):
-    """Learner German must be the learner's own: report examples and story sentences that copy six source words."""
-    words = re.findall(r"[a-zäöüß0-9]+", source_text.casefold())
-    source = {tuple(words[i:i + 6]) for i in range(len(words) - 5)}
+    """Learner text must be the learner's own: report examples and story sentences that copy six source words
+    (twelve characters in a language without spaces)."""
+    prof = language.profile(lesson["target_language"])
+    source = runs(language.words(prof, source_text), language.run_length(prof, 6))
     found = []
     for section in ("vocabulary", "grammar", "redemittel"):
         for record in lesson[section]:
             for index, example in enumerate(record["examples"]):
-                run = copied_run(example["de"], example["targets"], source)
+                run = copied_run(example["de"], example["targets"], source, prof)
                 if run:
                     found.append(f'{record["id"]}#{index} «{run}»')
     for index, paragraph in enumerate((lesson.get("story") or {}).get("paragraphs", []), 1):
-        run = copied_run(paragraph["de"], [use["form"] for use in paragraph.get("uses", [])], source)
+        run = copied_run(paragraph["de"], [use["form"] for use in paragraph.get("uses", [])], source, prof)
         if run:
             found.append(f"story p{index} «{run}»")
     if found:
@@ -643,7 +648,7 @@ def story_html(lesson, node_sections):
     for index, paragraph in enumerate(story["paragraphs"], 1):
         text, marks = paragraph["de"], story_marks(paragraph, node_sections)
         sentences = []
-        for start, end in sentence_spans(text):
+        for start, end in sentence_spans(text, prof):
             number += 1
             cursor, inner = start, []
             for mark_start, mark_end, card in marks:
@@ -659,6 +664,12 @@ def story_html(lesson, node_sections):
     return "".join(parts)
 
 
+# A right-to-left language (Arabic, Hebrew): the sheet stays left to right for its English, and every line of text
+# takes its direction from its first letter, so an Arabic example reads right to left beside its English translation.
+RTL_CSS = ("h1,h3,.de,.ex,.tr,.forms,.head,.meaning,.when,.variant,.patterns p,.contrast,.story-p p,.story-tr p,"
+           ".story h3{unicode-bidi:plaintext}")
+
+
 def render_html(bundle, draft=False, template_path=TEMPLATE):
     require(draft or (bundle.reviewed and bundle.source_verified),
             "Reviewed rendering needs a passing current review and --source; otherwise use --draft")
@@ -672,8 +683,10 @@ def render_html(bundle, draft=False, template_path=TEMPLATE):
     parts = ['<!DOCTYPE html>', f'<html lang="{esc(lesson["target_language"])}"><head>',
              '<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">',
              f'<meta name="study-pack-status" content="{status}">',
-             f'<title>{esc(lesson["lesson_id"])} — {esc(lesson["title"])}</title>', style.group(0),
-             '</head><body><main class="wrap">',
+             f'<title>{esc(lesson["lesson_id"])} — {esc(lesson["title"])}</title>', style.group(0)]
+    if prof.get("direction") == "rtl":
+        parts.append(f"<style>{RTL_CSS}</style>")
+    parts += ['</head><body><main class="wrap">',
              # The header names level and unit only: the source's title, publisher and ISBN stay in _work.
              f'<header class="hero"><div class="lekt">{esc(lesson["level"])} · {esc(lesson["lesson_id"])}</div><h1>{esc(lesson["title"])}</h1></header>',
              f'<h2><span class="num">1</span> {titles["vocabulary"]}</h2><div class="rule-under"></div>']

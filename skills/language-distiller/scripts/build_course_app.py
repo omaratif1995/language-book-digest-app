@@ -101,20 +101,30 @@ def accepted_articles(record, prof=None):
     return [a for a in prof["articles"] if a in found]
 
 
-def word_forms(record, lesson, small=frozenset()):
+def word_forms(record, lesson, small=frozenset(), prof=None):
     """The forms a vocabulary card can take in a sentence: its lemma and every form the lesson marks for it,
-    without the small words around them (`small`, from the language profile: sich, an, hat …)."""
+    without the small words around them (`small`, from the language profile: sich, an, hat …). A language without
+    spaces keeps each form whole (市場, 料理する)."""
+    prof = prof or language.profile("de")
     texts = [record["lemma"]] + [target for example in record["examples"] for target in example.get("targets", [])]
     texts += [use["form"] for paragraph in (lesson.get("story") or {}).get("paragraphs", [])
               for use in paragraph.get("uses", []) if use["card"] == record["id"]]
-    return {token for text in texts for token in re.findall(r"\w+", text.casefold())
-            if len(token) > 2 and token not in small}
+    if not language.spaced(prof):
+        return {text.casefold().strip() for text in texts if text.strip() and text.casefold().strip() not in small}
+    return {token for text in texts for token in language.words(prof, text) if len(token) > 2 and token not in small}
 
 
-def mentions(sentence, forms, endings=("en", "rn", "ln")):
+def mentions(sentence, forms, endings=("en", "rn", "ln"), prof=None):
     """Whether a sentence contains one of the forms, or a near form of a long one (erinnern: erinnert, erinnerte;
-    `endings` are the language's verb endings)."""
-    tokens = re.findall(r"\w+", sentence.casefold())
+    `endings` are the language's verb endings). Where words have no spaces between them (Japanese) or take small
+    words in front (Arabic و، ب، ال: `inside_words`), a form counts anywhere in the sentence, a verb also by its stem
+    (飲む: 飲みます); counting a word too often only leaves a sentence out of Hör-Bingo."""
+    prof = prof or language.profile("de")
+    text = sentence.casefold()
+    if not language.spaced(prof) or prof["bingo"].get("inside_words"):
+        stems = {form[:-len(end)] for form in forms for end in endings if form.endswith(end) and len(form) > len(end)}
+        return any(form in text for form in set(forms) | stems)
+    tokens = language.words(prof, text)
     for form in forms:
         stem = form[:-2] if len(form) >= 7 and form.endswith(tuple(endings)) else None
         if any(token == form or (stem and token.startswith(stem) and len(token) <= len(form) + 2) for token in tokens):
@@ -122,10 +132,15 @@ def mentions(sentence, forms, endings=("en", "rn", "ln")):
     return False
 
 
-def puzzle_sentence(text):
+def puzzle_sentence(text, prof=None):
     """A sentence for Satzbau: 5 to 9 words and one plain sentence (no quotes, colons, brackets or dashes), so the
-    words have one clear order and nothing but words is left to place."""
-    return 5 <= len(text.split()) <= 9 and not re.search(r'[„“"«»…:;/()\[\]]| – ', text)
+    words have one clear order and nothing but words is left to place. Without spaces the app finds the words
+    (Intl.Segmenter) and keeps sentences of 5 to 9; here only the length and the marks are checked."""
+    if re.search(r'[„“"«»…:;/()\[\]「」『』（）：；]| – ', text):
+        return False
+    if prof and not language.spaced(prof):
+        return 4 <= len(text.strip()) <= 40
+    return 5 <= len(text.split()) <= 9
 
 
 def game_data(lesson, unit_plan=None):
@@ -137,16 +152,19 @@ def game_data(lesson, unit_plan=None):
     prof = language.profile(lesson.get("target_language", "de"))
     small, endings = set(prof["bingo"]["function_words"].split()), prof["bingo"]["verb_endings"]
     vocabulary = lesson["vocabulary"]
-    forms = [word_forms(rec, lesson, small) for rec in vocabulary]
+    forms = [word_forms(rec, lesson, small, prof) for rec in vocabulary]
+
+    def js(text, at):                                 # a position as JavaScript counts it (UTF-16: 𠮟 is two)
+        return len(text[:at].encode("utf-16-le")) // 2
 
     def example(record, index):
         item = record["examples"][index]
         return {"de": item["de"], "en": item["en"], "au": controls.get(f'{record["id"]}-ex-{index}', ""),
-                "t": [list(span) for span in study_pack.target_spans(item, record["id"])]}
+                "t": [[js(item["de"], a), js(item["de"], b)] for a, b in study_pack.target_spans(item, record["id"])]}
 
     def word(position, rec):
         examples = [dict(example(rec, index), m=[other for other, found in enumerate(forms)
-                                                 if other != position and mentions(item["de"], found, endings)])
+                                                 if other != position and mentions(item["de"], found, endings, prof)])
                     for index, item in enumerate(rec["examples"])]
         entry = {"a": rec.get("article", ""), "w": rec["lemma"], "g": rec["gloss"], "h": controls.get(f'{rec["id"]}-head', ""),
                  "x": examples}
@@ -160,7 +178,7 @@ def game_data(lesson, unit_plan=None):
         "r": [{"f": rec["frame"], "g": rec["gloss"], "w": rec["when"], "reg": rec.get("register", ""), "grp": rec["group"],
                "au": controls.get(f'{rec["id"]}-head', ""), "x": example(rec, 0)} for rec in lesson["redemittel"]],
         "s": [example(rec, index) for section in ("vocabulary", "grammar", "redemittel")
-              for rec in lesson[section] for index, item in enumerate(rec["examples"]) if puzzle_sentence(item["de"])]}
+              for rec in lesson[section] for index, item in enumerate(rec["examples"]) if puzzle_sentence(item["de"], prof)]}
 
 
 def compressed(cache, clip_id, bitrate, ff):
@@ -271,13 +289,25 @@ APP_CSS = r"""
   .g-desc{font-size:13.5px;color:var(--muted)}
   .g-best{font-size:13px;color:var(--yellow);margin-top:2px}
   .g-random{font:inherit;font-weight:800;font-size:16px;min-height:54px;border-radius:14px;cursor:pointer;background:var(--accent);color:#1a1030;border:0}
-  .g-head{display:flex;align-items:center;gap:10px;margin:0 0 10px}
+  .g-total{color:var(--yellow);font-size:14px;font-weight:700;margin:-2px 0 2px}
+  .g-head{display:flex;align-items:center;gap:10px;margin:0 0 6px}
+  .g-prog{display:flex;align-items:center;gap:10px;height:24px;margin:0 0 10px}
+  .g-rail{flex:1;height:7px;border-radius:99px;background:var(--card);overflow:hidden}
+  .g-rail i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--accent),#34d399);transition:width .35s ease}
+  .g-clock i{width:100%;background:linear-gradient(90deg,#34d399,#f2d36b);transition:width 1s linear}
+  .g-run{min-width:3.2em;text-align:right;font-weight:800;font-size:15px;color:#fdba74;white-space:nowrap}
+  .g-run.bump{animation:bump .4s ease}
+  .g-drill{color:#fdba74;font-weight:700;font-size:14px;margin:0 0 8px}
+  .win{animation:win .45s ease}
+  @keyframes win{40%{transform:scale(1.06)}}
+  @keyframes bump{40%{transform:scale(1.35)}}
   .g-title{font-size:20px;font-weight:800;flex:1}
   .g-info{color:var(--muted);font-size:14px;white-space:nowrap}
   .g-close{font:inherit;width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
   .g-acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
   .g-acts button{flex:1;min-height:50px;font:inherit;font-weight:700;font-size:16px;border-radius:14px;cursor:pointer;background:var(--card);color:var(--ink);border:1px solid var(--line)}
   .g-acts .main{background:var(--accent);color:#1a1030;border-color:var(--accent)}
+  .g-acts .g-retry{flex-basis:100%}
   .g-end{text-align:center;padding:16px 4px}
   .g-end p{margin:6px 0;color:var(--muted)}
   .g-big{font-size:58px;line-height:1.1}
@@ -310,8 +340,6 @@ APP_CSS = r"""
   .s-tile.used{visibility:hidden}
   .s-tile.hint{border-color:var(--yellow);box-shadow:0 0 0 3px rgba(242,211,107,.35)}
   .s-fb{margin-top:10px;min-height:24px}
-  .a-time{height:9px;border-radius:99px;background:var(--card);overflow:hidden;margin-bottom:10px}
-  .a-time i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#34d399,#f2d36b);transition:width 1s linear}
   .a-score{text-align:center;color:var(--muted);margin-bottom:8px;min-height:22px}
   .a-card{min-height:156px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;border-radius:18px;
           background:var(--card);border:2px solid var(--line);padding:16px;transition:border-color .15s}
@@ -335,7 +363,7 @@ APP_CSS = r"""
           background:var(--card);color:var(--ink);border:2px solid var(--line);overflow-wrap:anywhere}
   .p-en{font-weight:600;font-size:14.5px;color:#c7d2fe}
   .p-card.sel{border-color:var(--yellow);box-shadow:0 0 0 3px rgba(242,211,107,.3)}
-  .p-card.done{opacity:.3;border-color:#34d399;cursor:default}
+  .p-card.done{opacity:.3;border-color:#34d399;cursor:default;transition:opacity .35s .3s}
   .shake{animation:shake .35s}
   @keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
   @keyframes hint{50%{box-shadow:0 0 0 5px rgba(242,211,107,.45)}}
@@ -343,8 +371,13 @@ APP_CSS = r"""
   .confetti{position:fixed;inset:0;pointer-events:none;z-index:55;overflow:hidden}
   .confetti i{position:absolute;top:-14px;width:9px;height:14px;border-radius:2px;animation:fall linear forwards}
   @keyframes fall{to{transform:translateY(108vh) rotate(600deg)}}
-  @media(prefers-reduced-motion:reduce){.fc,.fc.enter,.fc .back,.tr-bar i{transition:none;animation:none}.shake,.b-cell.hint,.b-bingo{animation:none}}
+  @media(prefers-reduced-motion:reduce){.fc,.fc.enter,.fc .back,.tr-bar i{transition:none;animation:none}.shake,.b-cell.hint,.b-bingo,.win,.g-run.bump{animation:none}}
 """
+
+# A right-to-left language: cards, game words and the listening line take their direction from their first letter
+# (as on the sheet, study_pack.RTL_CSS), and the words of Satzbau line up from the right.
+RTL_APP_CSS = (".front,.q-mean,.q-when,.b-cue,.b-cell,.b-fb div,.s-word,.s-tile,.a-word,.r-opt,.r-fb div,.p-card,#now-t"
+               "{unicode-bidi:plaintext}.r-opt{text-align:start}.s-line,.s-tiles{direction:rtl}")
 
 APP_JS = r"""
 (function(){
@@ -528,11 +561,13 @@ __LISTEN__
     function btn(cls,markup,fn){ var b=el('button',cls,markup); b.type='button'; b.addEventListener('click',function(){ fn(b); }); return b; }
     function say(id){ if(HAS_AUDIO&&S.auto&&id){ stopAll(); clip(id); } }
     function canHear(){ return HAS_AUDIO&&S.auto; }
-    function blip(ok){ if(navigator.vibrate) navigator.vibrate(ok?12:[30,40,30]); if(!S.auto) return;
-      try{ ac=ac||new (window.AudioContext||window.webkitAudioContext)(); var t=ac.currentTime, o=ac.createOscillator(), g=ac.createGain();
-        o.type=ok?'triangle':'sine'; o.frequency.setValueAtTime(ok?587:196,t); o.frequency.exponentialRampToValueAtTime(ok?880:150,t+0.14);
+    function tone(at,from,to,type){
+      try{ ac=ac||new (window.AudioContext||window.webkitAudioContext)(); var t=ac.currentTime+at, o=ac.createOscillator(), g=ac.createGain();
+        o.type=type; o.frequency.setValueAtTime(from,t); o.frequency.exponentialRampToValueAtTime(to,t+0.14);
         g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.12,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+0.28);
         o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+0.3); }catch(e){} }
+    function blip(ok){ if(navigator.vibrate) navigator.vibrate(ok?12:[30,40,30]); if(S.auto) tone(0,ok?587:196,ok?880:150,ok?'triangle':'sine'); }
+    function chord(){ if(S.auto) [523,659,784].forEach(function(f,i){ tone(0.12+i*0.09,f,f*1.01,'triangle'); }); }   /* a streak of 3, 5, 10 … */
     function confetti(){ if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       var c=el('div','confetti'), colors=['#f2d36b','#34d399','#b19ac8','#7f9fbd','#c58fa3'];
       for(var i=0;i<46;i++){ var p=el('i'); p.style.left=(Math.random()*100)+'%'; p.style.background=colors[i%5];
@@ -544,20 +579,46 @@ __LISTEN__
     function word(v){ return (v.a?'<span class="art-'+(COL[v.a]||v.a)+'">'+artLabel(v)+'</span> ':'')+esc(v.w); }
     function unit(){ return sel.value; }
     function data(){ return G[unit()]||{v:[],r:[],s:[]}; }
-    function head(title){ box.innerHTML=''; var h=el('div','g-head'); h.appendChild(el('div','g-title',title)); var info=el('div','g-info','');
-      h.appendChild(info); h.appendChild(btn('g-close','✕',function(){ open(); })); box.appendChild(h); return info; }
+    /* every game: a progress bar, a 🔥 streak of right answers in a row, and at the end a round of just your mistakes */
+    var run=0, top=0, runBox=null, drill=false;
+    function head(title,timed){ box.innerHTML=''; var h=el('div','g-head'); h.appendChild(el('div','g-title',title)); var info=el('div','g-info','');
+      h.appendChild(info); h.appendChild(btn('g-close','✕',function(){ open(); })); box.appendChild(h);
+      var row=el('div','g-prog'), rail=el('div',timed?'g-rail g-clock':'g-rail'); info.bar=el('i'); rail.appendChild(info.bar);   /* a timed game: the bar is the clock */
+      runBox=el('div','g-run',''); row.appendChild(rail); row.appendChild(runBox); box.appendChild(row);
+      if(drill) box.appendChild(el('p','g-drill','Nur deine Fehler aus der letzten Runde.'));
+      run=0; top=0; return info; }
+    function step(info,i,n){ info.textContent=(i+1)+' / '+n; grow(info,i,n); }          /* question i+1 of n */
+    function grow(info,k,n){ info.bar.style.width=Math.min(100,k/n*100)+'%'; }         /* k of n answered */
+    function pulse(e){ if(!e) return; e.classList.remove('win'); void e.offsetWidth; e.classList.add('win'); }
+    function cheer(ok,e){ if(!ok){ run=0; runBox.textContent=''; return; }
+      run++; top=Math.max(top,run); pulse(e); if(run<2) return;
+      runBox.textContent='🔥 '+run; runBox.classList.remove('bump'); void runBox.offsetWidth; runBox.classList.add('bump');
+      if(run===3||run===5||run%10===0) chord(); }
+    function note(list,x){ if(list.indexOf(x)<0) list.push(x); }                       /* a mistake to practise again */
     function stars(n){ return '★★★'.slice(0,n)+'☆☆☆'.slice(0,3-n); }
-    function finish(key,got,score,lines){ stop(); var u=unit(); best[u]=best[u]||{}; var old=best[u][key]||{s:0,p:0}, record=old.p>0&&score>old.p;
-      best[u][key]={s:Math.max(old.s,got),p:Math.max(old.p,score)}; save('games',best);
+    function finish(key,got,score,lines,missed){ stop(); var u=unit(); best[u]=best[u]||{}; var old=best[u][key]||{s:0,p:0}, record=!drill&&old.p>0&&score>old.p;
+      if(!drill){ best[u][key]={s:Math.max(old.s,got),p:Math.max(old.p,score)}; save('games',best); }   /* a mistakes round sets no record */
+      if(top>=3&&key!=='art') lines=lines.concat(['🔥 Beste Serie: '+top]);
       box.innerHTML=''; var m=el('div','g-end'); m.appendChild(el('div','g-big',got>=3?'🏆':got===2?'🎉':'👍'));
       m.appendChild(el('div','g-stars',stars(got)));
       lines.forEach(function(l){ var p=el('p'); p.textContent=l; m.appendChild(p); });
       if(record) m.appendChild(el('p','g-rec','Neuer Rekord!'));
-      var a=el('div','g-acts'); a.appendChild(btn('main','Nochmal',function(){ play(key); })); a.appendChild(btn('','Andere Spiele',function(){ open(); }));
+      var a=el('div','g-acts'), again=missed&&missed.length;
+      if(again) a.appendChild(btn('main g-retry',fill('Fehler üben ({n})',{n:missed.length}),function(){ play(key,missed); }));
+      a.appendChild(btn(again?'':'main','Nochmal',function(){ play(key); })); a.appendChild(btn('','Andere Spiele',function(){ open(); }));
       m.appendChild(a); box.appendChild(m); if(got>=3) confetti(); }
-    function toks(s){ return s.trim().split(/\s+/); }
+    /* Without spaces the browser finds the words (Intl.Segmenter): 。 stays with its word, kana after a kanji belong to it
+       (食|べ → 食べ), and a sentence with a lone kana that is no particle (く|れ|て) was split badly and is left out. */
+    var SEG=CFG.spaces===false&&window.Intl&&Intl.Segmenter?new Intl.Segmenter(d.documentElement.lang,{granularity:'word'}):null, SMALL=CFG.small||[];
+    function toks(s){ s=s.trim(); if(CFG.spaces!==false) return s.split(/\s+/);
+      var out=[], lead=''; if(SEG) Array.from(SEG.segment(s)).forEach(function(p){ var w=p.segment.trim(), last=out[out.length-1]; if(!w) return;
+        if(!p.isWordLike){ if(out.length) out[out.length-1]+=w; else lead+=w; return; }
+        if(last&&/^[ぁ-ゟ]+$/.test(w)&&/[㐀-鿿]$/.test(last)&&SMALL.indexOf(w)<0){ out[out.length-1]+=w; return; }
+        out.push(lead+w); lead=''; });
+      return out; }
+    function broken(ws){ return CFG.spaces===false&&ws.some(function(w){ return /^[ぁ-ヿ]$/.test(w)&&SMALL.indexOf(w)<0; }); }
     function fill(s,o){ return s.replace(/\{(\w+)\}/g,function(m,k){ return o[k]; }); }      /* a sentence with numbers in it */
-    function satzPool(g){ return g.s; }                                     /* the build keeps plain sentences of 5–9 words */
+    function satzPool(g){ return g.s.filter(function(s){ var w=toks(s.de); return w.length>=5&&w.length<=9&&!broken(w); }); }   /* plain sentences of 5–9 words */
     function nouns(g){ return g.v.filter(function(v){ return v.a; }); }
     function pairPool(g){ var seen={}; return g.v.filter(function(v){ var k=(v.g||'').toLowerCase(); if(!k||seen[k]) return false; seen[k]=1; return true; }); }
     var LIST=[
@@ -568,23 +629,27 @@ __LISTEN__
       {k:'red',icon:'💬',name:'Was sagt man?',desc:'Welche Wendung passt zur Situation?',ok:function(g){ return g.r.length>=3; },go:wendung}];
     function open(){ stop(); stopAll(); box.hidden=true; menu.hidden=false; var g=data(), u=unit(); menu.innerHTML='';
       menu.appendChild(el('p','g-lead',esc(CFG.labels[u]||u)+' als Spiel: ein paar Minuten, ganz ohne Lernstress.'));
-      var ready=LIST.filter(function(x){ return x.ok(g); });
+      var ready=LIST.filter(function(x){ return x.ok(g); }), got=ready.reduce(function(n,x){ return n+((best[u]&&best[u][x.k]||{}).s||0); },0);
+      if(ready.length) menu.appendChild(el('p','g-total',fill('★ {n} von {m} Sternen',{n:got,m:ready.length*3})));
       ready.forEach(function(x){ var b=best[u]&&best[u][x.k];
         menu.appendChild(btn('g-tile','<span class="g-icon">'+x.icon+'</span><span class="g-name">'+x.name+'</span><span class="g-desc">'+x.desc+'</span>'+
           '<span class="g-best">'+(b?stars(b.s)+(x.k==='art'||x.k==='paare'?' · Rekord '+b.p:''):'Neu')+'</span>',function(){ play(x.k); })); });
       if(ready.length>1) menu.appendChild(btn('g-random','🎲 Überrasch mich',function(){ play(ready[Math.floor(Math.random()*ready.length)].k); }));
       if(!ready.length) menu.appendChild(el('p','g-lead','Diese Lektion hat zu wenige Karten für ein Spiel.')); }
-    function play(k){ stop(); stopAll(); var x=LIST.filter(function(y){ return y.k===k; })[0]; menu.hidden=true; box.hidden=false; window.scrollTo(0,0); x.go(data()); }
+    function play(k,only){ stop(); stopAll(); var x=LIST.filter(function(y){ return y.k===k; })[0]; drill=!!only; menu.hidden=true; box.hidden=false; window.scrollTo(0,0); x.go(data(),only); }
 
     /* 🎱 Hör-Bingo: a sentence is played (or shown with a gap); tap a word of your card that it contains, or say none is there.
-       Every call has one clear answer: its sentence holds no other word of the card (the build lists the words each sentence holds). */
-    function bingo(g){
+       Every call has one clear answer: its sentence holds no other word of the card (the build lists the words each sentence holds).
+       A mistakes round puts the words you missed on the card. */
+    function bingo(g,only){
       var vs=g.v.filter(function(v){ return v.x.length; }), n=vs.length>=12?9:vs.length>=8?6:4, cols=n===4?2:3, rows=n/cols;
-      var board, places, calls, tries=0, ci=-1, open_=false, miss=0, wrong=0, bingoDone=false, on={}, readyAt=0;
+      var board, places, calls, tries=0, ci=-1, open_=false, miss=0, wrong=0, bingoDone=false, on={}, readyAt=0, missed=[];
       function holds(x){ return places.map(function(p,k){ return x.m.indexOf(p)>=0?k:-1; }).filter(function(k){ return k>=0; }); }
       function call(v){ var own=board.indexOf(v), fit=v.x.filter(function(x){ return holds(x).every(function(k){ return k===own; }); });
         return fit.length?{v:v,x:pick(fit,1)[0]}:null; }
-      do { board=pick(vs,n); places=board.map(function(v){ return g.v.indexOf(v); }); calls=board.map(call); }
+      function deal(){ var must=(only||[]).filter(function(v){ return vs.indexOf(v)>=0; }).slice(0,n);
+        return shuffle(must.concat(pick(vs.filter(function(v){ return must.indexOf(v)<0; }),n-must.length))); }
+      do { board=deal(); places=board.map(function(v){ return g.v.indexOf(v); }); calls=board.map(call); }
       while(calls.some(function(c){ return !c; })&&++tries<25);                   /* every word on the card can be called */
       var decoys=shuffle(vs.filter(function(v){ return board.indexOf(v)<0; })).map(call).filter(Boolean);
       calls=shuffle(calls.filter(Boolean).concat(decoys.slice(0,Math.ceil(n/2))));
@@ -598,9 +663,9 @@ __LISTEN__
       box.appendChild(grid); box.appendChild(btn('b-none','Nicht auf meiner Karte',function(b){ tap(-1,b); }));
       var fb=el('div','b-fb'), acts_=el('div','g-acts'); box.appendChild(fb); box.appendChild(acts_);
       function nextCall(){ ci++; wrong=0; fb.innerHTML=''; acts_.innerHTML=''; if(ci>=calls.length) return end();
-        open_=true; readyAt=Date.now()+300; info.textContent=(ci+1)+' / '+calls.length;           /* a tap meant for the last call does not count */
+        open_=true; readyAt=Date.now()+300; step(info,ci,calls.length);                /* a tap meant for the last call does not count */
         var x=calls[ci].x; if(canHear()&&x.au){ cue.innerHTML='<span class="b-ear">👂 Hör gut zu …</span>'; later(function(){ say(x.au); },300); } else cue.innerHTML=cloze(x); }
-      function reveal(ok,text){ var x=calls[ci].x; open_=false; cue.innerHTML=marked(x);
+      function reveal(ok,text){ var x=calls[ci].x; open_=false; cue.innerHTML=marked(x); grow(info,ci+1,calls.length);
         fb.innerHTML='<div class="'+(ok?'g-ok':'g-no')+'">'+text+'</div><div class="b-tr">'+esc(x.en)+'</div>';
         if(ok) later(nextCall,1500); else acts_.appendChild(btn('main','Weiter ›',nextCall)); }         /* a mistake stays until you have read it */
       function stamp(i){ on[i]=1; grid.children[i].classList.add('on'); if(bingoDone) return; var lines=[], r, c, k;
@@ -611,24 +676,24 @@ __LISTEN__
       function shake(b){ b.classList.add('shake'); setTimeout(function(){ b.classList.remove('shake'); },400); }
       function tap(i,b){ if(!open_||Date.now()<readyAt) return; var c=calls[ci], own=board.indexOf(c.v), hits=holds(c.x);
         if(own>=0&&hits.indexOf(own)<0) hits.push(own);
-        if(i>=0&&hits.indexOf(i)>=0){ blip(true); stamp(i); reveal(true,'✓ '+word(board[i])); return; }       /* any word of the card it contains */
-        if(i<0&&!hits.length){ blip(true); reveal(true,'✓ Richtig, '+word(c.v)+' ist nicht auf deiner Karte.'); return; }
-        blip(false); miss++; shake(b);
+        if(i>=0&&hits.indexOf(i)>=0){ blip(true); stamp(i); cheer(true,b); reveal(true,'✓ '+word(board[i])); return; }   /* any word of the card it contains */
+        if(i<0&&!hits.length){ blip(true); cheer(true,b); reveal(true,'✓ Richtig, '+word(c.v)+' ist nicht auf deiner Karte.'); return; }
+        blip(false); miss++; shake(b); cheer(false); note(missed,c.v);
         if(i>=0&&hits.length&&++wrong<2) return;                                 /* another cell: look again, once */
         hits.forEach(function(k){ var cell=grid.children[k]; cell.classList.add('hint'); later(function(){ cell.classList.remove('hint'); },2000); stamp(k); });
         reveal(false,hits.length?'Auf deiner Karte: '+hits.map(function(k){ return word(board[k]); }).join(', '):'Nicht auf deiner Karte: '+word(c.v)); }
       function end(){ finish('bingo',miss===0?3:miss<=2?2:1,Math.max(0,n*10-miss*3),[(bingoDone?'Bingo! ':'')+'Fehler: '+miss,
-        fill(canHear()?'Du hast {n} Sätze gehört und {w} Wörter gefunden.':'Du hast {n} Sätze gelesen und {w} Wörter gefunden.',{n:calls.length,w:n})]); }
+        fill(canHear()?'Du hast {n} Sätze gehört und {w} Wörter gefunden.':'Du hast {n} Sätze gelesen und {w} Wörter gefunden.',{n:calls.length,w:n})],missed); }
       nextCall(); }
 
     /* 🧩 Satzbau: the English meaning is shown; tap the German words in order (a wrong tile just shakes) */
-    function satz(g){
-      var round=pick(satzPool(g),6), i=-1, clean=0, info=head('🧩 Satzbau');
+    function satz(g,only){
+      var round=only?shuffle(only):pick(satzPool(g),6), i=-1, clean=0, missed=[], info=head('🧩 Satzbau');
       box.appendChild(el('p','g-lead','Bau den deutschen Satz: Tippe die Wörter der Reihe nach an.'));
       var prompt=el('div','s-prompt'), line=el('div','s-line'), tiles=el('div','s-tiles'), fb=el('div','s-fb'), acts_=el('div','g-acts');
       [prompt,line,tiles,fb,acts_].forEach(function(e){ box.appendChild(e); });
-      function nextSentence(){ i++; if(i>=round.length) return finish('satz',clean===round.length?3:clean>=Math.ceil(round.length*0.6)?2:1,clean*10,['Fehlerfrei: '+clean+' von '+round.length+' Sätzen']);
-        var s=round[i], want=toks(s.de), at=0, errs=0, order; info.textContent=(i+1)+' / '+round.length;
+      function nextSentence(){ i++; if(i>=round.length) return finish('satz',clean===round.length?3:clean>=Math.ceil(round.length*0.6)?2:1,clean*10,['Fehlerfrei: '+clean+' von '+round.length+' Sätzen'],missed);
+        var s=round[i], want=toks(s.de), at=0, errs=0, order; step(info,i,round.length);
         prompt.textContent=s.en; line.innerHTML=''; tiles.innerHTML=''; fb.innerHTML=''; acts_.innerHTML='';
         if(canHear()&&s.au) acts_.appendChild(btn('','🔊 Anhören',function(){ say(s.au); }));
         do { order=shuffle(want.map(function(w,k){ return k; })); } while(want.length>2&&order.every(function(k,j){ return want[k]===want[j]; }));
@@ -636,43 +701,46 @@ __LISTEN__
         function choose(t){ if(t.disabled||at>=want.length) return;
           if(t.getAttribute('data-w')===want[at]){ t.disabled=true; t.classList.add('used'); line.appendChild(el('span','s-word',esc(want[at]))); at++;
             [].forEach.call(tiles.children,function(x){ x.classList.remove('hint'); });
-            if(at===want.length){ if(!errs) clean++; solved(s,errs); } return; }
-          errs++; blip(false); t.classList.add('shake'); setTimeout(function(){ t.classList.remove('shake'); },400);
+            if(at===want.length){ if(!errs) clean++; else note(missed,s); solved(s,errs); } return; }
+          errs++; blip(false); cheer(false); t.classList.add('shake'); setTimeout(function(){ t.classList.remove('shake'); },400);
           if(errs>=2) [].some.call(tiles.children,function(x){ if(!x.disabled&&x.getAttribute('data-w')===want[at]){ x.classList.add('hint'); return true; } return false; }); } }
-      function solved(s,errs){ blip(true); line.innerHTML='<span>'+marked(s)+'</span>'; say(s.au);
+      function solved(s,errs){ blip(true); line.innerHTML='<span>'+marked(s)+'</span>'; say(s.au); grow(info,i+1,round.length); if(!errs) cheer(true,line);
         fb.innerHTML=errs?'<span class="g-no">'+(errs>1?fill('Geschafft, mit {n} Fehlern.',{n:errs}):'Geschafft, mit 1 Fehler.')+'</span>':'<span class="g-ok">✓ Perfekt!</span>';
         acts_.innerHTML=''; if(canHear()&&s.au) acts_.appendChild(btn('','🔊 Nochmal',function(){ say(s.au); })); acts_.appendChild(btn('main','Weiter ›',nextSentence)); }
       nextSentence(); }
 
-    /* ⚡ Der · Die · Das: 60 seconds of nouns; a streak multiplies the points, a miss comes back soon */
-    function artikel(g){
-      var pool_=nouns(g); if(pool_.length<12){ var more=[]; ORDER.forEach(function(u){ if(u!==unit()&&G[u]) more=more.concat(nouns(G[u])); }); pool_=pool_.concat(pick(more,12-pool_.length)); }
-      var q_=shuffle(pool_), cur_=null, score=0, streak=0, top=0, misses=[], left=60, wait=false, readyAt=0, info=head('⚡ Der · Die · Das');
-      var bar=el('div','a-time'), fill=el('i'); bar.appendChild(fill); box.appendChild(bar);
+    /* ⚡ Der · Die · Das: 60 seconds of nouns; a streak multiplies the points, a miss comes back soon.
+       A mistakes round has no clock: every noun you missed comes twice, and a miss brings it back once more. */
+    function artikel(g,only){
+      var pool_=only||nouns(g); if(!only&&pool_.length<12){ var more=[]; ORDER.forEach(function(u){ if(u!==unit()&&G[u]) more=more.concat(nouns(G[u])); }); pool_=pool_.concat(pick(more,12-pool_.length)); }
+      var q_=only?shuffle(only).concat(shuffle(only)):shuffle(pool_), need=q_.length, rights=0, cur_=null, score=0, misses=[], left=60, wait=false, readyAt=0;
+      var info=head('⚡ Der · Die · Das',!only), time=info.bar;
       var sc=el('div','a-score'), card=el('div','a-card'); box.appendChild(sc); box.appendChild(card);
       var row=el('div','a-btns'); row.style.gridTemplateColumns='repeat('+ARTS.length+',1fr)';
       ARTS.forEach(function(a){ row.appendChild(btn('a-'+(COL[a]||a),a,function(){ answer(a); })); }); box.appendChild(row);
       function key(e){ var a=ARTS[+e.key-1]; if(a&&!e.repeat){ e.preventDefault(); answer(a); } }
       d.addEventListener('keydown',key);
-      var tm=setInterval(function(){ left--; fill.style.width=(left/60*100)+'%'; info.textContent=left+' s'; if(left<=0) over(); },1000);
+      var tm=only?0:setInterval(function(){ left--; time.style.width=(left/60*100)+'%'; info.textContent=left+' s'; if(left<=0) over(); },1000);
       live=function(){ clearInterval(tm); d.removeEventListener('keydown',key); };
-      function mult(){ return Math.min(4,1+Math.floor(streak/3)); }
-      function showNext(){ if(!q_.length) q_=shuffle(pool_); cur_=q_.shift();
-        card.innerHTML='<div class="a-word">'+esc(cur_.w)+'</div><div class="a-gloss">'+esc(cur_.g)+'</div>'; sc.textContent=score+' Punkte'+(streak>=3?' · 🔥 ×'+mult():'');
+      function mult(){ return Math.min(4,1+Math.floor(run/3)); }
+      function showNext(){ if(!q_.length){ if(only) return over(); q_=shuffle(pool_); } cur_=q_.shift();
+        card.innerHTML='<div class="a-word">'+esc(cur_.w)+'</div><div class="a-gloss">'+esc(cur_.g)+'</div>'; sc.textContent=score+' Punkte'+(mult()>1?' · ×'+mult():'');
         readyAt=Date.now()+300; }                                                  /* a tap meant for the last word does not count */
       function answer(a){ if(wait||left<=0||Date.now()<readyAt) return; wait=true;
-        if((cur_.aa||[cur_.a]).indexOf(a)>=0){ score+=10*mult(); streak++; top=Math.max(top,streak); blip(true); say(cur_.h); card.classList.add('good');
-          setTimeout(function(){ card.classList.remove('good'); wait=false; if(left>0) showNext(); },260); return; }
-        streak=0; blip(false); misses.push(cur_); q_.splice(Math.min(4,q_.length),0,cur_);
+        if((cur_.aa||[cur_.a]).indexOf(a)>=0){ score+=10*mult(); rights++; cheer(true,card); blip(true); say(cur_.h); card.classList.add('good');
+          if(only){ info.textContent=rights+' / '+need; grow(info,rights,need); }
+          later(function(){ card.classList.remove('good'); wait=false; if(left>0) showNext(); },260); return; }
+        cheer(false); blip(false); misses.push(cur_); q_.splice(Math.min(4,q_.length),0,cur_);
         card.innerHTML='<div class="a-word">'+word(cur_)+'</div><div class="a-gloss">'+esc(cur_.g)+'</div>'; card.classList.add('bad'); say(cur_.h);
-        setTimeout(function(){ card.classList.remove('bad'); wait=false; if(left>0) showNext(); },1600); }
+        later(function(){ card.classList.remove('bad'); wait=false; if(left>0) showNext(); },1600); }
       function over(){ var seen={}, list=misses.filter(function(v){ var k=v.a+' '+v.w; if(seen[k]) return false; seen[k]=1; return true; });
-        finish('art',score>=300?3:score>=150?2:1,score,[score+' Punkte · beste Serie '+top].concat(list.length?['Merk dir: '+list.map(function(v){ return artLabel(v)+' '+v.w; }).join(', ')]:['Kein einziger Fehler!'])); }
-      info.textContent='60 s'; showNext(); }
+        var got=only?(!list.length?3:list.length<=2?2:1):score>=300?3:score>=150?2:1;
+        finish('art',got,score,[score+' Punkte · beste Serie '+top].concat(list.length?['Merk dir: '+list.map(function(v){ return artLabel(v)+' '+v.w; }).join(', ')]:['Kein einziger Fehler!']),list); }
+      info.textContent=only?'0 / '+need:'60 s'; showNext(); }
 
     /* 💬 Was sagt man?: a situation, three phrases from the lesson; pick the one that fits */
-    function wendung(g){
-      var all=g.r, qs=pick(all,Math.min(8,all.length)), i=-1, right=0, info=head('💬 Was sagt man?');
+    function wendung(g,only){
+      var all=g.r, qs=only?shuffle(only):pick(all,Math.min(8,all.length)), i=-1, right=0, missed=[], info=head('💬 Was sagt man?');
       box.appendChild(el('p','g-lead','Lies die Situation und wähle die passende Wendung.'));
       var sit=el('div','r-sit'), opts=el('div','r-opts'), fb=el('div','r-fb'), acts_=el('div','g-acts');
       [sit,opts,fb,acts_].forEach(function(e){ box.appendChild(e); });
@@ -682,35 +750,38 @@ __LISTEN__
         if(o.length<2) o=o.concat(shuffle(all.filter(function(x){ return x.grp===r.grp; })).filter(fresh));
         if(o.length<2) ORDER.forEach(function(u){ if(u!==unit()&&G[u]) o=o.concat(shuffle(G[u].r).filter(fresh)); });
         return o.slice(0,2); }
-      function ask(){ i++; if(i>=qs.length) return finish('red',right===qs.length?3:right>=Math.ceil(qs.length*0.6)?2:1,right*10,['Richtig: '+right+' von '+qs.length]);
-        var r=qs[i], answered=false; info.textContent=(i+1)+' / '+qs.length; fb.innerHTML=''; acts_.innerHTML='';
+      function ask(){ i++; if(i>=qs.length) return finish('red',right===qs.length?3:right>=Math.ceil(qs.length*0.6)?2:1,right*10,['Richtig: '+right+' von '+qs.length],missed);
+        var r=qs[i], answered=false; step(info,i,qs.length); fb.innerHTML=''; acts_.innerHTML='';
         sit.innerHTML='<div>'+esc(r.w)+'</div>'+(r.reg?'<div class="r-reg">'+esc(r.reg)+'</div>':''); opts.innerHTML='';
-        shuffle([r].concat(others(r))).forEach(function(x){ opts.appendChild(btn('r-opt',esc(x.f),function(b){ if(answered) return; answered=true;
-          if(x===r){ right++; blip(true); b.classList.add('ok'); }
-          else { blip(false); b.classList.add('no'); [].forEach.call(opts.children,function(o,k){ if(o.textContent===r.f) o.classList.add('ok'); }); }
+        shuffle([r].concat(others(r))).forEach(function(x){ opts.appendChild(btn('r-opt',esc(x.f),function(b){ if(answered) return; answered=true; grow(info,i+1,qs.length);
+          if(x===r){ right++; blip(true); b.classList.add('ok'); cheer(true,b); }
+          else { blip(false); cheer(false); note(missed,r); b.classList.add('no'); [].forEach.call(opts.children,function(o,k){ if(o.textContent===r.f) o.classList.add('ok'); }); }
           say(r.au); fb.innerHTML='<div class="'+(x===r?'g-ok':'g-no')+'">'+(x===r?'✓ Genau!':'So sagt man es:')+' '+esc(r.g)+'</div><div>'+marked(r.x)+'</div><div class="b-tr">'+esc(r.x.en)+'</div>';
           acts_.appendChild(btn('main','Weiter ›',ask)); })); }); }
       ask(); }
 
-    /* 🃏 Wortpaare: tap a German word, then its meaning; up to three rounds of five pairs against the clock */
-    function paare(g){
-      var pool_=pick(pairPool(g),15), sets=[], k, round=-1, misses=0, t0=Date.now(), info=head('🃏 Wortpaare');
-      for(k=0;k+3<=pool_.length;k+=5) sets.push(pool_.slice(k,k+5));            /* a round has three to five pairs */
+    /* 🃏 Wortpaare: tap a German word, then its meaning; up to three rounds of three to five pairs against the clock.
+       A mistakes round deals the words you mixed up, with others to make five. */
+    function paare(g,only){
+      var all=pairPool(g), pool_=only?only.concat(pick(all.filter(function(v){ return only.indexOf(v)<0; }),5-only.length)):pick(all,15);
+      var sets=[], k, at=0, rounds=Math.ceil(pool_.length/5), round=-1, misses=0, missed=[], matched=0, t0=Date.now(), info=head('🃏 Wortpaare');
+      for(k=0;k<rounds;k++){ var size=Math.ceil((pool_.length-at)/(rounds-k)); sets.push(pool_.slice(at,at+size)); at+=size; }   /* 7 pairs: 4 + 3 */
       box.appendChild(el('p','g-lead','Tippe ein deutsches Wort und dann seine Bedeutung.'));
       var grid=el('div','p-grid'), left=el('div','p-col'), right=el('div','p-col'); grid.appendChild(left); grid.appendChild(right); box.appendChild(grid);
       function deal(){ round++; if(round>=sets.length) return done(); var set=sets[round], picked=null, paired=0;
-        info.textContent='Runde '+(round+1)+' / '+sets.length; left.innerHTML=''; right.innerHTML='';
+        info.textContent='Runde '+(round+1)+' / '+sets.length; grow(info,matched,pool_.length); left.innerHTML=''; right.innerHTML='';
         shuffle(set).forEach(function(v){ left.appendChild(card(v,'de',word(v))); });
         shuffle(set).forEach(function(v){ right.appendChild(card(v,'en',esc(v.g))); });
         function card(v,side,markup){ var b=btn('p-card p-'+side,markup,function(){ choose(b,v,side); }); return b; }
         function choose(b,v,side){ if(b.disabled) return;
           if(!picked||picked.side===side){ if(picked) picked.b.classList.remove('sel'); picked={b:b,v:v,side:side}; b.classList.add('sel'); if(side==='de') say(v.h); return; }
           var a=picked; picked=null;
-          if(a.v===v){ blip(true); [a.b,b].forEach(function(x){ x.classList.remove('sel'); x.classList.add('done'); x.disabled=true; });
+          if(a.v===v){ blip(true); cheer(true,b); pulse(a.b); grow(info,++matched,pool_.length);
+            [a.b,b].forEach(function(x){ x.classList.remove('sel'); x.classList.add('done'); x.disabled=true; });
             if(++paired===set.length) later(deal,450); return; }
-          blip(false); misses++; [a.b,b].forEach(function(x){ x.classList.remove('sel'); x.classList.add('shake'); setTimeout(function(){ x.classList.remove('shake'); },400); }); } }
+          blip(false); cheer(false); misses++; note(missed,a.v); [a.b,b].forEach(function(x){ x.classList.remove('sel'); x.classList.add('shake'); setTimeout(function(){ x.classList.remove('shake'); },400); }); } }
       function done(){ var secs=Math.round((Date.now()-t0)/1000), n=pool_.length;
-        finish('paare',misses===0&&secs<=n*4?3:misses<=Math.ceil(n/5)?2:1,Math.max(10,n*20-secs*2-misses*10),['Zeit: '+secs+' s · Fehler: '+misses]); }
+        finish('paare',misses===0&&secs<=n*4?3:misses<=Math.ceil(n/5)?2:1,Math.max(10,n*20-secs*2-misses*10),['Zeit: '+secs+' s · Fehler: '+misses],missed); }
       deal(); }
     return {open:open, stop:stop};
   })();
@@ -836,6 +907,9 @@ def build(course, output, audio=True, bitrate="32k", explain_bitrate="24k", plac
     config = {"key": slug(course["title"]), "perDay": int(course.get("new_per_day", 20)),
               "units": [[u["id"], u["id"]] for u in course["units"]], "labels": {u["id"]: u["label"] for u in course["units"]},
               "arts": prof["articles"], "col": prof["article_colours"]}
+    if not language.spaced(prof):                     # Satzbau asks the browser for the words (Intl.Segmenter)
+        config.update(spaces=False, small=prof["bingo"]["function_words"].split())
+    rtl = study_pack.RTL_CSS + RTL_APP_CSS if prof.get("direction") == "rtl" else ""
     blocks = {}
     for cid, data in payloads.items():
         blocks.setdefault(first_unit[cid], []).append(f"{cid}:{data}")
@@ -859,7 +933,7 @@ def build(course, output, audio=True, bitrate="32k", explain_bitrate="24k", plac
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="study-pack-app" content="course v2">
 <title>{html.escape(course['title'])}</title>
-<style>{css}{AUDIO_CSS}{APP_CSS}</style>
+<style>{css}{AUDIO_CSS}{APP_CSS}{rtl}</style>
 </head>
 <body><main class="wrap">
 {frame}
