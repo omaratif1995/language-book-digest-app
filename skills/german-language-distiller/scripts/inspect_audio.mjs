@@ -75,26 +75,33 @@ try {
     awaitPromise: true, returnByValue: true, expression: `
       (async () => {
         const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-        const first = document.querySelector('.speak-button');
-        const full = document.getElementById('listen-all');
+        const first = document.querySelector('.ex .speak-button') || document.querySelector('.speak-button');
+        const open = document.querySelector('.listen-open');
         const meta = document.querySelector('meta[name="study-pack-audio"]')?.content;
-        if (!first || !full) return { passed:false, error:'controls missing' };
+        if (!first || !open) return { passed:false, error:'controls missing' };
         first.click();
         await wait(350);
-        const individualStarted = first.classList.contains('is-playing');
+        const individualStarted = first.classList.contains('is-playing') && !document.getElementById('now').hidden;
+        await wait(first.closest('.ex') ? 6500 : 3500);
+        const individualRepeats = first.classList.contains('is-playing');      // a 🔊 tap repeats until tapped again
         first.click();
         await wait(250);
-        full.click();
+        const individualStopped = !first.classList.contains('is-playing') && document.getElementById('now').hidden;
+        open.click();
+        await wait(150);
+        const panelOpen = !document.getElementById('lp').hidden;
+        document.querySelector('#lp [data-m="ex"]').click();
         await wait(350);
-        const wholeStarted = full.classList.contains('is-playing') && full.textContent.includes('Pause');
-        full.click();
-        const wholePaused = !full.classList.contains('is-playing') && full.textContent.includes('Resume');
+        const examplesStarted = open.classList.contains('is-playing') && open.textContent.includes('Stopp') && !!document.querySelector('.ex.follow');
+        open.click();
+        await wait(250);
+        const sessionStopped = !open.classList.contains('is-playing') && document.getElementById('now').hidden;
         return {
-          passed: meta === 'embedded' && individualStarted && wholeStarted && wholePaused,
+          passed: meta === 'embedded' && individualStarted && individualRepeats && individualStopped && panelOpen && examplesStarted && sessionStopped,
           embeddedMeta: meta,
           speakerButtons: document.querySelectorAll('.speak-button').length,
-          individualStarted, wholeStarted, wholePaused,
-          wholeLabelAfterPause: full.textContent.trim(),
+          individualStarted, individualRepeats, individualStopped, panelOpen, examplesStarted, sessionStopped,
+          nowPlaying: document.getElementById('now-t').textContent,
         };
       })()`
   });

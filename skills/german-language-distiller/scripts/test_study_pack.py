@@ -91,8 +91,9 @@ class StudyPackTests(unittest.TestCase):
         headings = re.findall(r"<h2\b[^>]*>(.*?)</h2>", rendered, re.S)
         plain = [re.sub(r"<[^>]+>", "", heading).strip() for heading in headings]
         self.assertEqual(plain, ["1 Wortschatz", "2 Grammatik", "3 Redemittel"])
-        for forbidden in ("Start here", "Mini-Abruf", "30-Sekunden", "source-note", "legend", "summary"):
+        for forbidden in ("Start here", "Mini-Abruf", "30-Sekunden", "source-note", "legend", 'class="summary"'):
             self.assertNotIn(forbidden, rendered)
+        self.assertNotIn("<details", rendered)              # only a story may fold its translations
         self.assertIn('<meta name="study-pack-status" content="reviewed">', rendered)
 
     def test_render_preserves_examples_and_escapes_content(self):
@@ -256,6 +257,99 @@ class StudyPackTests(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(pack.main(["validate", "--inventory", str(self.inventory_path), "--lesson", str(self.lesson_path), "--source", str(self.source)]), 1)
             self.assertEqual(pack.main(["validate", "--inventory", str(self.inventory_path), "--lesson", str(self.lesson_path), "--source", str(self.source), "--draft"]), 0)
+
+    # ---- the closing story (Geschichte) ----
+    def add_story(self):
+        self.lesson["story"] = {"title": "Sonne für alle", "paragraphs": [
+            {"de": "Unser Betriebsausflug findet dieses Jahr am Bodensee statt. Alle freuen sich seit Wochen darauf.",
+             "en": "Our company outing takes place at Lake Constance this year. Everyone has been looking forward to it for weeks.",
+             "uses": [{"card": "v1", "form": "Betriebsausflug"}]},
+            {"de": "Am Morgen regnet es in Strömen. Trotz des Regens steigen alle gut gelaunt in den Bus.",
+             "en": "In the morning it is pouring. Despite the rain, everyone gets on the bus in a good mood.",
+             "uses": [{"card": "g1", "form": "Trotz des Regens"}]},
+            {"de": "Meine Kollegin schreibt dem Chef: „Ich wollte mich erkundigen, ob wir Schirme mitbringen sollen.“ Er schickt nur ein Foto von der Sonne.",
+             "en": "My colleague writes to the boss: 'I wanted to ask whether we should bring umbrellas.' He just sends a photo of the sun.",
+             "uses": [{"card": "e1", "form": "Ich wollte mich erkundigen, ob"}]}]}
+        self.review["checks"][pack.STORY_CHECK] = "pass"
+
+    def test_story_renders_as_fourth_section_with_sentences_and_lesson_words(self):
+        self.add_story()
+        rendered = pack.render_html(self.bundle())
+        headings = [re.sub(r"<[^>]+>", "", h).strip() for h in re.findall(r"<h2\b[^>]*>(.*?)</h2>", rendered, re.S)]
+        self.assertEqual(headings, ["1 Wortschatz", "2 Grammatik", "3 Redemittel", "4 Geschichte"])
+        self.assertEqual(rendered.count('class="ss"'), 6)
+        self.assertEqual(rendered.count('class="story-p"'), 3)
+        self.assertIn('<span class="lw" data-card="v1" title="der Betriebsausflug: company outing">Betriebsausflug</span>', rendered)
+        self.assertIn('data-card="e1"', rendered)
+        self.assertNotIn('data-card="g1"', rendered)         # grammar is checked for coverage, not underlined
+        self.assertEqual(rendered.count('<details class="story-tr">'), 3)
+
+    def test_story_needs_its_own_review_check(self):
+        self.add_story()
+        del self.review["checks"][pack.STORY_CHECK]
+        with self.assertRaisesRegex(pack.PackError, "story_quality"):
+            self.bundle()
+
+    def test_story_forms_must_occur_in_their_paragraph(self):
+        self.add_story()
+        self.lesson["story"]["paragraphs"][0]["uses"][0]["form"] = "Betriebsausflüge"
+        with self.assertRaisesRegex(pack.PackError, "absent"):
+            self.bundle()
+
+    def test_story_must_use_every_grammar_point(self):
+        self.add_story()
+        self.lesson["story"]["paragraphs"][1]["uses"] = []
+        bundle = self.bundle()
+        self.assertFalse(bundle.reviewed)
+        self.assertIn("grammar point", " ".join(bundle.blockers))
+
+    def test_story_sentences_respect_abbreviations_dates_and_dialogue(self):
+        self.assertEqual(pack.story_sentences("Wir treffen uns am 3. Mai um acht. Kommst du mit?"),
+                         ["Wir treffen uns am 3. Mai um acht.", "Kommst du mit?"])
+        self.assertEqual(pack.story_sentences("Das kostet z. B. zehn Euro. Gut!"), ["Das kostet z. B. zehn Euro.", "Gut!"])
+        self.assertEqual(pack.story_sentences("„Bist du sicher?“, fragt sie. „Ja!“ Er lacht."),
+                         ["„Bist du sicher?“, fragt sie.", "„Ja!“", "Er lacht."])
+        self.assertEqual(pack.story_sentences("Das war 2019. Dann zog ich um."), ["Das war 2019.", "Dann zog ich um."])
+
+    def test_header_never_names_the_source(self):
+        rendered = pack.render_html(self.bundle())
+        self.assertNotIn("Synthetic German B1", rendered)
+        self.assertIn('<div class="lekt">B1 · L12</div>', rendered)
+
+    def test_private_terms_and_isbn_are_refused_in_learner_text(self):
+        self.inventory["private_terms"] = ["Kollegin Krause"]
+        self.lesson["redemittel"][0]["examples"][0]["en"] = "As Kollegin Krause asked: whether we should bring anything."
+        with self.assertRaisesRegex(pack.PackError, "private source term"):
+            self.bundle()
+        self.inventory["private_terms"] = []
+        self.lesson["redemittel"][0]["examples"][0]["en"] = "See ISBN 978-0-000-00000-0."
+        with self.assertRaisesRegex(pack.PackError, "ISBN"):
+            self.bundle()
+
+    def test_source_text_check_flags_copied_story_and_examples_but_not_the_frame(self):
+        self.add_story()
+        source_text = self.root / "pages.txt"
+        source_text.write_text("Am Morgen regnet es in Strömen, und alle bleiben im Bett. "
+                               "Ich wollte mich erkundigen, ob wir morgen kommen dürfen.", encoding="utf-8")
+        self.save()
+        bundle = pack.validate_bundle(self.inventory_path, self.lesson_path, self.review_path, self.source, source_text)
+        notes = " ".join(bundle.notes)
+        self.assertIn("story p2 «am morgen regnet es in strömen»", notes)
+        self.assertNotIn("e1#0", notes)          # the shared run is mostly the Redemittel frame itself
+        source_text.write_text("Ich wollte mich erkundigen, ob wir etwas mitbringen sollen.", encoding="utf-8")
+        bundle = pack.validate_bundle(self.inventory_path, self.lesson_path, self.review_path, self.source, source_text)
+        self.assertIn("e1#0", " ".join(bundle.notes))   # the whole source sentence is copied
+
+    def test_review_notes_flag_short_examples_and_verbs_without_perfekt(self):
+        self.lesson["vocabulary"].append({"id": "v2", "group": "Betriebliche Veranstaltungen", "lemma": "feiern",
+                                          "pos": "verb", "forms": "feiert", "gloss": "to celebrate",
+                                          "examples": [{"de": "Wir feiern.", "en": "We celebrate.", "targets": ["feiern"]}]})
+        self.inventory["items"].append({"id": "iv2", "kind": "vocabulary", "label": "feiern", "importance": "essential",
+                                        "sources": [{"pdf_index": 0, "region": "p0-content", "evidence": "cue"}],
+                                        "decision": "standalone", "home": "v2", "reason": "Word field."})
+        notes = " ".join(self.bundle().notes)
+        self.assertIn("Very short examples", notes)
+        self.assertIn("without a Perfekt form", notes)
 
 
 if __name__ == "__main__":

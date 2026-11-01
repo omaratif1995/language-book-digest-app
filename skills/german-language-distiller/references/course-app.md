@@ -1,6 +1,6 @@
 # Course study app and listening episodes
 
-Use this when several units have reviewed sheets and the learner wants to study on the phone, listen on the go or practise with flashcards. Both deliverables are rendered from the same reviewed lesson records and sheets. They never change the three-section sheets.
+Use this when several units have reviewed sheets and the learner wants to study on the phone, listen on the go, practise with flashcards or play. Both deliverables are rendered from the same reviewed lesson records and sheets. They never change the sheets.
 
 ## course.json
 
@@ -8,26 +8,29 @@ Write one `course.json` (usually in `_work/`). Paths are relative to the file.
 
 ```json
 {
-  "title": "Mein Kursbuch B1.1",
-  "subtitle": "Lektion 1–12 · Wortschatz · Grammatik · Redemittel",
+  "title": "Deutsch B1.1",
+  "subtitle": "Lektion 1–12 · Wortschatz · Grammatik · Redemittel · Geschichte",
   "narration": "narration.json",
   "voices": {"de": "de-DE-KatjaNeural", "en": "en-US-AvaNeural"},
   "cache": "audio",
   "episodes_dir": "../Audio",
   "new_per_day": 20,
+  "private_terms": ["Menschen B1", "Hueber"],
   "units": [
     {"id": "L01", "label": "Lektion 1", "lesson": "L01/L01_Lesson_v2.json", "sheet": "../L01_Studysheet_v2.html"}
   ]
 }
 ```
 
-List units in course order. Use the newest reviewed sheet of each unit; drafts are refused. `new_per_day` sets the trainer's default for new cards per day (20 suits most learners; 25 suits a near exam date). `voices` and `narration` are optional; the voices shown are the defaults.
+List units in course order. Use the newest reviewed sheet of each unit; drafts are refused. `new_per_day` sets the trainer's default for new cards per day (20 suits most learners; 25 suits a near exam date). `voices` and `narration` are optional; the voices shown are the defaults. Other keys are refused, so a misspelt key (`episodes_out` for `episodes_dir`) cannot silently fall back to a default folder.
+
+**Name the course yourself, never after the source.** The title, subtitle, unit labels and lesson titles are spoken in the episodes and shown in the app. `private_terms` lists names that must never appear in the app or the episode names: the course book's distinctive title words, its publisher, the teacher. The tools refuse to write output that contains one.
 
 ## Pronunciation: German is always spoken by a German voice
 
 Multilingual neural voices guess the language of each request, and the Edge service marks every request as American English. Short German words inside English ("als", "rund", "total") then come out with English pronunciation. `scripts/speech.py` therefore never asks one voice to speak both languages:
 
-- German text (headwords, examples, frames, variants) goes to the German voice in one piece.
+- German text (headwords, examples, frames, variants, story sentences) goes to the German voice in one piece.
 - English text (glosses, use cues, explanations) is split into language runs, and German words inside it go to the German voice. Detection uses:
   - word lists, plus the German and English `pyspellchecker` dictionaries and their word frequencies;
   - capitalisation, and an article before a capitalised word (`die Babysitter`);
@@ -54,22 +57,26 @@ Write each point as a short spoken explanation:
 - **Marks:** mark every German word, phrase or sentence with «…». Marked text goes to the German voice and nothing is guessed.
 - **No symbols:** leave out `+`, `→` and `/`, and isolated endings. Show German through short phrases (say «am größten», not "-sten").
 - **No wrong German aloud:** describe the mistake instead of saying it, because learners copy what they hear.
+- **Original examples:** quote the sheet's own examples or new ones, never the source's.
 
 `plan` refuses narration for unknown unit or grammar ids, and lists unmarked words that look German.
 
 ## Audio commands
 
-`course_audio.py plan` works offline. It writes `<cache>/plan.json` with each unit's listening order, the German controls (headwords, examples, phrases, variants), the grammar explanation chain and the episode announcement, and reports how many clips are not yet in `<cache>/clips`. Clip ids depend on the voices, the spoken runs and their pauses. Unchanged clips are never synthesized twice, and runs shared by several clips are fetched once.
+`course_audio.py plan` works offline. It writes `<cache>/plan.json` with each unit's listening order, the German controls (headwords, examples, phrases, variants, story sentences), the grammar explanation chain and the episode announcements, and reports how many clips are not yet in `<cache>/clips`. Clip ids depend on the voices, the spoken runs and their pauses. Unchanged clips are never synthesized twice, and runs shared by several clips are fetched once.
 
-`course_audio.py synth --confirm-external-tts` sends the missing texts to the Edge TTS service. Ask first and say what is sent: the example sentences, glosses and explanations of the selected units, nothing else.
+`course_audio.py synth --confirm-external-tts` sends the missing texts to the Edge TTS service. Ask first and say what is sent: the example sentences, glosses, explanations and stories of the selected units, nothing else.
 
 `course_audio.py episodes` builds one MP3 per unit in `episodes_dir`, in the sheet's listening order:
 
 - vocabulary: headword, English meaning, forms, German example, English translation;
 - grammar: the spoken explanation, then its examples;
-- Redemittel: frame, use and examples.
+- Redemittel: frame, use and examples;
+- Geschichte: the story, read straight through with a breath after each paragraph.
 
-After every German item there is a pause about as long as the clip, so the learner can repeat it aloud (shadowing). Expect roughly 15–30 minutes per unit.
+After every German teaching item there is a pause about as long as the clip, so the learner can repeat it aloud (shadowing). Expect roughly 15–30 minutes per unit.
+
+`course_audio.py episodes --kind examples --repeat 2` builds a second set in `episodes_dir/Beispiele`: only the unit's example sentences, each German sentence played twice with a pause to repeat it, then its English meaning. These are the commuting drill: short, dense and made for repetition with the screen off.
 
 Requirements: `pip install edge-tts pyspellchecker imageio-ffmpeg` (or a system ffmpeg).
 
@@ -79,9 +86,16 @@ Requirements: `pip install edge-tts pyspellchecker imageio-ffmpeg` (or a system 
 
 **Lernen**
 - All reviewed sheets in course order, a unit picker with ‹ ›, and a search over all cards.
-- 🔊 on every German headword, example, phrase and variant.
-- `🔊 Erklärung` on each grammar point plays its spoken explanation.
-- `▶ Ganze Lektion anhören` plays a guided session. German vocabulary and expressions come with pauses to repeat. Grammar is explained, followed by its German examples. The current card is highlighted and scrolled into view.
+- 🔊 on every German headword, example, phrase and variant. **A tap repeats**: by default the clip plays again and again, with a pause to repeat it aloud, until the learner taps it again or presses ⏹. The listening panel switches this to 1× or 3×.
+- `🔊 Erklärung` on each grammar point plays its spoken explanation once.
+- The **Geschichte** at the end of each unit: a **🔊 Ganze Geschichte** button on the story header to play the whole story straight through, a 🔊 per paragraph, and a tap on any sentence repeats that sentence. A tap on an underlined word shows its meaning and speaks it.
+- **🎧 Anhören** opens a small panel in the unit's header:
+  - three ways to listen: **Ganze Lektion** (German vocabulary and expressions, grammar explained, then the story), **Nur Beispiele** (only the German example sentences) and **Geschichte**;
+  - **Jeder Satz 1× · 2× · 3× · 5×**: how often each German sentence is played before the next one;
+  - **Am Ende Einmal · ⟳ Endlos**: stop at the end, or start the unit again;
+  - **🔊-Taste 1× · 3× · ∞**: what a single 🔊 tap does.
+
+  The current card or sentence is highlighted and scrolled into view, a bar at the bottom shows what is playing with a ⏹ Stopp button, and the screen stays on while a session runs. The settings are remembered.
 
 **Üben**
 - One card per sheet card. Vocabulary goes German → English, with English → German optional. Grammar shows its title and asks for the rule and examples. Redemittel show the situation and meaning in English and ask for the German frame, because that is the choice the learner makes while speaking or writing.
@@ -94,9 +108,18 @@ Requirements: `pip install edge-tts pyspellchecker imageio-ffmpeg` (or a system 
 - Schedule: new cards in course order up to the daily limit, interleaved with due reviews. "Gewusst" moves a card through the intervals 1 → 3 → 7 → 14 → 30 → 60 days. "Nochmal" brings it back after three cards and restarts its interval.
 - Settings live in a closed panel: units, parts, direction, new cards per day, round size, browse mode, sound and a progress backup file.
 
+**Spielen**: for days without motivation. Four short games per unit, made automatically from the unit's reviewed cards, so they never show anything the sheet does not teach and never show wrong German:
+
+- **🎱 Hör-Bingo.** A card of 4–9 lesson words. A sentence is played (without sound: shown with a gap); the learner taps its word, or "Nicht auf meiner Karte" for a decoy. Every answer shows the sentence and its meaning. A line is a BINGO. Trains listening and recognizing inflected forms.
+- **🧩 Satzbau.** The English meaning is shown; the learner taps the German words in the right order. A wrong tile only shakes, and after two misses the right one glows. Trains word order, the heart of B1 grammar.
+- **⚡ Der · Die · Das.** Sixty seconds of the unit's nouns; streaks multiply the points, a miss comes back soon, and the end screen lists the articles to remember. A noun with two correct articles accepts both: an adjective noun whose forms show «ein Bekannter» (der/die Bekannte), or forms that name both (der or das Joghurt).
+- **💬 Was sagt man?** A situation and three phrases from the lesson; pick the one that fits, then hear it and see it in use.
+
+"🎲 Überrasch mich" starts a random one. Stars and records are kept per unit and go into the progress backup. Sound effects follow the Ton setting.
+
 ## Size and performance
 
-German clips are embedded at 32 kbit/s and the English explanations at 24 kbit/s. They sit in per-unit text blocks after the app script, so the app becomes usable before the audio has finished loading, and a unit's sounds are unpacked on first use. A 16-unit course is about 40 MB.
+German clips are embedded at 32 kbit/s and the English explanations at 24 kbit/s. They sit in per-unit text blocks after the app script, so the app becomes usable before the audio has finished loading, and a unit's sounds are unpacked on first use. A 16-unit course is about 40–45 MB.
 
 Measured with headless Chrome at 4× CPU slowdown on a 41 MB, 16-unit course: usable after about 3 s, fully loaded after 5–7 s. On a desktop it is about 1 s. For quick sharing or old phones, also build a `--no-audio` copy (about 2 MB) and hand over the MP3 episodes.
 
@@ -104,8 +127,8 @@ Measured with headless Chrome at 4× CPU slowdown on a 41 MB, 16-unit course: us
 
 - **Sending it:** messengers and cloud drives handle the file; most mail servers reject 40 MB.
 - **Android:** opens the file in Chrome with everything working.
-- **iPhone:** the Files and messenger preview shows the text but runs no JavaScript, so audio and practice need a hosted link.
-- **MP3 episodes:** play everywhere.
+- **iPhone:** the Files and messenger preview shows the text but runs no JavaScript, so audio, practice and games need a hosted link.
+- **Screen off:** browsers may pause a web page in the background. For listening with the screen off, use the MP3 episodes, especially the Beispiele set.
 - **Progress:** stays in one browser on one device. The backup button moves it between devices.
 
 ## Verify before delivery
@@ -117,5 +140,6 @@ Measured with headless Chrome at 4× CPU slowdown on a 41 MB, 16-unit course: us
    - swipes grade in both directions;
    - the round break and the daily summary appear;
    - progress survives a reload.
-4. Check that at least one clip, one grammar explanation and the start of a guided unit really play. Listen to one mixed clip: the German words in it must sound German.
-5. Fully decode one MP3 episode with ffmpeg, so that `-v error` prints nothing.
+4. Check the listening: a 🔊 tap repeats until tapped again; the panel starts all three modes; the bottom bar stops them. Listen to one mixed clip: the German words in it must sound German. Test with the sound muted when other people are around.
+5. Play one round of each game to its end screen.
+6. Fully decode one MP3 episode with ffmpeg, so that `-v error` prints nothing.

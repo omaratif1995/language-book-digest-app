@@ -37,20 +37,46 @@ HTML = """<!DOCTYPE html><html lang="de"><head><meta name="study-pack-status" co
 </main></body></html>"""
 
 
+STORY_HTML = ('<h2>4 Geschichte</h2><article class="story" id="story"><h3>Ein Buch</h3><div class="story-p" id="story-p1"><p>'
+              '<span class="ss" id="story-s1">Ich lese ein <span class="lw" data-card="v01" title="das Buch: book">Buch</span>.</span> '
+              '<span class="ss" id="story-s2">Es ist spannend.</span></p><details class="story-tr"><summary>Übersetzung</summary>'
+              '<p lang="en">I read a book. It is exciting.</p></details></div></article>')
+
+
 class EmbeddedAudioTests(unittest.TestCase):
     @unittest.skipUnless(speech.dictionaries_available(), "pip install pyspellchecker")
     def test_plan_and_injection_are_self_contained(self):
-        clips, sequence, controls, explain = embed_audio.build_plan(LESSON, "test-voice")
-        self.assertEqual(list(explain), ["g01"])
-        result = embed_audio.inject_audio(
-            HTML, LESSON, {clip_id: "AAAA" for clip_id in clips}, sequence, controls)
+        clips, plan = embed_audio.lesson_plan(LESSON, "test-voice")
+        self.assertEqual(list(plan["explain"]), ["g01"])
+        result = embed_audio.inject_audio(HTML, LESSON, {clip_id: "AAAA" for clip_id in clips}, plan)
         self.assertEqual(result.count("<h2"), 3)
-        self.assertEqual(result.count('class="speak-button"'), len(controls))
-        self.assertEqual(len(controls), 8)
-        self.assertIn('id="listen-all"', result)
-        self.assertIn("data:audio/mpeg;base64,", result)
+        self.assertEqual(result.count('class="speak-button"'), len(plan["controls"]))
+        self.assertEqual(len(plan["controls"]), 8)
+        self.assertIn('class="listen-open"', result)
+        self.assertIn('id="lp"', result)                    # the listening panel: whole lesson, examples, story
+        self.assertIn('id="v01-x0"', result)                # examples carry ids, so a session can highlight them
+        self.assertEqual(result.count("data:audio/mpeg;base64,"), 1)
         self.assertNotIn("https://", result)
         self.assertNotIn("speechSynthesis", result)
+
+    @unittest.skipUnless(speech.dictionaries_available(), "pip install pyspellchecker")
+    def test_story_sentences_get_audio_and_their_own_session(self):
+        lesson = dict(LESSON, story={"title": "Ein Buch", "paragraphs": [
+            {"de": "Ich lese ein Buch. Es ist spannend.", "en": "I read a book. It is exciting.",
+             "uses": [{"card": "v01", "form": "Buch"}]}]})
+        clips, plan = embed_audio.lesson_plan(lesson, "test-voice")
+        self.assertEqual(len(plan["story"]), 1)
+        self.assertEqual(len(plan["story"][0]), 2)
+        self.assertIn("Geschichte", plan["sections"])
+        result = embed_audio.inject_audio(HTML.replace("</main>", STORY_HTML + "</main>"), lesson,
+                                          {clip_id: "AAAA" for clip_id in clips}, plan)
+        self.assertEqual(result.count('class="story-play"'), 1)
+        self.assertEqual(result.count('class="speak-button para-play"'), 1)
+        self.assertIn(f'id="story-s2" data-audio="{plan["controls"]["story-s2"]}"', result)
+        self.assertIn(f'data-card="v01" data-h="{plan["controls"]["v01-head"]}"', result)
+        story_steps = embed_audio.story_order("", plan)
+        self.assertEqual([step[2] for step in story_steps], ["story", "story-s1", "story-s2"])
+        self.assertEqual(len(embed_audio.examples_order("", lesson, plan)), 4)
 
     def test_speakable_removes_visual_notation(self):
         self.assertEqual(embed_audio.speakable("Subjekt + werden + … + Partizip II"),

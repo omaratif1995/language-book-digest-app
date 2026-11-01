@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="de"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="study-pack-app" content="course v1">
+<meta name="study-pack-app" content="course v2">
 <title>Beispielkurs Deutsch</title>
 <style>
   :root{
@@ -45,9 +45,53 @@
   .phrase .variant{font-size:13px;color:#d1e5dc;margin:4px 0;}
   .phrase .ex{background:#303633;border-left-color:var(--phrase-bar);color:#dce8df;}
   .phrase .ex .tr{color:#a9c2b0;}
-  @media(max-width:520px){body{padding:14px 9px 34px}.hero{padding:16px}.hero h1{font-size:24px}.rule{padding:12px}.voc,.phrase{padding:10px 11px}}
+  .story{background:linear-gradient(180deg,#2a2630 0%,#23212a 100%);border:1px solid var(--line);border-left:5px solid var(--yellow);border-radius:14px;padding:16px 18px 6px;margin:11px 0;}
+  .story h3{margin:0 0 12px;font-size:19px;color:#f5e6b3;}
+  .story-p{margin:0 0 14px;}
+  .story-p>p{margin:0;font-size:16.5px;line-height:1.75;}
+  .lw{border-bottom:2px dotted rgba(242,211,107,.75);}
+  .story-tr summary{cursor:pointer;color:var(--muted);font-size:12.5px;margin-top:5px;width:max-content;}
+  .story-tr p{margin:5px 0 0;color:#a9b8c9;font-style:italic;font-size:14px;line-height:1.6;}
+  @media(max-width:520px){body{padding:14px 9px 34px}.hero{padding:16px}.hero h1{font-size:24px}.rule{padding:12px}.voc,.phrase{padding:10px 11px}.story{padding:14px 13px 4px}}
   @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 
+  .listen-row{display:flex;align-items:center;gap:9px;margin-top:13px;flex-wrap:wrap}
+  .listen-open,.story-play,.speak-button{border:1px solid rgba(255,255,255,.28);color:#fff;background:rgba(15,23,42,.55);font:inherit;cursor:pointer;box-shadow:none}
+  .listen-open{border-radius:999px;padding:8px 15px;font-size:14px;font-weight:700;min-height:38px}
+  .story-play{border-radius:999px;padding:6px 13px;font-size:13.5px;font-weight:700;min-height:34px;white-space:nowrap}
+  .speak-button{width:29px;height:29px;border-radius:50%;padding:0;display:inline-grid;place-items:center;font-size:14px;line-height:1;flex:0 0 auto;vertical-align:middle}
+  .speak-button:hover,.listen-open:hover,.story-play:hover,.speak-button:focus-visible,.listen-open:focus-visible,.story-play:focus-visible{background:#394151;outline:2px solid #f2d36b;outline-offset:2px}
+  .speak-button.is-playing,.listen-open.is-playing,.story-play.is-playing{background:#0f766e;border-color:#6ee7b7;animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{50%{box-shadow:0 0 0 6px rgba(110,231,183,.18)}}
+  .voc .top,.phrase .head,.rule h3,.story h3{align-items:center}
+  .phrase .head,.rule h3,.story h3{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap}
+  .ex>.speak-button,.story-p>.para-play{float:right;margin:-1px 0 4px 8px}
+  .variant>.speak-button{margin-left:7px}
+  .ss[data-audio]{cursor:pointer;border-radius:5px;transition:background .2s}
+  .ss.is-playing,.ss.follow{background:rgba(242,211,107,.16);outline:none}
+  .follow{outline:2px solid var(--yellow);outline-offset:3px;border-radius:10px}
+  .lp{margin:12px 0 4px;padding:12px;border:1px solid rgba(255,255,255,.2);border-radius:14px;background:rgba(15,23,42,.72)}
+  .lp-modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:10px}
+  .lp-modes button{font:inherit;font-size:15px;font-weight:700;min-height:46px;border-radius:12px;cursor:pointer;color:#1a1030;background:var(--accent2);border:0}
+  .lp-modes button[data-m="ex"]{background:#f2d36b}
+  .lp-modes button[data-m="story"]{background:#6ee7b7}
+  .lp-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:7px 0 0}
+  .lp-row>span{flex:0 0 92px;font-size:12.5px;color:#dbe2ea;letter-spacing:.3px}
+  .lp-row .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .lp-row .chips button{font:inherit;font-size:13.5px;min-height:34px;padding:4px 11px;border-radius:999px;cursor:pointer;color:#fff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22)}
+  .lp-row .chips button[aria-pressed="true"]{background:#f2d36b;color:#1a1030;border-color:#f2d36b;font-weight:700}
+  .now{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:30;display:flex;align-items:center;gap:10px;
+       max-width:calc(100% - 24px);padding:8px 8px 8px 16px;border-radius:999px;background:#0f766e;color:#ecfdf5;box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:14px}
+  .now span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .now button{font:inherit;font-size:14px;font-weight:700;border:0;border-radius:999px;padding:7px 13px;background:#ecfdf5;color:#064e3b;cursor:pointer;flex:none}
+  .tip{position:absolute;z-index:40;max-width:min(300px,calc(100% - 16px));padding:8px 11px;border-radius:10px;background:#0b1220;color:#f8fafc;
+       border:1px solid #f2d36b;font-size:14px;box-shadow:0 8px 22px rgba(0,0,0,.45)}
+  .lw{cursor:help}
+  [hidden]{display:none !important}
+  @media(max-width:520px){.speak-button{width:32px;height:32px}}
+  @media(prefers-reduced-motion:reduce){.speak-button.is-playing,.listen-open.is-playing{animation:none}}
+
+  [hidden]{display:none !important}
   .bar{position:sticky;top:0;z-index:5;margin:-24px -16px 18px;padding:10px 16px;background:rgba(23,25,31,.95);
        backdrop-filter:blur(8px);border-bottom:1px solid var(--line);display:none;gap:8px;flex-wrap:wrap;align-items:center}
   .js .bar{display:flex}
@@ -70,14 +114,14 @@
   .searching article.miss,.searching .unit.empty{display:none !important}
   .searching h2,.searching .rule-under{display:none}
   section.unit + section.unit{margin-top:40px}
-  .follow{outline:2px solid var(--yellow);outline-offset:3px;border-radius:12px}
   .explain-button{border:1px solid rgba(255,255,255,.28);color:#fff;background:rgba(15,23,42,.55);font:inherit;font-size:13px;
        font-weight:700;border-radius:999px;padding:4px 10px;margin-left:8px;cursor:pointer;white-space:nowrap}
   .explain-button.is-playing{background:#0f766e;border-color:#6ee7b7}
-  .mode-practice .lernen{display:none}
-  #practice{display:none}
-  .mode-practice #practice{display:block}
-  .mode-practice .lern-only{display:none !important}
+  .mode-practice .lernen,.mode-games .lernen{display:none}
+  #practice,#games{display:none}
+  .mode-practice #practice,.mode-games #games{display:block}
+  .mode-practice .lern-only,.mode-games .search-only{display:none !important}
+  .mode-practice .now{bottom:calc(150px + env(safe-area-inset-bottom))}
   .tr-top{display:flex;align-items:center;gap:10px;margin:2px 0 12px}
   .tr-bar{flex:1;height:8px;border-radius:99px;background:var(--card);border:1px solid var(--line);overflow:hidden}
   .tr-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),#34d399);transition:width .35s ease}
@@ -130,60 +174,139 @@
   .pr .backup button,.pr .backup label{font:inherit;font-size:14px;cursor:pointer;color:var(--ink);background:var(--card);
        border:1px solid var(--line);border-radius:10px;padding:8px 10px}
   .pr .backup input{display:none}
-  @media(prefers-reduced-motion:reduce){.fc,.fc.enter,.fc .back,.tr-bar i{transition:none;animation:none}}
+  /* ---- Spielen ---- */
+  .g-menu{display:grid;gap:10px}
+  .g-lead{color:var(--muted);font-size:14px;margin:2px 0 8px}
+  .g-tile{display:grid;grid-template-columns:54px 1fr;column-gap:12px;align-items:center;text-align:left;padding:14px;border-radius:16px;cursor:pointer;
+          background:var(--card);border:1px solid var(--line);color:var(--ink);font:inherit;transition:transform .12s,border-color .2s}
+  .g-tile:hover{border-color:var(--accent)}
+  .g-tile:active{transform:scale(.98)}
+  .g-icon{grid-row:1 / span 3;font-size:36px;display:grid;place-items:center}
+  .g-name{font-size:18px;font-weight:800}
+  .g-desc{font-size:13.5px;color:var(--muted)}
+  .g-best{font-size:13px;color:var(--yellow);margin-top:2px}
+  .g-random{font:inherit;font-weight:800;font-size:16px;min-height:54px;border-radius:14px;cursor:pointer;background:var(--accent);color:#1a1030;border:0}
+  .g-head{display:flex;align-items:center;gap:10px;margin:0 0 10px}
+  .g-title{font-size:20px;font-weight:800;flex:1}
+  .g-info{color:var(--muted);font-size:14px;white-space:nowrap}
+  .g-close{font:inherit;width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+  .g-acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .g-acts button{flex:1;min-height:50px;font:inherit;font-weight:700;font-size:16px;border-radius:14px;cursor:pointer;background:var(--card);color:var(--ink);border:1px solid var(--line)}
+  .g-acts .main{background:var(--accent);color:#1a1030;border-color:var(--accent)}
+  .g-end{text-align:center;padding:16px 4px}
+  .g-end p{margin:6px 0;color:var(--muted)}
+  .g-big{font-size:58px;line-height:1.1}
+  .g-stars{font-size:32px;color:var(--yellow);letter-spacing:5px;margin:4px 0 8px}
+  .g-end .g-rec{color:#6ee7b7;font-weight:800}
+  .g-ok{color:#6ee7b7;font-weight:800}
+  .g-no{color:#fda4af;font-weight:800}
+  .b-call{display:flex;align-items:center;gap:10px;min-height:66px;padding:12px 14px;border-radius:14px;background:var(--ex-bg);border-left:4px solid var(--ex-bar);margin-bottom:12px}
+  .b-cue{flex:1;font-size:16.5px;line-height:1.45}
+  .b-cue mark{font-weight:700}
+  .b-ear{color:var(--muted)}
+  .b-again{font:inherit;font-size:14px;border-radius:999px;padding:7px 12px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;flex:none}
+  .b-grid{display:grid;gap:8px}
+  .b-cell{position:relative;min-height:76px;padding:8px;border-radius:14px;font:inherit;font-size:15.5px;font-weight:700;line-height:1.25;cursor:pointer;
+          background:var(--card);color:var(--ink);border:2px solid var(--line);overflow-wrap:anywhere;transition:background .2s,border-color .2s}
+  .b-cell.on{background:#145c4d;border-color:#34d399}
+  .b-cell.on::after{content:'✓';position:absolute;top:4px;right:8px;color:#6ee7b7;font-size:15px}
+  .b-cell.hint{animation:hint .6s ease 3}
+  .b-none{width:100%;margin-top:10px;min-height:50px;font:inherit;font-weight:700;border-radius:14px;cursor:pointer;background:transparent;color:var(--ink);border:2px dashed var(--muted)}
+  .b-fb{min-height:76px;margin-top:12px;font-size:14.5px;line-height:1.45}
+  .b-tr{color:#7fb3d9;font-style:italic;margin-top:2px}
+  .b-bingo{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%) rotate(-6deg);font-size:64px;font-weight:900;color:#f2d36b;
+           text-shadow:0 6px 24px rgba(0,0,0,.6);z-index:60;animation:pop .45s ease;pointer-events:none}
+  .gap{display:inline-block;min-width:3em;border-bottom:2px solid var(--yellow);color:transparent}
+  .s-prompt{font-size:17px;margin:4px 0 10px;font-style:italic;color:#c7d2fe}
+  .s-line{min-height:60px;padding:10px;border-radius:14px;border:2px dashed var(--line);display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:17px}
+  .s-word{background:var(--ex-bg);padding:5px 9px;border-radius:9px}
+  .s-tiles{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .s-tile{font:inherit;font-size:17px;padding:9px 13px;border-radius:12px;cursor:pointer;background:var(--card);color:var(--ink);border:1px solid var(--line);min-height:48px}
+  .s-tile.used{visibility:hidden}
+  .s-tile.hint{border-color:var(--yellow);box-shadow:0 0 0 3px rgba(242,211,107,.35)}
+  .s-fb{margin-top:10px;min-height:24px}
+  .a-time{height:9px;border-radius:99px;background:var(--card);overflow:hidden;margin-bottom:10px}
+  .a-time i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#34d399,#f2d36b);transition:width 1s linear}
+  .a-score{text-align:center;color:var(--muted);margin-bottom:8px;min-height:22px}
+  .a-card{min-height:156px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;border-radius:18px;
+          background:var(--card);border:2px solid var(--line);padding:16px;transition:border-color .15s}
+  .a-card.good{border-color:#34d399}
+  .a-card.bad{border-color:#f87171}
+  .a-word{font-size:32px;font-weight:800;overflow-wrap:anywhere}
+  .a-gloss{color:var(--muted);margin-top:6px}
+  .a-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+  .a-btns button{min-height:68px;font:inherit;font-size:22px;font-weight:800;border-radius:16px;cursor:pointer;border:0;color:#10141c}
+  .a-der{background:var(--der)} .a-die{background:var(--die)} .a-das{background:var(--das)}
+  .r-sit{padding:14px;border-radius:14px;background:var(--ex-bg);border-left:4px solid var(--phrase-bar);font-size:17px;margin-bottom:12px}
+  .r-reg{color:var(--muted);font-size:13px;margin-top:4px}
+  .r-opts{display:grid;gap:8px}
+  .r-opt{text-align:left;font:inherit;font-size:16px;padding:12px 14px;border-radius:14px;cursor:pointer;background:var(--card);color:#6ee7b7;border:2px solid var(--line);font-weight:700}
+  .r-opt.ok{border-color:#34d399;background:#145c4d;color:#e7fff6}
+  .r-opt.no{border-color:#f87171;background:#5b2333;color:#ffe4ea}
+  .r-fb{margin-top:12px;font-size:14.5px;line-height:1.45}
+  .shake{animation:shake .35s}
+  @keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+  @keyframes hint{50%{box-shadow:0 0 0 5px rgba(242,211,107,.45)}}
+  @keyframes pop{from{transform:translate(-50%,-50%) scale(.4) rotate(-6deg)}}
+  .confetti{position:fixed;inset:0;pointer-events:none;z-index:55;overflow:hidden}
+  .confetti i{position:absolute;top:-14px;width:9px;height:14px;border-radius:2px;animation:fall linear forwards}
+  @keyframes fall{to{transform:translateY(108vh) rotate(600deg)}}
+  @media(prefers-reduced-motion:reduce){.fc,.fc.enter,.fc .back,.tr-bar i{transition:none;animation:none}.shake,.b-cell.hint,.b-bingo{animation:none}}
 </style>
 </head>
 <body><main class="wrap">
 <nav class="bar" aria-label="Navigation">
-<div class="tabs"><button type="button" id="tab-l" aria-pressed="true">Lernen</button><button type="button" id="tab-p" aria-pressed="false">Üben</button></div>
+<div class="tabs"><button type="button" id="tab-l" aria-pressed="true">Lernen</button><button type="button" id="tab-p" aria-pressed="false">Üben</button><button type="button" id="tab-g" aria-pressed="false">Spielen</button></div>
 <button class="nav lern-only" id="prev" type="button" aria-label="Vorherige Lektion">‹</button>
 <select class="lern-only" id="pick" aria-label="Lektion wählen"><option value="E1">Einheit 1 · Der erste Arbeitstag</option><option value="E2">Einheit 2 · Pläne fürs Wochenende</option></select>
 <button class="nav lern-only" id="next" type="button" aria-label="Nächste Lektion">›</button>
-<input class="lern-only" id="q" type="search" placeholder="Suchen…" aria-label="Suchen">
-<div class="hits lern-only" id="hits"></div>
+<input class="lern-only search-only" id="q" type="search" placeholder="Suchen…" aria-label="Suchen">
+<div class="hits lern-only search-only" id="hits"></div>
 </nav>
-<noscript><p class="cover">Audio und Üben brauchen einen Browser mit JavaScript.</p></noscript>
+<noscript><p class="cover">Audio, Üben und Spielen brauchen einen Browser mit JavaScript.</p></noscript>
 <div class="lernen">
 <div class="cover"><b>Beispielkurs Deutsch</b>2 Einheiten · Wortschatz · Grammatik · Redemittel</div>
 <section class="unit" id="E1">
-<header class="hero"><div class="lekt">Beispielkurs · A2–B1 · E1</div><h1>Der erste Arbeitstag – Im Büro</h1></header>
+<header class="hero"><div class="lekt">A2–B1 · E1</div><h1>Der erste Arbeitstag – Im Büro</h1></header>
 <h2><span class="num">1</span> Wortschatz</h2><div class="rule-under"></div>
 <h3>Wortschatz der Einheit</h3><div class="grid">
-<article class="voc" id="E1-v1"><div class="top"><span class="de"><span class="art-der">der</span> Kollege</span><span class="en">colleague</span></div><p class="forms">die Kollegin, -nen · Plural: die Kollegen · n-noun: den / dem Kollegen</p><div class="ex">Mein <mark>Kollege</mark> zeigt mir am ersten Tag das ganze Büro. <span class="tr" lang="en">— My colleague shows me the whole office on the first day.</span></div></article>
-<article class="voc" id="E1-v2"><div class="top"><span class="de"><span class="art-die">die</span> Besprechung</span><span class="en">meeting</span></div><p class="forms">Plural: die Besprechungen · eine Besprechung haben</p><div class="ex">Die <mark>Besprechung</mark> mit dem Team beginnt um neun Uhr. <span class="tr" lang="en">— The meeting with the team starts at nine.</span></div></article>
-<article class="voc" id="E1-v3"><div class="top"><span class="de"><span class="art-der">der</span> Termin</span><span class="en">appointment</span></div><p class="forms">Plural: die Termine · einen Termin vereinbaren / verschieben</p><div class="ex">Können wir den <mark>Termin</mark> auf Donnerstag verschieben? <span class="tr" lang="en">— Can we move the appointment to Thursday?</span></div></article>
-<article class="voc" id="E1-v4"><div class="top"><span class="de">sich vorstellen</span><span class="en">to introduce oneself</span></div><p class="forms">stellt sich vor · hat sich vorgestellt · separable</p><div class="ex">Am ersten Tag <mark>stelle</mark> ich mich allen Kollegen <mark>vor</mark>. <span class="tr" lang="en">— On the first day I introduce myself to all my colleagues.</span></div></article>
-<article class="voc" id="E1-v5"><div class="top"><span class="de">erledigen</span><span class="en">to get done, take care of</span></div><p class="forms">erledigt · hat erledigt · eine Aufgabe erledigen</p><div class="ex">Diese Aufgabe <mark>erledige</mark> ich bis Freitag. <span class="tr" lang="en">— I&#x27;ll get this task done by Friday.</span></div></article>
-<article class="voc" id="E1-v6"><div class="top"><span class="de">pünktlich</span><span class="en">on time, punctual</span></div><p class="forms">↔ unpünktlich · die Pünktlichkeit</p><div class="ex">Bitte sei morgen <mark>pünktlich</mark>, wir haben um acht eine Besprechung. <span class="tr" lang="en">— Please be on time tomorrow, we have a meeting at eight.</span></div></article>
+<article class="voc" id="E1-v1"><div class="top"><span class="de"><span class="art-der">der</span> Kollege</span><span class="en">colleague</span></div><p class="forms">die Kollegin, -nen · Plural: die Kollegen · n-noun: den / dem Kollegen</p><div class="ex" id="E1-v1-x0">Mein <mark>Kollege</mark> zeigt mir am ersten Tag das ganze Büro. <span class="tr" lang="en">— My colleague shows me the whole office on the first day.</span></div></article>
+<article class="voc" id="E1-v2"><div class="top"><span class="de"><span class="art-die">die</span> Besprechung</span><span class="en">meeting</span></div><p class="forms">Plural: die Besprechungen · in einer Besprechung sein</p><div class="ex" id="E1-v2-x0">Ich kann gerade nicht telefonieren, ich bin in einer <mark>Besprechung</mark>. <span class="tr" lang="en">— I can&#x27;t talk right now, I&#x27;m in a meeting.</span></div></article>
+<article class="voc" id="E1-v3"><div class="top"><span class="de"><span class="art-der">der</span> Termin</span><span class="en">appointment</span></div><p class="forms">Plural: die Termine · einen Termin vereinbaren / verschieben</p><div class="ex" id="E1-v3-x0">Können wir den <mark>Termin</mark> auf Donnerstag verschieben? <span class="tr" lang="en">— Can we move the appointment to Thursday?</span></div></article>
+<article class="voc" id="E1-v4"><div class="top"><span class="de">sich vorstellen</span><span class="en">to introduce oneself</span></div><p class="forms">stellt sich vor · hat sich vorgestellt · separable</p><div class="ex" id="E1-v4-x0">Am ersten Tag <mark>stelle</mark> ich mich allen Kollegen <mark>vor</mark>. <span class="tr" lang="en">— On the first day I introduce myself to all my colleagues.</span></div></article>
+<article class="voc" id="E1-v5"><div class="top"><span class="de">erledigen</span><span class="en">to get done, take care of</span></div><p class="forms">erledigt · hat erledigt · eine Aufgabe erledigen</p><div class="ex" id="E1-v5-x0">Keine Sorge, das <mark>erledige</mark> ich gleich nach der Mittagspause. <span class="tr" lang="en">— Don&#x27;t worry, I&#x27;ll take care of that right after lunch.</span></div></article>
+<article class="voc" id="E1-v6"><div class="top"><span class="de">pünktlich</span><span class="en">on time, punctual</span></div><p class="forms">↔ unpünktlich · die Pünktlichkeit</p><div class="ex" id="E1-v6-x0">Bitte sei morgen <mark>pünktlich</mark>, wir haben um acht eine Besprechung. <span class="tr" lang="en">— Please be on time tomorrow, we have a meeting at eight.</span></div></article>
 </div>
 <h2><span class="num">2</span> Grammatik</h2><div class="rule-under"></div>
-<article class="rule" id="E1-g1"><h3>Separable verbs – the prefix goes to the end</h3><p><b>Meaning:</b> Many verbs have a prefix that separates from the verb in a main clause.</p><p><b>Rule:</b> In a main clause the conjugated verb stands in position 2 and the prefix goes to the end. In the Perfekt, -ge- stands between prefix and verb. With a modal verb the infinitive stays together at the end.</p><div class="patterns"><p><b>present:</b> an|fangen → Die Besprechung fängt um neun an.</p><p><b>Perfekt:</b> an|fangen → hat angefangen</p><p><b>modal verb:</b> Ich muss heute früh anfangen.</p></div><p class="contrast"><b>Important:</b> Inseparable prefixes (be-, ver-, er-, ent-) never separate: Ich verstehe die Aufgabe.</p><div class="ex">Die Besprechung <mark>fängt</mark> um neun Uhr <mark>an</mark>. <span class="tr" lang="en">— The meeting starts at nine o&#x27;clock.</span></div>
-<div class="ex">Ich <mark>rufe</mark> dich nach der Arbeit <mark>an</mark>. <span class="tr" lang="en">— I&#x27;ll call you after work.</span></div>
-<div class="ex">Wir haben das Projekt gestern <mark>abgeschlossen</mark>. <span class="tr" lang="en">— We finished the project yesterday.</span></div></article>
+<article class="rule" id="E1-g1"><h3>Separable verbs – the prefix goes to the end</h3><p><b>Meaning:</b> Many verbs have a prefix that separates from the verb in a main clause.</p><p><b>Rule:</b> In a main clause the conjugated verb stands in position 2 and the prefix goes to the end. In the Perfekt, -ge- stands between prefix and verb. With a modal verb the infinitive stays together at the end.</p><div class="patterns"><p><b>present:</b> an|fangen → Die Besprechung fängt um neun an.</p><p><b>Perfekt:</b> an|fangen → hat angefangen</p><p><b>modal verb:</b> Ich muss heute früh anfangen.</p></div><p class="contrast"><b>Important:</b> Inseparable prefixes (be-, ver-, er-, ent-) never separate: Ich verstehe die Aufgabe.</p><div class="ex" id="E1-g1-x0">Die Besprechung <mark>fängt</mark> um neun Uhr <mark>an</mark>. <span class="tr" lang="en">— The meeting starts at nine o&#x27;clock.</span></div>
+<div class="ex" id="E1-g1-x1">Ich <mark>rufe</mark> dich nach der Arbeit <mark>an</mark>. <span class="tr" lang="en">— I&#x27;ll call you after work.</span></div>
+<div class="ex" id="E1-g1-x2">Wir haben das Projekt gestern <mark>abgeschlossen</mark>. <span class="tr" lang="en">— We finished the project yesterday.</span></div></article>
 <h2><span class="num">3</span> Redemittel</h2><div class="rule-under"></div>
 <h3>Redemittel der Einheit</h3>
-<article class="phrase" id="E1-e1"><div class="head">Darf ich mich kurz vorstellen? Ich bin … und arbeite als …</div><p class="meaning">May I briefly introduce myself? I&#x27;m … and I work as …</p><div class="when">Introduce yourself at a new workplace. · polite</div><div class="ex"><mark>Darf ich mich kurz vorstellen</mark>? Ich bin Sara und arbeite als Grafikerin. <span class="tr" lang="en">— May I briefly introduce myself? I&#x27;m Sara and I work as a graphic designer.</span></div></article>
-<article class="phrase" id="E1-e2"><div class="head">Könnten Sie mir bitte zeigen, wie …?</div><p class="meaning">Could you please show me how …?</p><div class="when">Ask a colleague for help. · polite</div><div class="ex"><mark>Könnten Sie mir bitte zeigen, wie</mark> der Drucker funktioniert? <span class="tr" lang="en">— Could you please show me how the printer works?</span></div></article>
-<article class="phrase" id="E1-e3"><div class="head">Bis wann soll ich … erledigen?</div><p class="meaning">By when should I get … done?</p><div class="when">Ask about a deadline.</div><div class="ex"><mark>Bis wann soll ich</mark> den Bericht <mark>erledigen</mark>? <span class="tr" lang="en">— By when should I get the report done?</span></div></article>
+<article class="phrase" id="E1-e1"><div class="head">Darf ich mich kurz vorstellen? Ich bin … und arbeite als …</div><p class="meaning">May I briefly introduce myself? I&#x27;m … and I work as …</p><div class="when">Introduce yourself at a new workplace. · polite</div><div class="ex" id="E1-e1-x0"><mark>Darf ich mich kurz vorstellen</mark>? Ich bin Sara und arbeite als Grafikerin. <span class="tr" lang="en">— May I briefly introduce myself? I&#x27;m Sara and I work as a graphic designer.</span></div></article>
+<article class="phrase" id="E1-e2"><div class="head">Könnten Sie mir bitte zeigen, wie …?</div><p class="meaning">Could you please show me how …?</p><div class="when">Ask a colleague for help. · polite</div><div class="ex" id="E1-e2-x0"><mark>Könnten Sie mir bitte zeigen, wie</mark> der Drucker funktioniert? <span class="tr" lang="en">— Could you please show me how the printer works?</span></div></article>
+<article class="phrase" id="E1-e3"><div class="head">Bis wann soll ich … erledigen?</div><p class="meaning">By when should I get … done?</p><div class="when">Ask about a deadline.</div><div class="ex" id="E1-e3-x0"><mark>Bis wann soll ich</mark> den Bericht <mark>erledigen</mark>? <span class="tr" lang="en">— By when should I get the report done?</span></div></article>
+<h2><span class="num">4</span> Geschichte</h2><div class="rule-under"></div><article class="story" id="E1-story"><h3>Der Drucker hasst mich</h3><div class="story-p" id="E1-story-p1"><p><span class="ss" id="E1-story-s1">Mein erster Arbeitstag beginnt mit einem Problem: Der Wecker klingelt nicht.</span> <span class="ss" id="E1-story-s2">Ich ziehe mich in fünf Minuten an und renne zur S-Bahn.</span> <span class="ss" id="E1-story-s3">Um Viertel vor neun stehe ich vor dem Büro, außer Atem, aber <span class="lw" data-card="v6" title="pünktlich: on time, punctual">pünktlich</span>.</span></p><details class="story-tr"><summary>Übersetzung</summary><p lang="en">My first day at work starts with a problem: the alarm doesn&#x27;t go off. I get dressed in five minutes and run to the train. At a quarter to nine I&#x27;m standing outside the office, out of breath, but on time.</p></details></div><div class="story-p" id="E1-story-p2"><p><span class="ss" id="E1-story-s4">Ein <span class="lw" data-card="v1" title="der Kollege: colleague">Kollege</span> mit einer riesigen Tasse Kaffee kommt auf mich zu.</span> <span class="ss" id="E1-story-s5">„<span class="lw" data-card="e1" title="Darf ich mich kurz vorstellen? Ich bin … und arbeite als …: May I briefly introduce myself? I&#x27;m … and I work as …">Darf ich mich kurz vorstellen</span>?</span> <span class="ss" id="E1-story-s6">Ich bin Jonas und arbeite als Techniker.“</span> <span class="ss" id="E1-story-s7">Er zeigt mir meinen Platz und erklärt: „Die <span class="lw" data-card="v2" title="die Besprechung: meeting">Besprechung</span> fängt um neun an.</span> <span class="ss" id="E1-story-s8">Danach hast du deinen ersten <span class="lw" data-card="v3" title="der Termin: appointment">Termin</span> mit der Chefin.“</span></p><details class="story-tr"><summary>Übersetzung</summary><p lang="en">A colleague with a huge cup of coffee comes up to me. &#x27;May I briefly introduce myself? I&#x27;m Jonas and I work as a technician.&#x27; He shows me my desk and explains: &#x27;The meeting starts at nine. After that you have your first appointment with the boss.&#x27;</p></details></div><div class="story-p" id="E1-story-p3"><p><span class="ss" id="E1-story-s9">In der Besprechung <span class="lw" data-card="v4" title="sich vorstellen: to introduce oneself">stelle ich mich allen kurz vor</span>.</span> <span class="ss" id="E1-story-s10">Alle sind nett, nur der Drucker nicht: Er blinkt rot und druckt nichts.</span> <span class="ss" id="E1-story-s11">Ich frage Jonas: „<span class="lw" data-card="e2" title="Könnten Sie mir bitte zeigen, wie …?: Could you please show me how …?">Könnten Sie mir bitte zeigen, wie</span> der Drucker funktioniert?“</span> <span class="ss" id="E1-story-s12">Er lacht.</span> <span class="ss" id="E1-story-s13">„Sag ruhig du.</span> <span class="ss" id="E1-story-s14">Und der Drucker funktioniert nie.“</span></p><details class="story-tr"><summary>Übersetzung</summary><p lang="en">In the meeting I briefly introduce myself to everyone. Everyone is nice, except the printer: it blinks red and prints nothing. I ask Jonas: &#x27;Could you please show me how the printer works?&#x27; He laughs. &#x27;You can say du. And the printer never works.&#x27;</p></details></div><div class="story-p" id="E1-story-p4"><p><span class="ss" id="E1-story-s15">Am Nachmittag <span class="lw" data-card="v5" title="erledigen: to get done, take care of">erledige</span> ich zuerst meine E-Mails.</span> <span class="ss" id="E1-story-s16">Dann bekomme ich meine erste Aufgabe: eine Präsentation für die Kunden.</span> <span class="ss" id="E1-story-s17">„<span class="lw" data-card="e3" title="Bis wann soll ich … erledigen?: By when should I get … done?">Bis wann soll ich</span> die Präsentation fertig machen?“, frage ich.</span> <span class="ss" id="E1-story-s18">„Bis Donnerstag“, sagt die Chefin.</span> <span class="ss" id="E1-story-s19">Um sechs schalte ich den Computer aus und lächle.</span> <span class="ss" id="E1-story-s20">Morgen stelle ich den Wecker zweimal.</span></p><details class="story-tr"><summary>Übersetzung</summary><p lang="en">In the afternoon I first deal with my e-mails. Then I get my first task: a presentation for the clients. &#x27;By when should I finish the presentation?&#x27; I ask. &#x27;By Thursday,&#x27; says the boss. At six I switch off the computer and smile. Tomorrow I&#x27;ll set the alarm twice.</p></details></div></article>
 </section><section class="unit" id="E2">
-<header class="hero"><div class="lekt">Beispielkurs · A2–B1 · E2</div><h1>Pläne fürs Wochenende – Freizeit</h1></header>
+<header class="hero"><div class="lekt">A2–B1 · E2</div><h1>Pläne fürs Wochenende – Freizeit</h1></header>
 <h2><span class="num">1</span> Wortschatz</h2><div class="rule-under"></div>
 <h3>Wortschatz der Einheit</h3><div class="grid">
-<article class="voc" id="E2-v1"><div class="top"><span class="de"><span class="art-der">der</span> Ausflug</span><span class="en">trip, outing</span></div><p class="forms">Plural: die Ausflüge · einen Ausflug machen</p><div class="ex">Am Samstag machen wir einen <mark>Ausflug</mark> an den See. <span class="tr" lang="en">— On Saturday we&#x27;re going on a trip to the lake.</span></div></article>
-<article class="voc" id="E2-v2"><div class="top"><span class="de"><span class="art-die">die</span> Verabredung</span><span class="en">arrangement to meet, date</span></div><p class="forms">Plural: die Verabredungen · sich verabreden</p><div class="ex">Ich habe heute Abend eine <mark>Verabredung</mark> mit Lena. <span class="tr" lang="en">— I&#x27;m meeting Lena tonight.</span></div></article>
-<article class="voc" id="E2-v3"><div class="top"><span class="de">vorschlagen</span><span class="en">to suggest</span></div><p class="forms">schlägt vor · hat vorgeschlagen (!) · separable</p><div class="ex">Ich <mark>schlage</mark> <mark>vor</mark>, dass wir zusammen kochen. <span class="tr" lang="en">— I suggest that we cook together.</span></div></article>
-<article class="voc" id="E2-v4"><div class="top"><span class="de">spontan</span><span class="en">spontaneous(ly)</span></div><p class="forms">sich spontan entscheiden</p><div class="ex">Wir haben uns ganz <mark>spontan</mark> für das Kino entschieden. <span class="tr" lang="en">— We decided on the cinema quite spontaneously.</span></div></article>
-<article class="voc" id="E2-v5"><div class="top"><span class="de"><span class="art-das">das</span> Wetter</span><span class="en">weather</span></div><p class="forms">no plural · bei schönem Wetter</p><div class="ex">Bei schönem <mark>Wetter</mark> fahren wir mit dem Rad. <span class="tr" lang="en">— If the weather is nice, we&#x27;ll go by bike.</span></div></article>
+<article class="voc" id="E2-v1"><div class="top"><span class="de"><span class="art-der">der</span> Ausflug</span><span class="en">trip, outing</span></div><p class="forms">Plural: die Ausflüge · einen Ausflug machen</p><div class="ex" id="E2-v1-x0">Am Samstag machen wir einen <mark>Ausflug</mark> an den See. <span class="tr" lang="en">— On Saturday we&#x27;re going on a trip to the lake.</span></div></article>
+<article class="voc" id="E2-v2"><div class="top"><span class="de"><span class="art-die">die</span> Verabredung</span><span class="en">arrangement to meet, date</span></div><p class="forms">Plural: die Verabredungen · sich verabreden</p><div class="ex" id="E2-v2-x0">Tut mir leid, heute Abend habe ich schon eine <mark>Verabredung</mark>. <span class="tr" lang="en">— Sorry, I already have plans to meet someone tonight.</span></div></article>
+<article class="voc" id="E2-v3"><div class="top"><span class="de">vorschlagen</span><span class="en">to suggest</span></div><p class="forms">schlägt vor · hat vorgeschlagen (!) · separable</p><div class="ex" id="E2-v3-x0">Ich <mark>schlage</mark> <mark>vor</mark>, dass wir zusammen kochen. <span class="tr" lang="en">— I suggest that we cook together.</span></div></article>
+<article class="voc" id="E2-v4"><div class="top"><span class="de">spontan</span><span class="en">spontaneous(ly)</span></div><p class="forms">sich spontan entscheiden</p><div class="ex" id="E2-v4-x0">Wir haben uns ganz <mark>spontan</mark> für das Kino entschieden. <span class="tr" lang="en">— We decided on the cinema quite spontaneously.</span></div></article>
+<article class="voc" id="E2-v5"><div class="top"><span class="de"><span class="art-das">das</span> Wetter</span><span class="en">weather</span></div><p class="forms">no plural · bei schönem Wetter</p><div class="ex" id="E2-v5-x0">Bei schönem <mark>Wetter</mark> fahren wir mit dem Rad. <span class="tr" lang="en">— If the weather is nice, we&#x27;ll go by bike.</span></div></article>
 </div>
 <h2><span class="num">2</span> Grammatik</h2><div class="rule-under"></div>
-<article class="rule" id="E2-g1"><h3>Polite suggestions with könnte and wäre</h3><p><b>Meaning:</b> Konjunktiv II makes a suggestion sound open and friendly.</p><p><b>Rule:</b> Use könnten + infinitive at the end, or Wie wäre es mit + Dativ. Wir könnten … is softer than Wir müssen …</p><div class="patterns"><p><b>könnte:</b> Wir könnten am Sonntag wandern gehen.</p><p><b>wäre:</b> Wie wäre es mit einem Picknick?</p><p><b>Lust haben:</b> Hättest du Lust, … zu …?</p></div><p class="contrast"><b>Important:</b> Wir können … states that something is possible. Wir könnten … makes a suggestion.</p><div class="ex">Wir <mark>könnten</mark> am Sonntag wandern gehen. <span class="tr" lang="en">— We could go hiking on Sunday.</span></div>
-<div class="ex"><mark>Wie wäre es mit</mark> einem Picknick im Park? <span class="tr" lang="en">— How about a picnic in the park?</span></div>
-<div class="ex"><mark>Hättest du Lust</mark>, mit ins Kino zu kommen? <span class="tr" lang="en">— Would you like to come to the cinema?</span></div></article>
+<article class="rule" id="E2-g1"><h3>Polite suggestions with könnte and wäre</h3><p><b>Meaning:</b> Konjunktiv II makes a suggestion sound open and friendly.</p><p><b>Rule:</b> Use könnten + infinitive at the end, or Wie wäre es mit + Dativ. Wir könnten … is softer than Wir müssen …</p><div class="patterns"><p><b>könnte:</b> Wir könnten am Sonntag wandern gehen.</p><p><b>wäre:</b> Wie wäre es mit einem Picknick?</p><p><b>Lust haben:</b> Hättest du Lust, … zu …?</p></div><p class="contrast"><b>Important:</b> Wir können … states that something is possible. Wir könnten … makes a suggestion.</p><div class="ex" id="E2-g1-x0">Wir <mark>könnten</mark> am Sonntag wandern gehen. <span class="tr" lang="en">— We could go hiking on Sunday.</span></div>
+<div class="ex" id="E2-g1-x1"><mark>Wie wäre es mit</mark> einem Picknick im Park? <span class="tr" lang="en">— How about a picnic in the park?</span></div>
+<div class="ex" id="E2-g1-x2"><mark>Hättest du Lust</mark>, mit ins Kino zu kommen? <span class="tr" lang="en">— Would you like to come to the cinema?</span></div></article>
 <h2><span class="num">3</span> Redemittel</h2><div class="rule-under"></div>
 <h3>Redemittel der Einheit</h3>
-<article class="phrase" id="E2-e1"><div class="head">Hast du Lust, … zu …?</div><p class="meaning">Do you feel like …ing?</p><div class="when">Invite a friend informally. · informal</div><div class="ex"><mark>Hast du Lust</mark>, am Samstag mit uns <mark>zu</mark> grillen? <span class="tr" lang="en">— Do you feel like having a barbecue with us on Saturday?</span></div></article>
-<article class="phrase" id="E2-e2"><div class="head">Wie wäre es mit …?</div><p class="meaning">How about …?</p><div class="when">Make a suggestion.</div><div class="ex"><mark>Wie wäre es mit</mark> einem Ausflug an den See? <span class="tr" lang="en">— How about a trip to the lake?</span></div></article>
-<article class="phrase" id="E2-e3"><div class="head">Das passt mir gut. / Das passt mir leider nicht.</div><p class="meaning">That suits me. / Unfortunately that doesn&#x27;t suit me.</p><div class="when">Accept or decline a suggested time.</div><div class="ex">Samstag <mark>passt mir gut</mark>, aber Sonntag <mark>passt mir leider nicht</mark>. <span class="tr" lang="en">— Saturday suits me, but Sunday unfortunately doesn&#x27;t.</span></div></article>
+<article class="phrase" id="E2-e1"><div class="head">Hast du Lust, … zu …?</div><p class="meaning">Do you feel like …ing?</p><div class="when">Invite a friend informally. · informal</div><div class="ex" id="E2-e1-x0"><mark>Hast du Lust</mark>, am Samstag mit uns <mark>zu</mark> grillen? <span class="tr" lang="en">— Do you feel like having a barbecue with us on Saturday?</span></div></article>
+<article class="phrase" id="E2-e2"><div class="head">Wie wäre es mit …?</div><p class="meaning">How about …?</p><div class="when">Make a suggestion.</div><div class="ex" id="E2-e2-x0"><mark>Wie wäre es mit</mark> einem Ausflug an den See? <span class="tr" lang="en">— How about a trip to the lake?</span></div></article>
+<article class="phrase" id="E2-e3"><div class="head">Das passt mir gut. / Das passt mir leider nicht.</div><p class="meaning">That suits me. / Unfortunately that doesn&#x27;t suit me.</p><div class="when">Accept or decline a suggested time.</div><div class="ex" id="E2-e3-x0">Samstag <mark>passt mir gut</mark>, aber Sonntag <mark>passt mir leider nicht</mark>. <span class="tr" lang="en">— Saturday suits me, but Sunday unfortunately doesn&#x27;t.</span></div></article>
+<h2><span class="num">4</span> Geschichte</h2><div class="rule-under"></div><article class="story" id="E2-story"><h3>Der perfekte Samstag</h3><div class="story-p" id="E2-story-p1"><p><span class="ss" id="E2-story-s1">Am Freitagabend schreibt mir Lena: „<span class="lw" data-card="e1" title="Hast du Lust, … zu …?: Do you feel like …ing?">Hast du Lust</span>, am Samstag mit uns zu grillen?“</span> <span class="ss" id="E2-story-s2">Ich schaue sofort in die <span class="lw" data-card="v5" title="das Wetter: weather">Wetter</span>-App.</span> <span class="ss" id="E2-story-s3">Das Wetter soll perfekt werden: Sonne, 25 Grad, kein Wind.</span></p><details class="story-tr"><summary>Übersetzung</summary><p lang="en">On Friday evening Lena texts me: &#x27;Do you feel like having a barbecue with us on Saturday?&#x27; I check the weather app straight away. The weather is supposed to be perfect: sun, 25 degrees, no wind.</p></details></div><div class="story-p" id="E2-story-p2"><p><span class="ss" id="E2-story-s4">Ich antworte: „Samstag <span class="lw" data-card="e3" title="Das passt mir gut. / Das passt mir leider nicht.: That suits me. / Unfortunately that doesn&#x27;t suit me.">passt mir gut</span>!</span> <span class="ss" id="E2-story-s5">Aber <span class="lw" data-card="e2" title="Wie wäre es mit …?: How about …?">wie wäre es mit</span> einem <span class="lw" data-card="v1" title="der Ausflug: trip, outing">Ausflug</span> an den See?</span> <span class="ss" id="E2-story-s6">Wir könnten dort grillen und schwimmen.“</span> <span class="ss" id="E2-story-s7">Lena findet die Idee toll, nur Tom ist skeptisch.</span></p><details class="story-tr"><summary>Übersetzung</summary><p lang="en">I reply: &#x27;Saturday suits me! But how about a trip to the lake? We could have a barbecue there and go swimming.&#x27; Lena loves the idea, only Tom is sceptical.</p></details></div><div class="story-p" id="E2-story-p3"><p><span class="ss" id="E2-story-s8">Tom <span class="lw" data-card="v3" title="vorschlagen: to suggest">schlägt vor</span>, dass wir lieber ins Kino gehen.</span> <span class="ss" id="E2-story-s9">„Bei dem Wetter?</span> <span class="ss" id="E2-story-s10">Hättest du nicht Lust, mal etwas Neues zu machen?“, frage ich.</span> <span class="ss" id="E2-story-s11">Er gibt auf.</span></p><details class="story-tr"><summary>Übersetzung</summary><p lang="en">Tom suggests that we&#x27;d rather go to the cinema. &#x27;In this weather? Wouldn&#x27;t you like to do something new for once?&#x27; I ask. He gives in.</p></details></div><div class="story-p" id="E2-story-p4"><p><span class="ss" id="E2-story-s12">Am Samstag regnet es.</span> <span class="ss" id="E2-story-s13">Natürlich.</span> <span class="ss" id="E2-story-s14">Wir sitzen zu dritt in Lenas Küche, essen Würstchen aus der Pfanne und lachen viel.</span> <span class="ss" id="E2-story-s15">Ganz <span class="lw" data-card="v4" title="spontan: spontaneous(ly)">spontan</span> sagt Tom: „Und morgen gehen wir ins Kino?“</span> <span class="ss" id="E2-story-s16">Diesmal sage ich ja.</span> <span class="ss" id="E2-story-s17">Unsere nächste <span class="lw" data-card="v2" title="die Verabredung: arrangement to meet, date">Verabredung</span> steht.</span></p><details class="story-tr"><summary>Übersetzung</summary><p lang="en">On Saturday it rains. Of course. The three of us sit in Lena&#x27;s kitchen, eat sausages from the pan and laugh a lot. Quite spontaneously Tom says: &#x27;And tomorrow we go to the cinema?&#x27; This time I say yes. Our next date is set.</p></details></div></article>
 </section>
 </div>
 
@@ -198,66 +321,124 @@
 <div class="group"><div class="lab">Neue Karten pro Tag</div><div class="chips" id="s-new"></div></div>
 <div class="group"><div class="lab">Pause nach … Karten</div><div class="chips" id="s-round"></div></div>
 <div class="group"><div class="lab">Modus</div><div class="chips" id="s-mode"></div></div>
-<div class="group"><div class="lab">Aussprache automatisch</div><div class="chips" id="s-auto"></div></div>
+<div class="group"><div class="lab">Ton (Aussprache und Spiele)</div><div class="chips" id="s-auto"></div></div>
 <div class="group"><div class="lab">Fortschritt</div><p class="stat" id="s-stat"></p>
 <div class="backup"><button type="button" id="save-btn">Sichern</button><label for="load-in">Laden</label><input type="file" id="load-in" accept="application/json,.json"></div>
 <p class="stat">Der Fortschritt bleibt in diesem Browser auf diesem Gerät. Mit „Sichern“ nimmst du ihn mit.</p></div>
 </details>
 </section>
 
+
+<section id="games" aria-label="Spielen">
+<div class="g-menu" id="g-menu"></div>
+<div class="g-box" id="g-box" hidden></div>
+</section>
+
+<div class="lp" id="lp" hidden data-unit="">
+<div class="lp-modes"><button type="button" data-m="all">▶ Ganze Lektion</button><button type="button" data-m="ex">▶ Nur Beispiele</button><button type="button" data-m="story">▶ Geschichte</button></div>
+<div class="lp-row"><span>Jeder Satz</span><div class="chips" id="lp-each"></div></div>
+<div class="lp-row"><span>Am Ende</span><div class="chips" id="lp-loop"></div></div>
+<div class="lp-row"><span>🔊-Taste</span><div class="chips" id="lp-one"></div></div>
+</div>
+<div class="now" id="now" hidden><span id="now-t"></span><button type="button" id="now-x">⏹ Stopp</button></div>
+<div class="tip" id="tip" hidden></div>
+
 </main>
 <script>
 (function(){
   'use strict';
   var d=document, root=d.documentElement; root.classList.add('js');
-  var A={}, IDX={}, SEQ={}, CARDS=[{"u":"E1","l":"Einheit 1","id":"E1-v1","k":"w","b":"<div class=\"top\"><span class=\"de\"><span class=\"art-der\">der<\/span> Kollege<\/span><span class=\"en\">colleague<\/span><\/div><p class=\"forms\">die Kollegin, -nen · Plural: die Kollegen · n-noun: den / dem Kollegen<\/p><div class=\"ex\">Mein <mark>Kollege<\/mark> zeigt mir am ersten Tag das ganze Büro. <span class=\"tr\" lang=\"en\">— My colleague shows me the whole office on the first day.<\/span><\/div>","f":"<span class=\"art-der\">der<\/span> Kollege","r":"colleague","a":"der Kollege = colleague"},{"u":"E1","l":"Einheit 1","id":"E1-v2","k":"w","b":"<div class=\"top\"><span class=\"de\"><span class=\"art-die\">die<\/span> Besprechung<\/span><span class=\"en\">meeting<\/span><\/div><p class=\"forms\">Plural: die Besprechungen · eine Besprechung haben<\/p><div class=\"ex\">Die <mark>Besprechung<\/mark> mit dem Team beginnt um neun Uhr. <span class=\"tr\" lang=\"en\">— The meeting with the team starts at nine.<\/span><\/div>","f":"<span class=\"art-die\">die<\/span> Besprechung","r":"meeting","a":"die Besprechung = meeting"},{"u":"E1","l":"Einheit 1","id":"E1-v3","k":"w","b":"<div class=\"top\"><span class=\"de\"><span class=\"art-der\">der<\/span> Termin<\/span><span class=\"en\">appointment<\/span><\/div><p class=\"forms\">Plural: die Termine · einen Termin vereinbaren / verschieben<\/p><div class=\"ex\">Können wir den <mark>Termin<\/mark> auf Donnerstag verschieben? <span class=\"tr\" lang=\"en\">— Can we move the appointment to Thursday?<\/span><\/div>","f":"<span class=\"art-der\">der<\/span> Termin","r":"appointment","a":"der Termin = appointment"},{"u":"E1","l":"Einheit 1","id":"E1-v4","k":"w","b":"<div class=\"top\"><span class=\"de\">sich vorstellen<\/span><span class=\"en\">to introduce oneself<\/span><\/div><p class=\"forms\">stellt sich vor · hat sich vorgestellt · separable<\/p><div class=\"ex\">Am ersten Tag <mark>stelle<\/mark> ich mich allen Kollegen <mark>vor<\/mark>. <span class=\"tr\" lang=\"en\">— On the first day I introduce myself to all my colleagues.<\/span><\/div>","f":"sich vorstellen","r":"to introduce oneself","a":"sich vorstellen = to introduce oneself"},{"u":"E1","l":"Einheit 1","id":"E1-v5","k":"w","b":"<div class=\"top\"><span class=\"de\">erledigen<\/span><span class=\"en\">to get done, take care of<\/span><\/div><p class=\"forms\">erledigt · hat erledigt · eine Aufgabe erledigen<\/p><div class=\"ex\">Diese Aufgabe <mark>erledige<\/mark> ich bis Freitag. <span class=\"tr\" lang=\"en\">— I&#x27;ll get this task done by Friday.<\/span><\/div>","f":"erledigen","r":"to get done, take care of","a":"erledigen = to get done, take care of"},{"u":"E1","l":"Einheit 1","id":"E1-v6","k":"w","b":"<div class=\"top\"><span class=\"de\">pünktlich<\/span><span class=\"en\">on time, punctual<\/span><\/div><p class=\"forms\">↔ unpünktlich · die Pünktlichkeit<\/p><div class=\"ex\">Bitte sei morgen <mark>pünktlich<\/mark>, wir haben um acht eine Besprechung. <span class=\"tr\" lang=\"en\">— Please be on time tomorrow, we have a meeting at eight.<\/span><\/div>","f":"pünktlich","r":"on time, punctual","a":"pünktlich = on time, punctual"},{"u":"E1","l":"Einheit 1","id":"E1-g1","k":"g","b":"<h3>Separable verbs – the prefix goes to the end<\/h3><p><b>Meaning:<\/b> Many verbs have a prefix that separates from the verb in a main clause.<\/p><p><b>Rule:<\/b> In a main clause the conjugated verb stands in position 2 and the prefix goes to the end. In the Perfekt, -ge- stands between prefix and verb. With a modal verb the infinitive stays together at the end.<\/p><div class=\"patterns\"><p><b>present:<\/b> an|fangen → Die Besprechung fängt um neun an.<\/p><p><b>Perfekt:<\/b> an|fangen → hat angefangen<\/p><p><b>modal verb:<\/b> Ich muss heute früh anfangen.<\/p><\/div><p class=\"contrast\"><b>Important:<\/b> Inseparable prefixes (be-, ver-, er-, ent-) never separate: Ich verstehe die Aufgabe.<\/p><div class=\"ex\">Die Besprechung <mark>fängt<\/mark> um neun Uhr <mark>an<\/mark>. <span class=\"tr\" lang=\"en\">— The meeting starts at nine o&#x27;clock.<\/span><\/div>\n<div class=\"ex\">Ich <mark>rufe<\/mark> dich nach der Arbeit <mark>an<\/mark>. <span class=\"tr\" lang=\"en\">— I&#x27;ll call you after work.<\/span><\/div>\n<div class=\"ex\">Wir haben das Projekt gestern <mark>abgeschlossen<\/mark>. <span class=\"tr\" lang=\"en\">— We finished the project yesterday.<\/span><\/div>","f":"Separable verbs – the prefix goes to the end","a":"Separable verbs – the prefix goes to the end"},{"u":"E1","l":"Einheit 1","id":"E1-e1","k":"r","b":"<div class=\"head\">Darf ich mich kurz vorstellen? Ich bin … und arbeite als …<\/div><p class=\"meaning\">May I briefly introduce myself? I&#x27;m … and I work as …<\/p><div class=\"when\">Introduce yourself at a new workplace. · polite<\/div><div class=\"ex\"><mark>Darf ich mich kurz vorstellen<\/mark>? Ich bin Sara und arbeite als Grafikerin. <span class=\"tr\" lang=\"en\">— May I briefly introduce myself? I&#x27;m Sara and I work as a graphic designer.<\/span><\/div>","f":"<span class=\"q-mean\">May I briefly introduce myself? I&#x27;m … and I work as …<\/span><span class=\"q-when\">Introduce yourself at a new workplace. · polite<\/span>","a":"Darf ich mich kurz vorstellen? Ich bin … und arbeite als …"},{"u":"E1","l":"Einheit 1","id":"E1-e2","k":"r","b":"<div class=\"head\">Könnten Sie mir bitte zeigen, wie …?<\/div><p class=\"meaning\">Could you please show me how …?<\/p><div class=\"when\">Ask a colleague for help. · polite<\/div><div class=\"ex\"><mark>Könnten Sie mir bitte zeigen, wie<\/mark> der Drucker funktioniert? <span class=\"tr\" lang=\"en\">— Could you please show me how the printer works?<\/span><\/div>","f":"<span class=\"q-mean\">Could you please show me how …?<\/span><span class=\"q-when\">Ask a colleague for help. · polite<\/span>","a":"Könnten Sie mir bitte zeigen, wie …?"},{"u":"E1","l":"Einheit 1","id":"E1-e3","k":"r","b":"<div class=\"head\">Bis wann soll ich … erledigen?<\/div><p class=\"meaning\">By when should I get … done?<\/p><div class=\"when\">Ask about a deadline.<\/div><div class=\"ex\"><mark>Bis wann soll ich<\/mark> den Bericht <mark>erledigen<\/mark>? <span class=\"tr\" lang=\"en\">— By when should I get the report done?<\/span><\/div>","f":"<span class=\"q-mean\">By when should I get … done?<\/span><span class=\"q-when\">Ask about a deadline.<\/span>","a":"Bis wann soll ich … erledigen?"},{"u":"E2","l":"Einheit 2","id":"E2-v1","k":"w","b":"<div class=\"top\"><span class=\"de\"><span class=\"art-der\">der<\/span> Ausflug<\/span><span class=\"en\">trip, outing<\/span><\/div><p class=\"forms\">Plural: die Ausflüge · einen Ausflug machen<\/p><div class=\"ex\">Am Samstag machen wir einen <mark>Ausflug<\/mark> an den See. <span class=\"tr\" lang=\"en\">— On Saturday we&#x27;re going on a trip to the lake.<\/span><\/div>","f":"<span class=\"art-der\">der<\/span> Ausflug","r":"trip, outing","a":"der Ausflug = trip, outing"},{"u":"E2","l":"Einheit 2","id":"E2-v2","k":"w","b":"<div class=\"top\"><span class=\"de\"><span class=\"art-die\">die<\/span> Verabredung<\/span><span class=\"en\">arrangement to meet, date<\/span><\/div><p class=\"forms\">Plural: die Verabredungen · sich verabreden<\/p><div class=\"ex\">Ich habe heute Abend eine <mark>Verabredung<\/mark> mit Lena. <span class=\"tr\" lang=\"en\">— I&#x27;m meeting Lena tonight.<\/span><\/div>","f":"<span class=\"art-die\">die<\/span> Verabredung","r":"arrangement to meet, date","a":"die Verabredung = arrangement to meet, date"},{"u":"E2","l":"Einheit 2","id":"E2-v3","k":"w","b":"<div class=\"top\"><span class=\"de\">vorschlagen<\/span><span class=\"en\">to suggest<\/span><\/div><p class=\"forms\">schlägt vor · hat vorgeschlagen (!) · separable<\/p><div class=\"ex\">Ich <mark>schlage<\/mark> <mark>vor<\/mark>, dass wir zusammen kochen. <span class=\"tr\" lang=\"en\">— I suggest that we cook together.<\/span><\/div>","f":"vorschlagen","r":"to suggest","a":"vorschlagen = to suggest"},{"u":"E2","l":"Einheit 2","id":"E2-v4","k":"w","b":"<div class=\"top\"><span class=\"de\">spontan<\/span><span class=\"en\">spontaneous(ly)<\/span><\/div><p class=\"forms\">sich spontan entscheiden<\/p><div class=\"ex\">Wir haben uns ganz <mark>spontan<\/mark> für das Kino entschieden. <span class=\"tr\" lang=\"en\">— We decided on the cinema quite spontaneously.<\/span><\/div>","f":"spontan","r":"spontaneous(ly)","a":"spontan = spontaneous(ly)"},{"u":"E2","l":"Einheit 2","id":"E2-v5","k":"w","b":"<div class=\"top\"><span class=\"de\"><span class=\"art-das\">das<\/span> Wetter<\/span><span class=\"en\">weather<\/span><\/div><p class=\"forms\">no plural · bei schönem Wetter<\/p><div class=\"ex\">Bei schönem <mark>Wetter<\/mark> fahren wir mit dem Rad. <span class=\"tr\" lang=\"en\">— If the weather is nice, we&#x27;ll go by bike.<\/span><\/div>","f":"<span class=\"art-das\">das<\/span> Wetter","r":"weather","a":"das Wetter = weather"},{"u":"E2","l":"Einheit 2","id":"E2-g1","k":"g","b":"<h3>Polite suggestions with könnte and wäre<\/h3><p><b>Meaning:<\/b> Konjunktiv II makes a suggestion sound open and friendly.<\/p><p><b>Rule:<\/b> Use könnten + infinitive at the end, or Wie wäre es mit + Dativ. Wir könnten … is softer than Wir müssen …<\/p><div class=\"patterns\"><p><b>könnte:<\/b> Wir könnten am Sonntag wandern gehen.<\/p><p><b>wäre:<\/b> Wie wäre es mit einem Picknick?<\/p><p><b>Lust haben:<\/b> Hättest du Lust, … zu …?<\/p><\/div><p class=\"contrast\"><b>Important:<\/b> Wir können … states that something is possible. Wir könnten … makes a suggestion.<\/p><div class=\"ex\">Wir <mark>könnten<\/mark> am Sonntag wandern gehen. <span class=\"tr\" lang=\"en\">— We could go hiking on Sunday.<\/span><\/div>\n<div class=\"ex\"><mark>Wie wäre es mit<\/mark> einem Picknick im Park? <span class=\"tr\" lang=\"en\">— How about a picnic in the park?<\/span><\/div>\n<div class=\"ex\"><mark>Hättest du Lust<\/mark>, mit ins Kino zu kommen? <span class=\"tr\" lang=\"en\">— Would you like to come to the cinema?<\/span><\/div>","f":"Polite suggestions with könnte and wäre","a":"Polite suggestions with könnte and wäre"},{"u":"E2","l":"Einheit 2","id":"E2-e1","k":"r","b":"<div class=\"head\">Hast du Lust, … zu …?<\/div><p class=\"meaning\">Do you feel like …ing?<\/p><div class=\"when\">Invite a friend informally. · informal<\/div><div class=\"ex\"><mark>Hast du Lust<\/mark>, am Samstag mit uns <mark>zu<\/mark> grillen? <span class=\"tr\" lang=\"en\">— Do you feel like having a barbecue with us on Saturday?<\/span><\/div>","f":"<span class=\"q-mean\">Do you feel like …ing?<\/span><span class=\"q-when\">Invite a friend informally. · informal<\/span>","a":"Hast du Lust, … zu …?"},{"u":"E2","l":"Einheit 2","id":"E2-e2","k":"r","b":"<div class=\"head\">Wie wäre es mit …?<\/div><p class=\"meaning\">How about …?<\/p><div class=\"when\">Make a suggestion.<\/div><div class=\"ex\"><mark>Wie wäre es mit<\/mark> einem Ausflug an den See? <span class=\"tr\" lang=\"en\">— How about a trip to the lake?<\/span><\/div>","f":"<span class=\"q-mean\">How about …?<\/span><span class=\"q-when\">Make a suggestion.<\/span>","a":"Wie wäre es mit …?"},{"u":"E2","l":"Einheit 2","id":"E2-e3","k":"r","b":"<div class=\"head\">Das passt mir gut. / Das passt mir leider nicht.<\/div><p class=\"meaning\">That suits me. / Unfortunately that doesn&#x27;t suit me.<\/p><div class=\"when\">Accept or decline a suggested time.<\/div><div class=\"ex\">Samstag <mark>passt mir gut<\/mark>, aber Sonntag <mark>passt mir leider nicht<\/mark>. <span class=\"tr\" lang=\"en\">— Saturday suits me, but Sunday unfortunately doesn&#x27;t.<\/span><\/div>","f":"<span class=\"q-mean\">That suits me. / Unfortunately that doesn&#x27;t suit me.<\/span><span class=\"q-when\">Accept or decline a suggested time.<\/span>","a":"Das passt mir gut. / Das passt mir leider nicht."}], ORDER=["E1", "E2"], CFG={"key": "beispielkurs-deutsch", "perDay": 10, "units": [["E1", "E1"], ["E2", "E2"]]};
+  var AU={}, IDX={}, SEQ={}, EXS={}, STO={}, CARDS=[{"u":"E1","l":"Einheit 1","id":"E1-v1","k":"w","b":"<div class=\"top\"><span class=\"de\"><span class=\"art-der\">der<\/span> Kollege<\/span><span class=\"en\">colleague<\/span><\/div><p class=\"forms\">die Kollegin, -nen · Plural: die Kollegen · n-noun: den / dem Kollegen<\/p><div class=\"ex\" id=\"v1-x0\">Mein <mark>Kollege<\/mark> zeigt mir am ersten Tag das ganze Büro. <span class=\"tr\" lang=\"en\">— My colleague shows me the whole office on the first day.<\/span><\/div>","f":"<span class=\"art-der\">der<\/span> Kollege","r":"colleague","a":"der Kollege = colleague"},{"u":"E1","l":"Einheit 1","id":"E1-v2","k":"w","b":"<div class=\"top\"><span class=\"de\"><span class=\"art-die\">die<\/span> Besprechung<\/span><span class=\"en\">meeting<\/span><\/div><p class=\"forms\">Plural: die Besprechungen · in einer Besprechung sein<\/p><div class=\"ex\" id=\"v2-x0\">Ich kann gerade nicht telefonieren, ich bin in einer <mark>Besprechung<\/mark>. <span class=\"tr\" lang=\"en\">— I can&#x27;t talk right now, I&#x27;m in a meeting.<\/span><\/div>","f":"<span class=\"art-die\">die<\/span> Besprechung","r":"meeting","a":"die Besprechung = meeting"},{"u":"E1","l":"Einheit 1","id":"E1-v3","k":"w","b":"<div class=\"top\"><span class=\"de\"><span class=\"art-der\">der<\/span> Termin<\/span><span class=\"en\">appointment<\/span><\/div><p class=\"forms\">Plural: die Termine · einen Termin vereinbaren / verschieben<\/p><div class=\"ex\" id=\"v3-x0\">Können wir den <mark>Termin<\/mark> auf Donnerstag verschieben? <span class=\"tr\" lang=\"en\">— Can we move the appointment to Thursday?<\/span><\/div>","f":"<span class=\"art-der\">der<\/span> Termin","r":"appointment","a":"der Termin = appointment"},{"u":"E1","l":"Einheit 1","id":"E1-v4","k":"w","b":"<div class=\"top\"><span class=\"de\">sich vorstellen<\/span><span class=\"en\">to introduce oneself<\/span><\/div><p class=\"forms\">stellt sich vor · hat sich vorgestellt · separable<\/p><div class=\"ex\" id=\"v4-x0\">Am ersten Tag <mark>stelle<\/mark> ich mich allen Kollegen <mark>vor<\/mark>. <span class=\"tr\" lang=\"en\">— On the first day I introduce myself to all my colleagues.<\/span><\/div>","f":"sich vorstellen","r":"to introduce oneself","a":"sich vorstellen = to introduce oneself"},{"u":"E1","l":"Einheit 1","id":"E1-v5","k":"w","b":"<div class=\"top\"><span class=\"de\">erledigen<\/span><span class=\"en\">to get done, take care of<\/span><\/div><p class=\"forms\">erledigt · hat erledigt · eine Aufgabe erledigen<\/p><div class=\"ex\" id=\"v5-x0\">Keine Sorge, das <mark>erledige<\/mark> ich gleich nach der Mittagspause. <span class=\"tr\" lang=\"en\">— Don&#x27;t worry, I&#x27;ll take care of that right after lunch.<\/span><\/div>","f":"erledigen","r":"to get done, take care of","a":"erledigen = to get done, take care of"},{"u":"E1","l":"Einheit 1","id":"E1-v6","k":"w","b":"<div class=\"top\"><span class=\"de\">pünktlich<\/span><span class=\"en\">on time, punctual<\/span><\/div><p class=\"forms\">↔ unpünktlich · die Pünktlichkeit<\/p><div class=\"ex\" id=\"v6-x0\">Bitte sei morgen <mark>pünktlich<\/mark>, wir haben um acht eine Besprechung. <span class=\"tr\" lang=\"en\">— Please be on time tomorrow, we have a meeting at eight.<\/span><\/div>","f":"pünktlich","r":"on time, punctual","a":"pünktlich = on time, punctual"},{"u":"E1","l":"Einheit 1","id":"E1-g1","k":"g","b":"<h3>Separable verbs – the prefix goes to the end<\/h3><p><b>Meaning:<\/b> Many verbs have a prefix that separates from the verb in a main clause.<\/p><p><b>Rule:<\/b> In a main clause the conjugated verb stands in position 2 and the prefix goes to the end. In the Perfekt, -ge- stands between prefix and verb. With a modal verb the infinitive stays together at the end.<\/p><div class=\"patterns\"><p><b>present:<\/b> an|fangen → Die Besprechung fängt um neun an.<\/p><p><b>Perfekt:<\/b> an|fangen → hat angefangen<\/p><p><b>modal verb:<\/b> Ich muss heute früh anfangen.<\/p><\/div><p class=\"contrast\"><b>Important:<\/b> Inseparable prefixes (be-, ver-, er-, ent-) never separate: Ich verstehe die Aufgabe.<\/p><div class=\"ex\" id=\"g1-x0\">Die Besprechung <mark>fängt<\/mark> um neun Uhr <mark>an<\/mark>. <span class=\"tr\" lang=\"en\">— The meeting starts at nine o&#x27;clock.<\/span><\/div>\n<div class=\"ex\" id=\"g1-x1\">Ich <mark>rufe<\/mark> dich nach der Arbeit <mark>an<\/mark>. <span class=\"tr\" lang=\"en\">— I&#x27;ll call you after work.<\/span><\/div>\n<div class=\"ex\" id=\"g1-x2\">Wir haben das Projekt gestern <mark>abgeschlossen<\/mark>. <span class=\"tr\" lang=\"en\">— We finished the project yesterday.<\/span><\/div>","f":"Separable verbs – the prefix goes to the end","a":"Separable verbs – the prefix goes to the end"},{"u":"E1","l":"Einheit 1","id":"E1-e1","k":"r","b":"<div class=\"head\">Darf ich mich kurz vorstellen? Ich bin … und arbeite als …<\/div><p class=\"meaning\">May I briefly introduce myself? I&#x27;m … and I work as …<\/p><div class=\"when\">Introduce yourself at a new workplace. · polite<\/div><div class=\"ex\" id=\"e1-x0\"><mark>Darf ich mich kurz vorstellen<\/mark>? Ich bin Sara und arbeite als Grafikerin. <span class=\"tr\" lang=\"en\">— May I briefly introduce myself? I&#x27;m Sara and I work as a graphic designer.<\/span><\/div>","f":"<span class=\"q-mean\">May I briefly introduce myself? I&#x27;m … and I work as …<\/span><span class=\"q-when\">Introduce yourself at a new workplace. · polite<\/span>","a":"Darf ich mich kurz vorstellen? Ich bin … und arbeite als …"},{"u":"E1","l":"Einheit 1","id":"E1-e2","k":"r","b":"<div class=\"head\">Könnten Sie mir bitte zeigen, wie …?<\/div><p class=\"meaning\">Could you please show me how …?<\/p><div class=\"when\">Ask a colleague for help. · polite<\/div><div class=\"ex\" id=\"e2-x0\"><mark>Könnten Sie mir bitte zeigen, wie<\/mark> der Drucker funktioniert? <span class=\"tr\" lang=\"en\">— Could you please show me how the printer works?<\/span><\/div>","f":"<span class=\"q-mean\">Could you please show me how …?<\/span><span class=\"q-when\">Ask a colleague for help. · polite<\/span>","a":"Könnten Sie mir bitte zeigen, wie …?"},{"u":"E1","l":"Einheit 1","id":"E1-e3","k":"r","b":"<div class=\"head\">Bis wann soll ich … erledigen?<\/div><p class=\"meaning\">By when should I get … done?<\/p><div class=\"when\">Ask about a deadline.<\/div><div class=\"ex\" id=\"e3-x0\"><mark>Bis wann soll ich<\/mark> den Bericht <mark>erledigen<\/mark>? <span class=\"tr\" lang=\"en\">— By when should I get the report done?<\/span><\/div>","f":"<span class=\"q-mean\">By when should I get … done?<\/span><span class=\"q-when\">Ask about a deadline.<\/span>","a":"Bis wann soll ich … erledigen?"},{"u":"E2","l":"Einheit 2","id":"E2-v1","k":"w","b":"<div class=\"top\"><span class=\"de\"><span class=\"art-der\">der<\/span> Ausflug<\/span><span class=\"en\">trip, outing<\/span><\/div><p class=\"forms\">Plural: die Ausflüge · einen Ausflug machen<\/p><div class=\"ex\" id=\"v1-x0\">Am Samstag machen wir einen <mark>Ausflug<\/mark> an den See. <span class=\"tr\" lang=\"en\">— On Saturday we&#x27;re going on a trip to the lake.<\/span><\/div>","f":"<span class=\"art-der\">der<\/span> Ausflug","r":"trip, outing","a":"der Ausflug = trip, outing"},{"u":"E2","l":"Einheit 2","id":"E2-v2","k":"w","b":"<div class=\"top\"><span class=\"de\"><span class=\"art-die\">die<\/span> Verabredung<\/span><span class=\"en\">arrangement to meet, date<\/span><\/div><p class=\"forms\">Plural: die Verabredungen · sich verabreden<\/p><div class=\"ex\" id=\"v2-x0\">Tut mir leid, heute Abend habe ich schon eine <mark>Verabredung<\/mark>. <span class=\"tr\" lang=\"en\">— Sorry, I already have plans to meet someone tonight.<\/span><\/div>","f":"<span class=\"art-die\">die<\/span> Verabredung","r":"arrangement to meet, date","a":"die Verabredung = arrangement to meet, date"},{"u":"E2","l":"Einheit 2","id":"E2-v3","k":"w","b":"<div class=\"top\"><span class=\"de\">vorschlagen<\/span><span class=\"en\">to suggest<\/span><\/div><p class=\"forms\">schlägt vor · hat vorgeschlagen (!) · separable<\/p><div class=\"ex\" id=\"v3-x0\">Ich <mark>schlage<\/mark> <mark>vor<\/mark>, dass wir zusammen kochen. <span class=\"tr\" lang=\"en\">— I suggest that we cook together.<\/span><\/div>","f":"vorschlagen","r":"to suggest","a":"vorschlagen = to suggest"},{"u":"E2","l":"Einheit 2","id":"E2-v4","k":"w","b":"<div class=\"top\"><span class=\"de\">spontan<\/span><span class=\"en\">spontaneous(ly)<\/span><\/div><p class=\"forms\">sich spontan entscheiden<\/p><div class=\"ex\" id=\"v4-x0\">Wir haben uns ganz <mark>spontan<\/mark> für das Kino entschieden. <span class=\"tr\" lang=\"en\">— We decided on the cinema quite spontaneously.<\/span><\/div>","f":"spontan","r":"spontaneous(ly)","a":"spontan = spontaneous(ly)"},{"u":"E2","l":"Einheit 2","id":"E2-v5","k":"w","b":"<div class=\"top\"><span class=\"de\"><span class=\"art-das\">das<\/span> Wetter<\/span><span class=\"en\">weather<\/span><\/div><p class=\"forms\">no plural · bei schönem Wetter<\/p><div class=\"ex\" id=\"v5-x0\">Bei schönem <mark>Wetter<\/mark> fahren wir mit dem Rad. <span class=\"tr\" lang=\"en\">— If the weather is nice, we&#x27;ll go by bike.<\/span><\/div>","f":"<span class=\"art-das\">das<\/span> Wetter","r":"weather","a":"das Wetter = weather"},{"u":"E2","l":"Einheit 2","id":"E2-g1","k":"g","b":"<h3>Polite suggestions with könnte and wäre<\/h3><p><b>Meaning:<\/b> Konjunktiv II makes a suggestion sound open and friendly.<\/p><p><b>Rule:<\/b> Use könnten + infinitive at the end, or Wie wäre es mit + Dativ. Wir könnten … is softer than Wir müssen …<\/p><div class=\"patterns\"><p><b>könnte:<\/b> Wir könnten am Sonntag wandern gehen.<\/p><p><b>wäre:<\/b> Wie wäre es mit einem Picknick?<\/p><p><b>Lust haben:<\/b> Hättest du Lust, … zu …?<\/p><\/div><p class=\"contrast\"><b>Important:<\/b> Wir können … states that something is possible. Wir könnten … makes a suggestion.<\/p><div class=\"ex\" id=\"g1-x0\">Wir <mark>könnten<\/mark> am Sonntag wandern gehen. <span class=\"tr\" lang=\"en\">— We could go hiking on Sunday.<\/span><\/div>\n<div class=\"ex\" id=\"g1-x1\"><mark>Wie wäre es mit<\/mark> einem Picknick im Park? <span class=\"tr\" lang=\"en\">— How about a picnic in the park?<\/span><\/div>\n<div class=\"ex\" id=\"g1-x2\"><mark>Hättest du Lust<\/mark>, mit ins Kino zu kommen? <span class=\"tr\" lang=\"en\">— Would you like to come to the cinema?<\/span><\/div>","f":"Polite suggestions with könnte and wäre","a":"Polite suggestions with könnte and wäre"},{"u":"E2","l":"Einheit 2","id":"E2-e1","k":"r","b":"<div class=\"head\">Hast du Lust, … zu …?<\/div><p class=\"meaning\">Do you feel like …ing?<\/p><div class=\"when\">Invite a friend informally. · informal<\/div><div class=\"ex\" id=\"e1-x0\"><mark>Hast du Lust<\/mark>, am Samstag mit uns <mark>zu<\/mark> grillen? <span class=\"tr\" lang=\"en\">— Do you feel like having a barbecue with us on Saturday?<\/span><\/div>","f":"<span class=\"q-mean\">Do you feel like …ing?<\/span><span class=\"q-when\">Invite a friend informally. · informal<\/span>","a":"Hast du Lust, … zu …?"},{"u":"E2","l":"Einheit 2","id":"E2-e2","k":"r","b":"<div class=\"head\">Wie wäre es mit …?<\/div><p class=\"meaning\">How about …?<\/p><div class=\"when\">Make a suggestion.<\/div><div class=\"ex\" id=\"e2-x0\"><mark>Wie wäre es mit<\/mark> einem Ausflug an den See? <span class=\"tr\" lang=\"en\">— How about a trip to the lake?<\/span><\/div>","f":"<span class=\"q-mean\">How about …?<\/span><span class=\"q-when\">Make a suggestion.<\/span>","a":"Wie wäre es mit …?"},{"u":"E2","l":"Einheit 2","id":"E2-e3","k":"r","b":"<div class=\"head\">Das passt mir gut. / Das passt mir leider nicht.<\/div><p class=\"meaning\">That suits me. / Unfortunately that doesn&#x27;t suit me.<\/p><div class=\"when\">Accept or decline a suggested time.<\/div><div class=\"ex\" id=\"e3-x0\">Samstag <mark>passt mir gut<\/mark>, aber Sonntag <mark>passt mir leider nicht<\/mark>. <span class=\"tr\" lang=\"en\">— Saturday suits me, but Sunday unfortunately doesn&#x27;t.<\/span><\/div>","f":"<span class=\"q-mean\">That suits me. / Unfortunately that doesn&#x27;t suit me.<\/span><span class=\"q-when\">Accept or decline a suggested time.<\/span>","a":"Das passt mir gut. / Das passt mir leider nicht."}], ORDER=["E1", "E2"], CFG={"key":"beispielkurs-deutsch","perDay":10,"units":[["E1","E1"],["E2","E2"]],"labels":{"E1":"Einheit 1","E2":"Einheit 2"}}, G={"E1":{"v":[{"a":"der","w":"Kollege","g":"colleague","h":"","x":[{"de":"Mein Kollege zeigt mir am ersten Tag das ganze Büro.","en":"My colleague shows me the whole office on the first day.","au":"","t":[[5,12]]}]},{"a":"die","w":"Besprechung","g":"meeting","h":"","x":[{"de":"Ich kann gerade nicht telefonieren, ich bin in einer Besprechung.","en":"I can't talk right now, I'm in a meeting.","au":"","t":[[53,64]]}]},{"a":"der","w":"Termin","g":"appointment","h":"","x":[{"de":"Können wir den Termin auf Donnerstag verschieben?","en":"Can we move the appointment to Thursday?","au":"","t":[[15,21]]}]},{"a":"","w":"sich vorstellen","g":"to introduce oneself","h":"","x":[{"de":"Am ersten Tag stelle ich mich allen Kollegen vor.","en":"On the first day I introduce myself to all my colleagues.","au":"","t":[[14,20],[45,48]]}]},{"a":"","w":"erledigen","g":"to get done, take care of","h":"","x":[{"de":"Keine Sorge, das erledige ich gleich nach der Mittagspause.","en":"Don't worry, I'll take care of that right after lunch.","au":"","t":[[17,25]]}]},{"a":"","w":"pünktlich","g":"on time, punctual","h":"","x":[{"de":"Bitte sei morgen pünktlich, wir haben um acht eine Besprechung.","en":"Please be on time tomorrow, we have a meeting at eight.","au":"","t":[[17,26]]}]}],"r":[{"f":"Darf ich mich kurz vorstellen? Ich bin … und arbeite als …","g":"May I briefly introduce myself? I'm … and I work as …","w":"Introduce yourself at a new workplace.","reg":"polite","grp":"Redemittel der Einheit","au":"","x":{"de":"Darf ich mich kurz vorstellen? Ich bin Sara und arbeite als Grafikerin.","en":"May I briefly introduce myself? I'm Sara and I work as a graphic designer.","au":"","t":[[0,29]]}},{"f":"Könnten Sie mir bitte zeigen, wie …?","g":"Could you please show me how …?","w":"Ask a colleague for help.","reg":"polite","grp":"Redemittel der Einheit","au":"","x":{"de":"Könnten Sie mir bitte zeigen, wie der Drucker funktioniert?","en":"Could you please show me how the printer works?","au":"","t":[[0,33]]}},{"f":"Bis wann soll ich … erledigen?","g":"By when should I get … done?","w":"Ask about a deadline.","reg":"","grp":"Redemittel der Einheit","au":"","x":{"de":"Bis wann soll ich den Bericht erledigen?","en":"By when should I get the report done?","au":"","t":[[0,17],[30,39]]}}],"s":[{"de":"Mein Kollege zeigt mir am ersten Tag das ganze Büro.","en":"My colleague shows me the whole office on the first day.","au":"","t":[[5,12]]},{"de":"Ich kann gerade nicht telefonieren, ich bin in einer Besprechung.","en":"I can't talk right now, I'm in a meeting.","au":"","t":[[53,64]]},{"de":"Können wir den Termin auf Donnerstag verschieben?","en":"Can we move the appointment to Thursday?","au":"","t":[[15,21]]},{"de":"Am ersten Tag stelle ich mich allen Kollegen vor.","en":"On the first day I introduce myself to all my colleagues.","au":"","t":[[14,20],[45,48]]},{"de":"Keine Sorge, das erledige ich gleich nach der Mittagspause.","en":"Don't worry, I'll take care of that right after lunch.","au":"","t":[[17,25]]},{"de":"Bitte sei morgen pünktlich, wir haben um acht eine Besprechung.","en":"Please be on time tomorrow, we have a meeting at eight.","au":"","t":[[17,26]]},{"de":"Die Besprechung fängt um neun Uhr an.","en":"The meeting starts at nine o'clock.","au":"","t":[[16,21],[34,36]]},{"de":"Ich rufe dich nach der Arbeit an.","en":"I'll call you after work.","au":"","t":[[4,8],[30,32]]},{"de":"Wir haben das Projekt gestern abgeschlossen.","en":"We finished the project yesterday.","au":"","t":[[30,43]]},{"de":"Darf ich mich kurz vorstellen? Ich bin Sara und arbeite als Grafikerin.","en":"May I briefly introduce myself? I'm Sara and I work as a graphic designer.","au":"","t":[[0,29]]},{"de":"Könnten Sie mir bitte zeigen, wie der Drucker funktioniert?","en":"Could you please show me how the printer works?","au":"","t":[[0,33]]},{"de":"Bis wann soll ich den Bericht erledigen?","en":"By when should I get the report done?","au":"","t":[[0,17],[30,39]]}]},"E2":{"v":[{"a":"der","w":"Ausflug","g":"trip, outing","h":"","x":[{"de":"Am Samstag machen wir einen Ausflug an den See.","en":"On Saturday we're going on a trip to the lake.","au":"","t":[[28,35]]}]},{"a":"die","w":"Verabredung","g":"arrangement to meet, date","h":"","x":[{"de":"Tut mir leid, heute Abend habe ich schon eine Verabredung.","en":"Sorry, I already have plans to meet someone tonight.","au":"","t":[[46,57]]}]},{"a":"","w":"vorschlagen","g":"to suggest","h":"","x":[{"de":"Ich schlage vor, dass wir zusammen kochen.","en":"I suggest that we cook together.","au":"","t":[[4,11],[12,15]]}]},{"a":"","w":"spontan","g":"spontaneous(ly)","h":"","x":[{"de":"Wir haben uns ganz spontan für das Kino entschieden.","en":"We decided on the cinema quite spontaneously.","au":"","t":[[19,26]]}]},{"a":"das","w":"Wetter","g":"weather","h":"","x":[{"de":"Bei schönem Wetter fahren wir mit dem Rad.","en":"If the weather is nice, we'll go by bike.","au":"","t":[[12,18]]}]}],"r":[{"f":"Hast du Lust, … zu …?","g":"Do you feel like …ing?","w":"Invite a friend informally.","reg":"informal","grp":"Redemittel der Einheit","au":"","x":{"de":"Hast du Lust, am Samstag mit uns zu grillen?","en":"Do you feel like having a barbecue with us on Saturday?","au":"","t":[[0,12],[33,35]]}},{"f":"Wie wäre es mit …?","g":"How about …?","w":"Make a suggestion.","reg":"","grp":"Redemittel der Einheit","au":"","x":{"de":"Wie wäre es mit einem Ausflug an den See?","en":"How about a trip to the lake?","au":"","t":[[0,15]]}},{"f":"Das passt mir gut. / Das passt mir leider nicht.","g":"That suits me. / Unfortunately that doesn't suit me.","w":"Accept or decline a suggested time.","reg":"","grp":"Redemittel der Einheit","au":"","x":{"de":"Samstag passt mir gut, aber Sonntag passt mir leider nicht.","en":"Saturday suits me, but Sunday unfortunately doesn't.","au":"","t":[[8,21],[36,58]]}}],"s":[{"de":"Am Samstag machen wir einen Ausflug an den See.","en":"On Saturday we're going on a trip to the lake.","au":"","t":[[28,35]]},{"de":"Tut mir leid, heute Abend habe ich schon eine Verabredung.","en":"Sorry, I already have plans to meet someone tonight.","au":"","t":[[46,57]]},{"de":"Ich schlage vor, dass wir zusammen kochen.","en":"I suggest that we cook together.","au":"","t":[[4,11],[12,15]]},{"de":"Wir haben uns ganz spontan für das Kino entschieden.","en":"We decided on the cinema quite spontaneously.","au":"","t":[[19,26]]},{"de":"Bei schönem Wetter fahren wir mit dem Rad.","en":"If the weather is nice, we'll go by bike.","au":"","t":[[12,18]]},{"de":"Wir könnten am Sonntag wandern gehen.","en":"We could go hiking on Sunday.","au":"","t":[[4,11]]},{"de":"Wie wäre es mit einem Picknick im Park?","en":"How about a picnic in the park?","au":"","t":[[0,15]]},{"de":"Hättest du Lust, mit ins Kino zu kommen?","en":"Would you like to come to the cinema?","au":"","t":[[0,15]]},{"de":"Hast du Lust, am Samstag mit uns zu grillen?","en":"Do you feel like having a barbecue with us on Saturday?","au":"","t":[[0,12],[33,35]]},{"de":"Wie wäre es mit einem Ausflug an den See?","en":"How about a trip to the lake?","au":"","t":[[0,15]]},{"de":"Samstag passt mir gut, aber Sonntag passt mir leider nicht.","en":"Saturday suits me, but Sunday unfortunately doesn't.","au":"","t":[[8,21],[36,58]]}]}};
   var K=CFG.key;
   function load(k,dflt){try{var v=localStorage.getItem(K+':'+k);return v?JSON.parse(v):dflt;}catch(e){return dflt;}}
   function save(k,v){try{localStorage.setItem(K+':'+k,JSON.stringify(v));}catch(e){}}
   var ui=load('ui',{}), state=load('srs',{}), meta=load('meta',{day:0,fresh:0,extra:0,streak:0,last:-9,done:0,good:0});
   function today(){var t=new Date();return Math.floor((t.getTime()-t.getTimezoneOffset()*60000)/86400000);}
+  /* audio sits in per-unit text blocks after this script; a unit's clips are unpacked on first use */
+  function need(id){ if(AU[id]!==undefined) return AU[id]; var k=IDX[id], el=k===undefined?null:d.getElementById('au-'+k);
+    if(el && !el.getAttribute('data-read')){ el.textContent.split(';').forEach(function(p){ var i=p.indexOf(':'); if(i>0) AU[p.slice(0,i)]=p.slice(i+1); }); el.setAttribute('data-read','1'); }
+    return AU[id]||''; }
+  function pending(id){ return IDX[id]!==undefined && d.readyState==='loading'; }
 
-  /* ---------------- audio: single clips, chains, guided listening ---------------- */
-  var player=new Audio(), active=null, run=null;
+  /* ---------------- listening: a 🔊 tap repeats, guided sessions repeat and loop ---------------- */
+  var A=load('listen',{one:0,each:2,loop:1});     /* one: plays per 🔊 tap (0 = until tapped again); each: plays of every German sentence in a session; loop: start again at the end */
+  var player=new Audio(), R=null, lastF=null, lock=null, tipT=null;
+  var lp=d.getElementById('lp'), nowBar=d.getElementById('now'), nowT=d.getElementById('now-t'), tip=d.getElementById('tip');
+  var LABEL={all:'Ganze Lektion',ex:'Nur Beispiele',story:'Geschichte'};
   function mark(el,on){ if(el) el.classList.toggle('is-playing',on); }
-  function stopAll(){ player.pause(); player.onended=null; mark(active,false); active=null;
-    if(run){ clearTimeout(run.timer); if(run.btn){ mark(run.btn,false); if(run.label) run.btn.textContent=run.label; } if(run.card) run.card.classList.remove('follow'); run=null; } }
-  function need(id){ if(A[id]!==undefined) return A[id]; var k=IDX[id], el=k===undefined?null:d.getElementById('au-'+k);
-    if(el && !el.getAttribute('data-read')){ el.textContent.split(';').forEach(function(p){ var i=p.indexOf(':'); if(i>0) A[p.slice(0,i)]=p.slice(i+1); }); el.setAttribute('data-read','1'); }
-    return A[id]||''; }
-  function clip(id,el,done){ var data=need(id);
-    if(!data && IDX[id]!==undefined && d.readyState==='loading'){ mark(el,true);   /* audio still loading: play when it has arrived */
-      d.addEventListener('DOMContentLoaded',function(){ mark(el,false); clip(id,el,done); },{once:true}); return; }
-    if(!data){ if(done) setTimeout(done,0); return; }
-    player.pause(); mark(active,false); active=el||null; mark(active,true);
-    player.onended=function(){ mark(active,false); active=null; if(done) done(); };
-    player.src='data:audio/mpeg;base64,'+data; var p=player.play(); if(p) p.catch(function(){ mark(active,false); active=null; }); }
-  function chain(items,btn,label,follow){ stopAll(); run={i:0,timer:null,btn:btn,label:label,card:null}; mark(btn,true); if(label) btn.textContent='❚❚ Stopp';
-    (function step(){ if(!run) return; if(run.card){ run.card.classList.remove('follow'); run.card=null; }
-      if(run.i>=items.length){ stopAll(); return; }
-      var it=items[run.i++];
-      if(follow && it[2]){ var c=d.getElementById(it[2]); if(c){ c.classList.add('follow'); c.scrollIntoView({block:'center',behavior:'smooth'}); run.card=c; } }
-      clip(it[0],null,function(){ if(!run) return; run.timer=setTimeout(step,(player.duration||1.2)*1000*it[1]+350); });
-    })(); }
+  function follow(el){ if(lastF) lastF.classList.remove('follow'); lastF=el||null; if(!el) return; el.classList.add('follow');
+    var b=el.getBoundingClientRect(); if(b.top<90||b.bottom>innerHeight-90) el.scrollIntoView({block:'center',behavior:'smooth'}); }
+  function wake(on){ try{ if(on&&!lock&&navigator.wakeLock) navigator.wakeLock.request('screen').then(function(l){ if(R) lock=l; else l.release(); },function(){});
+    else if(!on&&lock){ lock.release(); lock=null; } }catch(e){} }
+  function stopAll(){ player.pause(); player.onended=null; var r=R; R=null;
+    if(r){ clearTimeout(r.t); mark(r.o.btn,false); if(r.o.btn&&r.o.btn.getAttribute('data-l')){ r.o.btn.textContent=r.o.btn.getAttribute('data-l'); r.o.btn.removeAttribute('data-l'); } }
+    follow(null); wake(false); if(nowBar) nowBar.hidden=true; }
+  function clip(id,done){ var data=need(id);
+    if(!data&&pending(id)){ d.addEventListener('DOMContentLoaded',function(){ clip(id,done); },{once:true}); return true; }
+    if(!data) return false;
+    player.onended=done||null; player.src='data:audio/mpeg;base64,'+data; var p=player.play(); if(p) p.catch(function(){ stopAll(); }); return true; }
+  /* items: [clip id, pause factor, element (or its id) to highlight, repeatable]; o: {btn, each, laps (0 = endless), follow, stop, label} */
+  function run(items,o){ stopAll(); if(!items||!items.length) return; R={items:items,o:o,i:0,r:0,lap:1,t:null};
+    mark(o.btn,true); if(o.btn&&o.stop){ o.btn.setAttribute('data-l',o.btn.textContent); o.btn.textContent=o.stop; }
+    if(items.length>1||!o.laps) wake(true); step(); }
+  function step(){ var r=R; if(!r) return;
+    if(r.i>=r.items.length){
+      if(!r.o.laps||r.lap<r.o.laps){ r.lap++; r.i=0; tick(r); r.t=setTimeout(step,r.items.length>1?1500:0); return; }
+      stopAll(); return; }
+    var it=r.items[r.i], reps=it[3]?(r.o.each||1):1;
+    if(r.o.follow) follow(typeof it[2]==='string'?d.getElementById(it[2]):it[2]); tick(r);
+    var ok=clip(it[0],function(){ if(R!==r) return; var dur=isFinite(player.duration)&&player.duration>0?player.duration:1.2; r.r++;
+      if(r.r<reps){ r.t=setTimeout(step,Math.max(700,dur*850)); return; }      /* the same sentence again, after time to repeat it aloud */
+      r.r=0; r.i++; r.t=setTimeout(step,dur*1000*it[1]+350); });
+    if(!ok){ if(r.items.length===1){ stopAll(); return; } r.i++; r.t=setTimeout(step,0); } }
+  function tick(r){ if(!nowBar) return; nowBar.hidden=false; var n=r.items.length, out=[r.o.label||'Wiedergabe'];
+    if(n>1) out.push(Math.min(r.i+1,n)+' / '+n);
+    if(n>1&&(r.o.each||1)>1) out.push('jeder Satz '+r.o.each+'×');
+    if(r.o.laps!==1) out.push(r.o.laps?(r.lap+' / '+r.o.laps):(n>1?'⟳ Runde '+r.lap:'⟳ '+r.lap+'×'));
+    nowT.textContent=out.join(' · '); }
+  function chipRow(id,items,value,set){ var box=d.getElementById(id); box.innerHTML='';
+    items.forEach(function(it){ var b=d.createElement('button'); b.type='button'; b.textContent=it[1]; b.setAttribute('aria-pressed',String(it[0]===value));
+      b.addEventListener('click',function(){ set(it[0]); save('listen',A); panel(); }); box.appendChild(b); }); }
+  function panel(){ chipRow('lp-each',[[1,'1×'],[2,'2×'],[3,'3×'],[5,'5×']],A.each,function(v){A.each=v;});
+    chipRow('lp-loop',[[0,'Einmal'],[1,'⟳ Endlos']],A.loop,function(v){A.loop=v;});
+    chipRow('lp-one',[[1,'1×'],[3,'3×'],[0,'∞ bis Stopp']],A.one,function(v){A.one=v;});
+    var u=lp.getAttribute('data-unit'); lp.querySelector('[data-m="story"]').hidden=!(STO[u]&&STO[u].length); }
+  function openPanel(btn){ var u=btn.getAttribute('data-unit'), row=btn.closest('.listen-row');
+    if(!lp.hidden&&lp.getAttribute('data-unit')===u){ lp.hidden=true; return; }
+    row.parentNode.insertBefore(lp,row.nextSibling); lp.setAttribute('data-unit',u); lp.hidden=false; panel(); }
+  function session(u,m){ var src=m==='ex'?EXS:m==='story'?STO:SEQ; lp.hidden=true;
+    run(src[u],{btn:d.querySelector('.listen-open[data-unit="'+u+'"]'),each:A.each,laps:A.loop?0:1,follow:true,stop:'⏹ Stopp',label:LABEL[m]}); }
+  function gloss(w){ var t=w.getAttribute('title')||w.getAttribute('data-t'); if(!t||!tip) return;
+    if(w.getAttribute('title')){ w.setAttribute('data-t',t); w.removeAttribute('title'); }      /* no native tooltip on top of ours */
+    tip.textContent=t; tip.hidden=false; var b=w.getBoundingClientRect();
+    tip.style.left=Math.max(8,Math.min(b.left+scrollX,scrollX+innerWidth-tip.offsetWidth-8))+'px'; tip.style.top=(b.bottom+scrollY+6)+'px';
+    clearTimeout(tipT); tipT=setTimeout(function(){ tip.hidden=true; },3200);
+    var h=w.getAttribute('data-h'); if(h) run([[h,0.4,null,0]],{laps:1,label:'Wort'}); }
+  lp.addEventListener('click',function(e){ var b=e.target.closest('[data-m]'); if(b) session(lp.getAttribute('data-unit'),b.getAttribute('data-m')); });
+  d.getElementById('now-x').addEventListener('click',stopAll);
   d.addEventListener('click',function(e){
-    var b=e.target.closest('.speak-button,.explain-button,.listen-all'); if(!b) return;
+    var b=e.target.closest('.speak-button,.explain-button,.listen-open,.story-play,.ss[data-audio],.lw'); if(!b) return;
+    if(b.classList.contains('lw')){ gloss(b); return; }
     e.stopPropagation();
-    if(run && run.btn===b){ stopAll(); return; }
-    if(b.classList.contains('listen-all')){ chain(SEQ[b.getAttribute('data-unit')],b,b.textContent,true); return; }
-    if(b.classList.contains('explain-button')){ chain(b.getAttribute('data-chain').split(' ').map(function(id){return [id,0.12,null];}),b,null,false); return; }
-    if(run) stopAll();
-    if(active===b && !player.paused){ player.pause(); mark(b,false); active=null; return; }
-    clip(b.getAttribute('data-audio'),b);
+    if(R&&R.o.btn===b){ stopAll(); return; }
+    if(b.classList.contains('listen-open')){ openPanel(b); return; }
+    if(b.classList.contains('story-play')){ var u=b.closest('.unit')?b.closest('.unit').id:'L'; run(STO[u],{btn:b,each:1,laps:A.one,follow:true,stop:'\u23f9 Stopp',label:'Geschichte'}); return; }
+    if(b.classList.contains('explain-button')){ run(b.getAttribute('data-chain').split(' ').map(function(id){ return [id,0.12,null,0]; }),{btn:b,laps:1,label:'Erklärung'}); return; }
+    if(b.classList.contains('para-play')){ run([].map.call(b.closest('.story-p').querySelectorAll('.ss[data-audio]'),function(s){ return [s.getAttribute('data-audio'),0.3,s,0]; }),
+      {btn:b,laps:A.one,follow:true,label:'Absatz'}); return; }
+    var sentence=b.classList.contains('ss');
+    run([[b.getAttribute('data-audio'),0.8,sentence?b:null,0]],{btn:b,laps:A.one,follow:sentence,label:sentence?'Satz':'Wiederholen'});
   },true);
 
   /* ---------------- Lernen: unit picker and search ---------------- */
   var units=[].slice.call(d.querySelectorAll('section.unit')), sel=d.getElementById('pick'), q=d.getElementById('q'), hits=d.getElementById('hits');
   function show(id,scroll){ if(!units.some(function(u){return u.id===id;})) id=units[0].id;
     units.forEach(function(u){u.classList.toggle('on',u.id===id);}); sel.value=id; ui.unit=id; save('ui',ui); if(scroll) window.scrollTo(0,0); }
-  function step(n){ var i=units.findIndex(function(u){return u.id===sel.value;}); i=Math.max(0,Math.min(units.length-1,i+n)); stopAll(); show(units[i].id,true); }
-  sel.addEventListener('change',function(){stopAll(); show(sel.value,true);});
-  d.getElementById('prev').addEventListener('click',function(){step(-1);});
-  d.getElementById('next').addEventListener('click',function(){step(1);});
+  function stepUnit(n){ var i=units.findIndex(function(u){return u.id===sel.value;}); i=Math.max(0,Math.min(units.length-1,i+n)); stopAll(); show(units[i].id,true); unitChanged(); }
+  function unitChanged(){ if(d.body.classList.contains('mode-games')) Games.open(); }
+  sel.addEventListener('change',function(){stopAll(); show(sel.value,true); unitChanged();});
+  d.getElementById('prev').addEventListener('click',function(){stepUnit(-1);});
+  d.getElementById('next').addEventListener('click',function(){stepUnit(1);});
   function norm(s){return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/ß/g,'ss');}
   var arts=[].slice.call(d.querySelectorAll('section.unit article')).map(function(a){return [a,norm(a.textContent)];}), tq;
   q.addEventListener('input',function(){clearTimeout(tq); tq=setTimeout(search,150);});
@@ -269,10 +450,11 @@
     hits.textContent=n+(n===1?' Karte':' Karten')+' gefunden'; }
 
   /* ---------------- tabs ---------------- */
-  var tabL=d.getElementById('tab-l'), tabP=d.getElementById('tab-p');
-  function mode(m){ stopAll(); d.body.classList.toggle('mode-practice',m==='p'); tabL.setAttribute('aria-pressed',m!=='p'); tabP.setAttribute('aria-pressed',m==='p');
-    ui.tab=m; save('ui',ui); if(m==='p') start(); window.scrollTo(0,0); }
-  tabL.addEventListener('click',function(){mode('l');}); tabP.addEventListener('click',function(){mode('p');});
+  var tabs={l:d.getElementById('tab-l'),p:d.getElementById('tab-p'),g:d.getElementById('tab-g')};
+  function mode(m){ stopAll(); Games.stop(); d.body.classList.toggle('mode-practice',m==='p'); d.body.classList.toggle('mode-games',m==='g');
+    Object.keys(tabs).forEach(function(k){ tabs[k].setAttribute('aria-pressed',String(k===m)); });
+    ui.tab=m; save('ui',ui); if(m==='p') start(); if(m==='g') Games.open(); window.scrollTo(0,0); }
+  Object.keys(tabs).forEach(function(k){ tabs[k].addEventListener('click',function(){ mode(k); }); });
 
   /* ---------------- Üben: spaced repetition with rounds ---------------- */
   var DAYS=[0,1,3,7,14,30,60], KIND={w:'Wortschatz',g:'Grammatik',r:'Redemittel'};
@@ -293,11 +475,11 @@
     ses={inRound:0,rg:0,ra:0};
     if(!p.length){ cur=null; view='empty'; render(); return; }
     next(); }
-  function next(){ cur=queue.shift()||null; shown=false; missed=false; view=cur?'card':'done'; readyAt=Date.now()+250;   /* a double tap must not grade the next card */
+  function next(){ stopAll(); cur=queue.shift()||null; shown=false; missed=false; view=cur?'card':'done'; readyAt=Date.now()+250;   /* a double tap must not grade the next card */
     fc.style.transition='none'; render(); void fc.offsetWidth; fc.style.transition=''; fc.classList.add('enter');
     if(cur) autoFront(); }
-  function autoFront(){ if(S.auto && cur.k==='w' && S.dir==='de' && cur.fa) clip(cur.fa,null); }
-  function autoBack(){ if(!S.auto) return; if(cur.k==='w' && S.dir==='en' && cur.fa) clip(cur.fa,null); else if(cur.k==='r' && cur.ba) clip(cur.ba,null); }
+  function autoFront(){ if(S.auto && cur.k==='w' && S.dir==='de' && cur.fa) clip(cur.fa); }
+  function autoBack(){ if(!S.auto) return; if(cur.k==='w' && S.dir==='en' && cur.fa) clip(cur.fa); else if(cur.k==='r' && cur.ba) clip(cur.ba); }
   function topbar(){ var t=d.getElementById('tr-count'), bar=d.getElementById('tr-fill'), st=d.getElementById('tr-streak');
     if(S.browse){ t.textContent=(bList.length?(bIdx+1)+' / '+bList.length:'0'); bar.style.width=(bList.length?100*(bIdx+1)/bList.length:0)+'%'; }
     else { var left=queue.length+(cur && view==='card'?1:0), all=(meta.done||0)+left; t.textContent='Heute '+(meta.done||0)+' / '+all; bar.style.width=(all?100*(meta.done||0)/all:0)+'%'; }
@@ -348,7 +530,7 @@
     if(u.s) state[u.card.id]=u.s; else delete state[u.card.id];
     meta=JSON.parse(u.meta); ses=JSON.parse(u.ses); queue=u.queue; cur=u.card; shown=true; missed=false; view='card';
     save('srs',state); save('meta',meta); render(); autoBack(); }
-  function browseMove(n){ bIdx=Math.max(0,Math.min(bList.length-1,bIdx+n)); cur=bList[bIdx]; shown=false; render(); }
+  function browseMove(n){ bIdx=Math.max(0,Math.min(bList.length-1,bIdx+n)); cur=bList[bIdx]; shown=false; stopAll(); render(); }
   acts.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; var a=b.getAttribute('data-a');
     if(a==='good') good(); else if(a==='again') again(); else if(a==='go') advance(); else if(a==='flip') peek();
     else if(a==='resume'){ next(); } else if(a==='pause'){ dropUndo(); view='paused'; render(); }
@@ -396,14 +578,174 @@
     d.getElementById('s-stat').textContent='Neu '+n.neu+' · Lerne ich '+n.lern+' · Sicher '+n.sicher+' · Fest '+n.fest; }
   d.getElementById('all-u').addEventListener('click',function(){ S.units=S.units.length===ORDER.length?[]:ORDER.slice(); persist(); start(); });
   d.getElementById('save-btn').addEventListener('click',function(){
-    var blob=new Blob([JSON.stringify({v:2,key:K,state:state,meta:meta})],{type:'application/json'}), a=d.createElement('a');
+    var blob=new Blob([JSON.stringify({v:2,key:K,state:state,meta:meta,games:load('games',{})})],{type:'application/json'}), a=d.createElement('a');
     a.href=URL.createObjectURL(blob); a.download=K+'-fortschritt-'+new Date().toISOString().slice(0,10)+'.json'; d.body.appendChild(a); a.click(); a.remove(); });
   d.getElementById('load-in').addEventListener('change',function(e){ var f=e.target.files[0]; if(!f) return; var r=new FileReader();
-    r.onload=function(){ try{ var o=JSON.parse(r.result); if(o && o.state){ state=o.state; meta=o.meta||meta; save('srs',state); save('meta',meta); start(); alert('Fortschritt geladen.'); } }catch(err){ alert('Diese Datei ist keine Sicherung.'); } };
+    r.onload=function(){ try{ var o=JSON.parse(r.result); if(o && o.state){ state=o.state; meta=o.meta||meta; save('srs',state); save('meta',meta); if(o.games) save('games',o.games); start(); alert('Fortschritt geladen.'); } }catch(err){ alert('Diese Datei ist keine Sicherung.'); } };
     r.readAsText(f); });
 
+  /* ---------------- Spielen: four short games per unit, made from its cards ---------------- */
+  var Games=(function(){
+    var box=d.getElementById('g-box'), menu=d.getElementById('g-menu'), best=load('games',{}), timers=[], live=null, ac=null;
+    var HAS_AUDIO=Object.keys(IDX).length>0;
+    function later(f,ms){ timers.push(setTimeout(f,ms)); }
+    function stop(){ timers.forEach(clearTimeout); timers=[]; if(live) live(); live=null; }
+    function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)), t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+    function pick(a,n){ return shuffle(a).slice(0,Math.max(0,n)); }
+    function esc(s){ return String(s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+    function el(tag,cls,markup){ var e=d.createElement(tag); if(cls) e.className=cls; if(markup!==undefined) e.innerHTML=markup; return e; }
+    function btn(cls,markup,fn){ var b=el('button',cls,markup); b.type='button'; b.addEventListener('click',function(){ fn(b); }); return b; }
+    function say(id){ if(HAS_AUDIO&&S.auto&&id){ stopAll(); clip(id); } }
+    function canHear(){ return HAS_AUDIO&&S.auto; }
+    function blip(ok){ if(navigator.vibrate) navigator.vibrate(ok?12:[30,40,30]); if(!S.auto) return;
+      try{ ac=ac||new (window.AudioContext||window.webkitAudioContext)(); var t=ac.currentTime, o=ac.createOscillator(), g=ac.createGain();
+        o.type=ok?'triangle':'sine'; o.frequency.setValueAtTime(ok?587:196,t); o.frequency.exponentialRampToValueAtTime(ok?880:150,t+0.14);
+        g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.12,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+0.28);
+        o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+0.3); }catch(e){} }
+    function confetti(){ if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      var c=el('div','confetti'), colors=['#f2d36b','#34d399','#b19ac8','#7f9fbd','#c58fa3'];
+      for(var i=0;i<46;i++){ var p=el('i'); p.style.left=(Math.random()*100)+'%'; p.style.background=colors[i%5];
+        p.style.animationDelay=(Math.random()*0.35)+'s'; p.style.animationDuration=(1.1+Math.random()*0.9)+'s'; c.appendChild(p); }
+      d.body.appendChild(c); setTimeout(function(){ c.remove(); },2600); }
+    function marked(x){ var s=x.de, out='', at=0; x.t.forEach(function(sp){ out+=esc(s.slice(at,sp[0]))+'<mark>'+esc(s.slice(sp[0],sp[1]))+'</mark>'; at=sp[1]; }); return out+esc(s.slice(at)); }
+    function cloze(x){ var s=x.de, out='', at=0; x.t.forEach(function(sp){ out+=esc(s.slice(at,sp[0]))+'<span class="gap">'+esc(s.slice(sp[0],sp[1]))+'</span>'; at=sp[1]; }); return out+esc(s.slice(at)); }
+    function word(v){ return (v.a?'<span class="art-'+v.a+'">'+v.a+'</span> ':'')+esc(v.w); }
+    function unit(){ return sel.value; }
+    function data(){ return G[unit()]||{v:[],r:[],s:[]}; }
+    function head(title){ box.innerHTML=''; var h=el('div','g-head'); h.appendChild(el('div','g-title',title)); var info=el('div','g-info','');
+      h.appendChild(info); h.appendChild(btn('g-close','✕',function(){ open(); })); box.appendChild(h); return info; }
+    function stars(n){ return '★★★'.slice(0,n)+'☆☆☆'.slice(0,3-n); }
+    function finish(key,got,score,lines){ stop(); var u=unit(); best[u]=best[u]||{}; var old=best[u][key]||{s:0,p:0}, record=old.p>0&&score>old.p;
+      best[u][key]={s:Math.max(old.s,got),p:Math.max(old.p,score)}; save('games',best);
+      box.innerHTML=''; var m=el('div','g-end'); m.appendChild(el('div','g-big',got>=3?'🏆':got===2?'🎉':'👍'));
+      m.appendChild(el('div','g-stars',stars(got)));
+      lines.forEach(function(l){ var p=el('p'); p.textContent=l; m.appendChild(p); });
+      if(record) m.appendChild(el('p','g-rec','Neuer Rekord!'));
+      var a=el('div','g-acts'); a.appendChild(btn('main','Nochmal',function(){ play(key); })); a.appendChild(btn('','Andere Spiele',function(){ open(); }));
+      m.appendChild(a); box.appendChild(m); if(got>=3) confetti(); }
+    function toks(s){ return s.trim().split(/\s+/); }
+    function satzPool(g){ return g.s.filter(function(s){ var n=toks(s.de).length; return n>=4&&n<=11&&!/[„“"«»…]| – /.test(s.de); }); }
+    function nouns(g){ return g.v.filter(function(v){ return v.a; }); }
+    var LIST=[
+      {k:'bingo',icon:'🎱',name:'Hör-Bingo',desc:'Hör einen Satz und finde das Wort auf deiner Karte.',ok:function(g){ return g.v.length>=4; },go:bingo},
+      {k:'satz',icon:'🧩',name:'Satzbau',desc:'Tippe die Wörter in die richtige Reihenfolge.',ok:function(g){ return satzPool(g).length>=3; },go:satz},
+      {k:'art',icon:'⚡',name:'Der · Die · Das',desc:'60 Sekunden: Welcher Artikel passt?',ok:function(g){ return nouns(g).length>=3; },go:artikel},
+      {k:'red',icon:'💬',name:'Was sagt man?',desc:'Welche Wendung passt zur Situation?',ok:function(g){ return g.r.length>=3; },go:wendung}];
+    function open(){ stop(); stopAll(); box.hidden=true; menu.hidden=false; var g=data(), u=unit(); menu.innerHTML='';
+      menu.appendChild(el('p','g-lead',esc(CFG.labels[u]||u)+' als Spiel: ein paar Minuten, ganz ohne Lernstress.'));
+      var ready=LIST.filter(function(x){ return x.ok(g); });
+      ready.forEach(function(x){ var b=best[u]&&best[u][x.k];
+        menu.appendChild(btn('g-tile','<span class="g-icon">'+x.icon+'</span><span class="g-name">'+x.name+'</span><span class="g-desc">'+x.desc+'</span>'+
+          '<span class="g-best">'+(b?stars(b.s)+(x.k==='art'?' · Rekord '+b.p:''):'Neu')+'</span>',function(){ play(x.k); })); });
+      if(ready.length>1) menu.appendChild(btn('g-random','🎲 Überrasch mich',function(){ play(ready[Math.floor(Math.random()*ready.length)].k); }));
+      if(!ready.length) menu.appendChild(el('p','g-lead','Diese Lektion hat zu wenige Karten für ein Spiel.')); }
+    function play(k){ stop(); stopAll(); var x=LIST.filter(function(y){ return y.k===k; })[0]; menu.hidden=true; box.hidden=false; window.scrollTo(0,0); x.go(data()); }
+
+    /* 🎱 Hör-Bingo: a sentence is played (or shown with a gap); find its word on your card, or say it isn't there */
+    function bingo(g){
+      var vs=g.v.filter(function(v){ return v.x.length; }), n=vs.length>=12?9:vs.length>=8?6:4, cols=n===4?2:3, rows=n/cols;
+      var board=pick(vs,n), rest=vs.filter(function(v){ return board.indexOf(v)<0; });
+      var calls=shuffle(board.concat(pick(rest,Math.ceil(n/2)))), ci=-1, open_=false, miss=0, bingoDone=false, on={};
+      var info=head('🎱 Hör-Bingo');
+      box.appendChild(el('p','g-lead',canHear()?'Hör den Satz. Ist ein Wort daraus auf deiner Karte? Tippe es an.':'Lies den Satz. Welches Wort fehlt? Ist es auf deiner Karte?'));
+      var call=el('div','b-call'), cue=el('div','b-cue'); call.appendChild(cue);
+      if(canHear()) call.appendChild(btn('b-again','🔊 Nochmal',function(){ if(ci>=0&&ci<calls.length) say(calls[ci].x[0].au); }));
+      box.appendChild(call);
+      var grid=el('div','b-grid'); grid.style.gridTemplateColumns='repeat('+cols+',1fr)';
+      board.forEach(function(v,i){ grid.appendChild(btn('b-cell',word(v),function(b){ tap(i,b); })); });
+      box.appendChild(grid); box.appendChild(btn('b-none','Nicht auf meiner Karte',function(b){ tap(-1,b); }));
+      var fb=el('div','b-fb'); box.appendChild(fb);
+      function nextCall(){ ci++; fb.innerHTML=''; if(ci>=calls.length) return end(); open_=true; info.textContent=(ci+1)+' / '+calls.length;
+        var x=calls[ci].x[0]; if(canHear()&&x.au){ cue.innerHTML='<span class="b-ear">👂 Hör gut zu …</span>'; later(function(){ say(x.au); },300); } else cue.innerHTML=cloze(x); }
+      function reveal(ok,text){ var x=calls[ci].x[0]; open_=false; cue.innerHTML=marked(x);
+        fb.innerHTML='<div class="'+(ok?'g-ok':'g-no')+'">'+text+'</div><div class="b-tr">'+esc(x.en)+'</div>'; later(nextCall,ok?1800:2800); }
+      function stamp(i){ on[i]=1; grid.children[i].classList.add('on'); if(bingoDone) return; var lines=[], r, c, k;
+        for(r=0;r<rows;r++){ var row=[]; for(c=0;c<cols;c++) row.push(r*cols+c); lines.push(row); }
+        if(rows>2) for(c=0;c<cols;c++){ var col=[]; for(r=0;r<rows;r++) col.push(r*cols+c); lines.push(col); }
+        if(rows===cols){ var a=[], b=[]; for(k=0;k<cols;k++){ a.push(k*cols+k); b.push(k*cols+cols-1-k); } lines.push(a,b); }
+        if(lines.some(function(line){ return line.every(function(j){ return on[j]; }); })){ bingoDone=true; var big=el('div','b-bingo','BINGO!'); d.body.appendChild(big); confetti(); later(function(){ big.remove(); },1500); } }
+      function shake(b){ b.classList.add('shake'); setTimeout(function(){ b.classList.remove('shake'); },400); }
+      function tap(i,b){ if(!open_) return; var v=calls[ci], at=board.indexOf(v);
+        if((i>=0&&i===at)||(i<0&&at<0)){ blip(true); if(i>=0) stamp(i); reveal(true,i>=0?'✓ '+word(v):'✓ Richtig, '+word(v)+' ist nicht auf deiner Karte.'); return; }
+        blip(false); miss++; shake(b);
+        if(i>=0&&at>=0) return;                                   /* another cell: look again */
+        if(i<0){ var c=grid.children[at]; c.classList.add('hint'); later(function(){ c.classList.remove('hint'); },2000); stamp(at); reveal(false,'Doch, auf deiner Karte: '+word(v)); }
+        else reveal(false,'Nicht auf deiner Karte: '+word(v)); }
+      function end(){ finish('bingo',miss===0?3:miss<=2?2:1,Math.max(0,n*10-miss*3),[(bingoDone?'Bingo! ':'')+'Fehler: '+miss,
+        'Du hast '+calls.length+' Sätze '+(canHear()?'gehört':'gelesen')+' und '+n+' Wörter gefunden.']); }
+      nextCall(); }
+
+    /* 🧩 Satzbau: the English meaning is shown; tap the German words in order (a wrong tile just shakes) */
+    function satz(g){
+      var round=pick(satzPool(g),6), i=-1, clean=0, info=head('🧩 Satzbau');
+      box.appendChild(el('p','g-lead','Bau den deutschen Satz: Tippe die Wörter der Reihe nach an.'));
+      var prompt=el('div','s-prompt'), line=el('div','s-line'), tiles=el('div','s-tiles'), fb=el('div','s-fb'), acts_=el('div','g-acts');
+      [prompt,line,tiles,fb,acts_].forEach(function(e){ box.appendChild(e); });
+      function nextSentence(){ i++; if(i>=round.length) return finish('satz',clean===round.length?3:clean>=Math.ceil(round.length*0.6)?2:1,clean*10,['Fehlerfrei: '+clean+' von '+round.length+' Sätzen']);
+        var s=round[i], want=toks(s.de), at=0, errs=0, order; info.textContent=(i+1)+' / '+round.length;
+        prompt.textContent=s.en; line.innerHTML=''; tiles.innerHTML=''; fb.innerHTML=''; acts_.innerHTML='';
+        if(canHear()&&s.au) acts_.appendChild(btn('','🔊 Anhören',function(){ say(s.au); }));
+        do { order=shuffle(want.map(function(w,k){ return k; })); } while(want.length>2&&order.every(function(k,j){ return want[k]===want[j]; }));
+        order.forEach(function(k){ var t=btn('s-tile',esc(want[k]),function(b){ choose(b); }); t.setAttribute('data-w',want[k]); tiles.appendChild(t); });
+        function choose(t){ if(t.disabled||at>=want.length) return;
+          if(t.getAttribute('data-w')===want[at]){ t.disabled=true; t.classList.add('used'); line.appendChild(el('span','s-word',esc(want[at]))); at++;
+            [].forEach.call(tiles.children,function(x){ x.classList.remove('hint'); });
+            if(at===want.length){ if(!errs) clean++; solved(s,errs); } return; }
+          errs++; blip(false); t.classList.add('shake'); setTimeout(function(){ t.classList.remove('shake'); },400);
+          if(errs>=2) [].some.call(tiles.children,function(x){ if(!x.disabled&&x.getAttribute('data-w')===want[at]){ x.classList.add('hint'); return true; } return false; }); } }
+      function solved(s,errs){ blip(true); line.innerHTML='<span>'+marked(s)+'</span>'; say(s.au);
+        fb.innerHTML=errs?'<span class="g-no">Geschafft, mit '+errs+' Fehler'+(errs>1?'n':'')+'.</span>':'<span class="g-ok">✓ Perfekt!</span>';
+        acts_.innerHTML=''; if(canHear()&&s.au) acts_.appendChild(btn('','🔊 Nochmal',function(){ say(s.au); })); acts_.appendChild(btn('main','Weiter ›',nextSentence)); }
+      nextSentence(); }
+
+    /* ⚡ Der · Die · Das: 60 seconds of nouns; a streak multiplies the points, a miss comes back soon */
+    function artikel(g){
+      var pool_=nouns(g); if(pool_.length<12){ var more=[]; ORDER.forEach(function(u){ if(u!==unit()&&G[u]) more=more.concat(nouns(G[u])); }); pool_=pool_.concat(pick(more,12-pool_.length)); }
+      var q_=shuffle(pool_), cur_=null, score=0, streak=0, top=0, misses=[], left=60, wait=false, info=head('⚡ Der · Die · Das');
+      var bar=el('div','a-time'), fill=el('i'); bar.appendChild(fill); box.appendChild(bar);
+      var sc=el('div','a-score'), card=el('div','a-card'); box.appendChild(sc); box.appendChild(card);
+      var row=el('div','a-btns'); ['der','die','das'].forEach(function(a){ row.appendChild(btn('a-'+a,a,function(){ answer(a); })); }); box.appendChild(row);
+      function key(e){ var a={'1':'der','2':'die','3':'das'}[e.key]; if(a&&!e.repeat){ e.preventDefault(); answer(a); } }
+      d.addEventListener('keydown',key);
+      var tm=setInterval(function(){ left--; fill.style.width=(left/60*100)+'%'; info.textContent=left+' s'; if(left<=0) over(); },1000);
+      live=function(){ clearInterval(tm); d.removeEventListener('keydown',key); };
+      function mult(){ return Math.min(4,1+Math.floor(streak/3)); }
+      function showNext(){ if(!q_.length) q_=shuffle(pool_); cur_=q_.shift();
+        card.innerHTML='<div class="a-word">'+esc(cur_.w)+'</div><div class="a-gloss">'+esc(cur_.g)+'</div>'; sc.textContent=score+' Punkte'+(streak>=3?' · 🔥 ×'+mult():''); }
+      function answer(a){ if(wait||left<=0) return; wait=true;
+        if(a===cur_.a){ score+=10*mult(); streak++; top=Math.max(top,streak); blip(true); say(cur_.h); card.classList.add('good');
+          setTimeout(function(){ card.classList.remove('good'); wait=false; if(left>0) showNext(); },260); return; }
+        streak=0; blip(false); misses.push(cur_); q_.splice(Math.min(4,q_.length),0,cur_);
+        card.innerHTML='<div class="a-word">'+word(cur_)+'</div><div class="a-gloss">'+esc(cur_.g)+'</div>'; card.classList.add('bad'); say(cur_.h);
+        setTimeout(function(){ card.classList.remove('bad'); wait=false; if(left>0) showNext(); },1200); }
+      function over(){ var seen={}, list=misses.filter(function(v){ var k=v.a+' '+v.w; if(seen[k]) return false; seen[k]=1; return true; });
+        finish('art',score>=300?3:score>=150?2:1,score,[score+' Punkte · beste Serie '+top].concat(list.length?['Merk dir: '+list.map(function(v){ return v.a+' '+v.w; }).join(', ')]:['Kein einziger Fehler!'])); }
+      info.textContent='60 s'; showNext(); }
+
+    /* 💬 Was sagt man?: a situation, three phrases from the lesson; pick the one that fits */
+    function wendung(g){
+      var all=g.r, qs=pick(all,Math.min(8,all.length)), i=-1, right=0, info=head('💬 Was sagt man?');
+      box.appendChild(el('p','g-lead','Lies die Situation und wähle die passende Wendung.'));
+      var sit=el('div','r-sit'), opts=el('div','r-opts'), fb=el('div','r-fb'), acts_=el('div','g-acts');
+      [sit,opts,fb,acts_].forEach(function(e){ box.appendChild(e); });
+      function others(r){ var o=all.filter(function(x){ return x!==r&&x.grp!==r.grp; });
+        if(o.length<2) o=all.filter(function(x){ return x!==r; });
+        if(o.length<2) ORDER.forEach(function(u){ if(u!==unit()&&G[u]) o=o.concat(G[u].r); });
+        return pick(o,2); }
+      function ask(){ i++; if(i>=qs.length) return finish('red',right===qs.length?3:right>=Math.ceil(qs.length*0.6)?2:1,right*10,['Richtig: '+right+' von '+qs.length]);
+        var r=qs[i], answered=false; info.textContent=(i+1)+' / '+qs.length; fb.innerHTML=''; acts_.innerHTML='';
+        sit.innerHTML='<div>'+esc(r.w)+'</div>'+(r.reg?'<div class="r-reg">'+esc(r.reg)+'</div>':''); opts.innerHTML='';
+        shuffle([r].concat(others(r))).forEach(function(x){ opts.appendChild(btn('r-opt',esc(x.f),function(b){ if(answered) return; answered=true;
+          if(x===r){ right++; blip(true); b.classList.add('ok'); }
+          else { blip(false); b.classList.add('no'); [].forEach.call(opts.children,function(o,k){ if(o.textContent===r.f) o.classList.add('ok'); }); }
+          say(r.au); fb.innerHTML='<div class="'+(x===r?'g-ok':'g-no')+'">'+(x===r?'✓ Genau!':'So sagt man es:')+' '+esc(r.g)+'</div><div>'+marked(r.x)+'</div><div class="b-tr">'+esc(r.x.en)+'</div>';
+          acts_.appendChild(btn('main','Weiter ›',ask)); })); }); }
+      ask(); }
+    return {open:open, stop:stop};
+  })();
+
   show(ui.unit||units[0].id,false);
-  mode(ui.tab==='p'?'p':'l');
+  mode(ui.tab==='p'||ui.tab==='g'?ui.tab:'l');
 })();
 </script>
 

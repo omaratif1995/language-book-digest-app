@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-"""Validate internal lesson records and render a compact three-section study sheet.
+"""Validate internal lesson records and render a compact study sheet.
 
+The sheet has three teaching sections (Wortschatz, Grammatik, Redemittel) and, when the
+lesson data has a story, a closing Geschichte that recycles the lesson in one catchy text.
 Mechanical checks cannot judge pedagogical selection or German accuracy. Those
 require a real source comparison and language review.
 """
@@ -24,10 +26,15 @@ SECTIONS = {"vocabulary": "vocabulary", "grammar": "grammar", "redemittel": "exp
 HOME_KINDS = {"vocabulary": "vocabulary", "grammar": "grammar", "expression": "redemittel"}
 LESSON_KEYS = {"schema_version", "lesson_id", "inventory_sha256", "title", "level",
                "target_language", "gloss_language", "vocabulary", "grammar", "redemittel"}
+OPTIONAL_LESSON_KEYS = {"story"}
 FORBIDDEN_LEARNER_FIELDS = {"goal", "core_ids", "start_grammar_id", "start_expression_id",
                             "start_labels", "contexts", "practice", "recap", "later"}
+STORY_CHECK = "story_quality"
+STORY_MIN_PARAGRAPHS = 3
+STORY_MIN_VOCABULARY_SHARE = 0.6
 HASH = re.compile(r"[0-9a-f]{64}\Z")
 IDENTIFIER = re.compile(r"[A-Za-z][A-Za-z0-9_-]*\Z")
+ISBN = re.compile(r"\b97[89](?:[-\s]?\d){10}\b")
 TEMPLATE = Path(__file__).resolve().parents[1] / "references" / "master-template.html"
 
 
@@ -115,6 +122,14 @@ def load_json(path):
     return value, hashlib.sha256(raw).hexdigest()
 
 
+def exact_matches(text, target):
+    """Occurrences of `target` in `text` that do not start or end inside another word."""
+    edge = r"[A-Za-zÀ-ÖØ-öø-ÿ0-9_]"
+    prefix = r"(?<!\w)" if re.fullmatch(edge, target[0]) else ""
+    suffix = r"(?!\w)" if re.fullmatch(edge, target[-1]) else ""
+    return list(re.finditer(prefix + re.escape(target) + suffix, text))
+
+
 def target_spans(example, where):
     obj(example, where)
     text = field(example, "de", where)
@@ -122,10 +137,7 @@ def target_spans(example, where):
     targets = unique_strings(example.get("targets"), f"{where}.targets", 1)
     spans = []
     for target in targets:
-        edge = r"[A-Za-zÀ-ÖØ-öø-ÿ0-9_]"
-        prefix = r"(?<!\w)" if re.fullmatch(edge, target[0]) else ""
-        suffix = r"(?!\w)" if re.fullmatch(edge, target[-1]) else ""
-        matches = list(re.finditer(prefix + re.escape(target) + suffix, text))
+        matches = exact_matches(text, target)
         require(matches, f"{where}: exact target {target!r} is absent or inside another word")
         spans.extend((match.start(), match.end()) for match in matches)
     spans.sort()
@@ -158,6 +170,196 @@ def target_visible_strings(value):
                 yield from target_visible_strings(item)
 
 
+def learner_strings(value):
+    """Every string a learner can see or hear: titles, cards, glosses, examples and the story."""
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, list):
+        for item in value:
+            yield from learner_strings(item)
+    elif isinstance(value, dict):
+        for key, item in value.items():
+            if key not in ("id", "card", "targets", "uses", "schema_version", "lesson_id", "inventory_sha256"):
+                yield from learner_strings(item)
+
+
+# A sentence ends at . ! ? or … (plus closing quotes) before the next sentence's capital, digit, quote or dash.
+_SENTENCE_END = re.compile(r"[.!?…]+[“”\"»«’)]*(?=\s+[„“\"«»(A-ZÄÖÜ0-9–-])")
+_NO_SENTENCE_END = re.compile(r"(?:(?<![A-Za-zÄÖÜäöüß])[A-Za-zÄÖÜäöüß]|(?<!\d)\d{1,2}|Dr|Fr|Hr|Nr|Str|Prof|St|ca|bzw|usw|etc|evtl|ggf|inkl|vgl|Tel|Mio|Mrd)\.\Z")
+
+
+def story_sentences(text):
+    """Split one story paragraph into sentences (stable, so audio clips and highlights line up)."""
+    sentences, start = [], 0
+    for match in _SENTENCE_END.finditer(text):
+        if _NO_SENTENCE_END.search(text[start:match.end()]):
+            continue                                  # z. B., Dr., am 3. Mai: not the end of a sentence
+        sentences.append(text[start:match.end()].strip())
+        start = match.end()
+    if text[start:].strip():
+        sentences.append(text[start:].strip())
+    return sentences
+
+
+def sentence_spans(text):
+    """(start, end) of each story sentence inside its paragraph."""
+    spans, cursor = [], 0
+    for sentence in story_sentences(text):
+        start = text.index(sentence, cursor)
+        spans.append((start, start + len(sentence)))
+        cursor = start + len(sentence)
+    return spans
+
+
+def story_marks(paragraph, sections):
+    """Spans of the lesson words and phrases a paragraph uses (first occurrence of each), for highlighting."""
+    marks = []
+    for use in paragraph.get("uses", []):
+        if sections.get(use["card"]) in ("vocabulary", "redemittel"):
+            match = exact_matches(paragraph["de"], use["form"])[0]
+            marks.append((match.start(), match.end(), use["card"]))
+    return sorted(marks)
+
+
+def validate_story(lesson, nodes, node_sections, blockers, notes):
+    story = obj(lesson["story"], "lesson.story")
+    require(set(story) <= {"title", "paragraphs"}, "lesson.story accepts only title and paragraphs")
+    field(story, "title", "lesson.story")
+    paragraphs = seq(story.get("paragraphs"), "lesson.story.paragraphs", STORY_MIN_PARAGRAPHS)
+    used, words = {}, 0
+    for index, paragraph in enumerate(paragraphs, 1):
+        where = f"story paragraph {index}"
+        obj(paragraph, where)
+        require(set(paragraph) <= {"de", "en", "uses"}, f"{where}: accepts only de, en and uses")
+        text = field(paragraph, "de", where)
+        field(paragraph, "en", where)
+        words += len(text.split())
+        bounds = sentence_spans(text)
+        for use_index, use in enumerate(seq(paragraph.get("uses", []), f"{where}.uses")):
+            obj(use, f"{where}.uses[{use_index}]")
+            card, form = field(use, "card", where), field(use, "form", where)
+            require(card in nodes, f"{where}: uses unknown card {card}")
+            matches = exact_matches(text, form)
+            require(matches, f"{where}: the form {form!r} of {card} is absent or inside another word")
+            first = matches[0]
+            require(any(a <= first.start() and first.end() <= b for a, b in bounds),
+                    f"{where}: the form {form!r} runs across two sentences")
+            used.setdefault(card, []).append(index)
+        marks = story_marks(paragraph, node_sections)
+        require(all(left[1] <= right[0] for left, right in zip(marks, marks[1:])),
+                f"{where}: highlighted words and phrases overlap")
+    sections = {"vocabulary": [], "grammar": [], "redemittel": []}
+    for nid, section in node_sections.items():
+        sections[section].append(nid)
+    unused_grammar = [nid for nid in sections["grammar"] if nid not in used]
+    if unused_grammar:
+        blockers.append("Story never uses grammar point(s) " + ", ".join(unused_grammar))
+    vocabulary = sections["vocabulary"]
+    share = sum(nid in used for nid in vocabulary) / len(vocabulary) if vocabulary else 1.0
+    if share < STORY_MIN_VOCABULARY_SHARE:
+        blockers.append(f"Story uses only {share:.0%} of the vocabulary cards (needs {STORY_MIN_VOCABULARY_SHARE:.0%})")
+    phrases = sections["redemittel"]
+    notes.append(f"Story: {words} words, {len(paragraphs)} paragraphs; vocabulary {share:.0%}, "
+                 f"grammar {len(sections['grammar']) - len(unused_grammar)}/{len(sections['grammar'])}, "
+                 f"Redemittel {sum(nid in used for nid in phrases)}/{len(phrases)}")
+    unused = [nid for nid in vocabulary + phrases if nid not in used]
+    if unused:
+        notes.append("Story leaves out: " + ", ".join(unused))
+    if not 200 <= words <= 700:
+        notes.append(f"Story has {words} words; 250-600 usually reads well in one sitting")
+
+
+def _words(text):
+    return re.findall(r"[a-zäöüß0-9]+", text.casefold())
+
+
+def example_notes(lesson, inventory, notes):
+    """Hints for the language review: flat or copied examples, verbs without Perfekt. Never blockers."""
+    evidence = set()
+    for item in inventory.get("items", []):
+        for source in item.get("sources", []):
+            words = _words(source.get("evidence", ""))
+            evidence.update(tuple(words[i:i + 6]) for i in range(len(words) - 5))
+    short, copied, starts = [], [], []
+    for section in ("vocabulary", "grammar", "redemittel"):
+        for record in lesson[section]:
+            for example in record["examples"]:
+                words = _words(example["de"])
+                starts.append(words[0] if words else "")
+                if len(words) < 5:
+                    short.append(record["id"])
+                if section != "redemittel" and any(tuple(words[i:i + 6]) in evidence for i in range(len(words) - 5)):
+                    copied.append(record["id"])
+    if short:
+        notes.append("Very short examples (check they are not too simple): " + ", ".join(sorted(set(short))))
+    if copied:
+        notes.append("Examples that repeat six or more source words in a row (write your own): " + ", ".join(sorted(set(copied))))
+    if starts and starts.count("ich") / len(starts) > 0.4:
+        notes.append(f"{starts.count('ich')} of {len(starts)} examples start with «Ich»; vary the subjects")
+    perfekt = [record["id"] for record in lesson["vocabulary"]
+               if record["pos"] == "verb" and not re.search(r"\b(hat|ist|haben|sein)\b", record.get("forms", ""))]
+    if perfekt:
+        notes.append("Verb cards without a Perfekt form (hat/ist + Partizip II): " + ", ".join(perfekt))
+
+
+def copied_run(text, protected, source, n=6):
+    """The first run of n words that `text` shares with the source, unless it is mostly the card's own target phrase.
+    Only phrases of three or more words count as protected (a Redemittel frame); single target words do not."""
+    words = [(m.group(0), m.start(), m.end()) for m in re.finditer(r"[a-zäöüß0-9]+", text.casefold())]
+    phrases = [phrase for phrase in protected if len(re.findall(r"\w+", phrase)) >= 3]
+    spans = [(m.start(), m.end()) for phrase in phrases for m in re.finditer(re.escape(phrase.casefold()), text.casefold())]
+    for i in range(len(words) - n + 1):
+        run = words[i:i + n]
+        if tuple(w for w, _, _ in run) in source:
+            if sum(any(a <= s and e <= b for a, b in spans) for _, s, e in run) < 4:
+                return " ".join(w for w, _, _ in run)
+    return None
+
+
+def source_copy_notes(lesson, source_text, notes):
+    """Learner German must be the learner's own: report examples and story sentences that copy six source words."""
+    words = re.findall(r"[a-zäöüß0-9]+", source_text.casefold())
+    source = {tuple(words[i:i + 6]) for i in range(len(words) - 5)}
+    found = []
+    for section in ("vocabulary", "grammar", "redemittel"):
+        for record in lesson[section]:
+            for index, example in enumerate(record["examples"]):
+                run = copied_run(example["de"], example["targets"], source)
+                if run:
+                    found.append(f'{record["id"]}#{index} «{run}»')
+    for index, paragraph in enumerate((lesson.get("story") or {}).get("paragraphs", []), 1):
+        run = copied_run(paragraph["de"], [use["form"] for use in paragraph.get("uses", [])], source)
+        if run:
+            found.append(f"story p{index} «{run}»")
+    if found:
+        notes.append("Copied from the source, rewrite in your own words: " + "; ".join(found))
+
+
+def source_text_of(source_path, scope):
+    """Text of the source for the originality check: a text file as it is, or the scope pages of a PDF."""
+    path = Path(source_path)
+    if path.suffix.lower() == ".pdf":
+        try:
+            import pymupdf
+        except ImportError:
+            return None
+        with pymupdf.open(path) as pdf:
+            return " ".join(pdf[index].get_text() for index in scope if index < pdf.page_count)
+    try:
+        return path.read_text(encoding="utf-8")
+    except (UnicodeDecodeError, OSError):
+        return None
+
+
+def check_private_terms(lesson, inventory):
+    """Learner output never names the source: no ISBN and none of the inventory's private_terms."""
+    terms = unique_strings(inventory.get("private_terms", []), "inventory.private_terms")
+    for text in learner_strings({key: lesson[key] for key in lesson if key not in ("target_language", "gloss_language")}):
+        require(not ISBN.search(text), f"Learner text contains an ISBN: {text[:60]!r}")
+        for term in terms:
+            require(not exact_matches(text, term), f"Learner text names a private source term {term!r}: {text[:60]!r}")
+
+
 @dataclass
 class Bundle:
     inventory: dict
@@ -175,13 +377,13 @@ class Bundle:
         return self.review is not None and not self.blockers
 
 
-def validate_bundle(inventory_path, lesson_path, review_path=None, source_path=None):
+def validate_bundle(inventory_path, lesson_path, review_path=None, source_path=None, source_text_path=None):
     inventory, inventory_hash = load_json(inventory_path)
     lesson, lesson_hash = load_json(lesson_path)
     require(inventory["lesson_id"] == lesson["lesson_id"], "Inventory and lesson IDs differ")
-    require(set(lesson) == LESSON_KEYS,
-            "Lesson top-level fields must contain only the three-section v2 contract; unexpected/missing: " +
-            ", ".join(sorted(set(lesson) ^ LESSON_KEYS)))
+    require(set(lesson) - OPTIONAL_LESSON_KEYS == LESSON_KEYS,
+            "Lesson top-level fields must contain only the three-section v2 contract (plus an optional story); "
+            "unexpected/missing: " + ", ".join(sorted((set(lesson) - OPTIONAL_LESSON_KEYS) ^ LESSON_KEYS)))
     require(not (set(lesson) & FORBIDDEN_LEARNER_FIELDS), "Learner-meta fields are forbidden in v2 lesson data")
     require(hash_field(lesson, "inventory_sha256", "lesson") == inventory_hash,
             "Lesson inventory_sha256 is stale")
@@ -338,6 +540,10 @@ def validate_bundle(inventory_path, lesson_path, review_path=None, source_path=N
     require(set(nodes) == standalone_homes,
             "Every learner card needs exactly one standalone source decision; mismatch: " +
             ", ".join(sorted(set(nodes) ^ standalone_homes)))
+    check_private_terms(lesson, inventory)
+    if "story" in lesson:
+        validate_story(lesson, nodes, node_sections, blockers, notes)
+    example_notes(lesson, inventory, notes)
 
     review = None
     hashes = {"inventory": inventory_hash, "lesson": lesson_hash, "source": source_hash}
@@ -351,7 +557,9 @@ def validate_bundle(inventory_path, lesson_path, review_path=None, source_path=N
         field(review, "scope_note", "review")
         require(review.get("method") in ("independent-source-comparison", "author-second-pass"), "Invalid review method")
         checks = obj(review.get("checks"), "review.checks")
-        require(set(checks) == CHECKS, "Review must record the seven v2 checks")
+        expected = CHECKS | ({STORY_CHECK} if "story" in lesson else set())
+        require(set(checks) == expected, "Review must record the seven v2 checks" +
+                (f" plus {STORY_CHECK} for the story" if "story" in lesson else ""))
         for name, value in checks.items():
             require(value in ("pass", "fail", "not_checked"), f"Review {name}: invalid result")
             if value != "pass":
@@ -387,6 +595,12 @@ def validate_bundle(inventory_path, lesson_path, review_path=None, source_path=N
                 raise PackError(f"Cannot verify PDF bounds: {error}") from error
     else:
         notes.append("Source bytes were not supplied for hash verification")
+    text = (Path(source_text_path).read_text(encoding="utf-8") if source_text_path
+            else source_text_of(source_path, scope) if source_path else None)
+    if text:
+        source_copy_notes(lesson, text, notes)
+    elif source_path or source_text_path:
+        notes.append("Source text unavailable for the originality check; pass --source-text with the lesson's text")
     return Bundle(inventory, lesson, review, hashes, nodes, node_sections, blockers, notes, verified)
 
 
@@ -408,6 +622,34 @@ def example_html(record, gloss_language):
                      for example in record["examples"])
 
 
+def story_html(lesson, node_sections):
+    """Section 4: the story, one span per sentence (audio and highlighting) and the lesson's words underlined."""
+    story, support = lesson["story"], lesson["gloss_language"]
+    hints = {record["id"]: (f'{record["article"]} ' if record.get("article") else "") + f'{record["lemma"]}: {record["gloss"]}'
+             for record in lesson["vocabulary"]}
+    hints.update({record["id"]: f'{record["frame"]}: {record["gloss"]}' for record in lesson["redemittel"]})
+    parts = ['<h2><span class="num">4</span> Geschichte</h2><div class="rule-under"></div>',
+             f'<article class="story" id="story"><h3>{esc(story["title"])}</h3>']
+    number = 0
+    for index, paragraph in enumerate(story["paragraphs"], 1):
+        text, marks = paragraph["de"], story_marks(paragraph, node_sections)
+        sentences = []
+        for start, end in sentence_spans(text):
+            number += 1
+            cursor, inner = start, []
+            for mark_start, mark_end, card in marks:
+                if start <= mark_start and mark_end <= end:
+                    inner += [esc(text[cursor:mark_start]),
+                              f'<span class="lw" data-card="{esc(card)}" title="{esc(hints[card])}">{esc(text[mark_start:mark_end])}</span>']
+                    cursor = mark_end
+            inner.append(esc(text[cursor:end]))
+            sentences.append(f'<span class="ss" id="story-s{number}">{"".join(inner)}</span>')
+        parts.append(f'<div class="story-p" id="story-p{index}"><p>{" ".join(sentences)}</p>'
+                     f'<details class="story-tr"><summary>Übersetzung</summary><p lang="{esc(support)}">{esc(paragraph["en"])}</p></details></div>')
+    parts.append('</article>')
+    return "".join(parts)
+
+
 def render_html(bundle, draft=False, template_path=TEMPLATE):
     require(draft or (bundle.reviewed and bundle.source_verified),
             "Reviewed rendering needs a passing current review and --source; otherwise use --draft")
@@ -421,7 +663,8 @@ def render_html(bundle, draft=False, template_path=TEMPLATE):
              f'<meta name="study-pack-status" content="{status}">',
              f'<title>{esc(lesson["lesson_id"])} — {esc(lesson["title"])}</title>', style.group(0),
              '</head><body><main class="wrap">',
-             f'<header class="hero"><div class="lekt">{esc(bundle.inventory["book"])} · {esc(lesson["level"])} · {esc(lesson["lesson_id"])}</div><h1>{esc(lesson["title"])}</h1></header>',
+             # The header names level and unit only: the source's title, publisher and ISBN stay in _work.
+             f'<header class="hero"><div class="lekt">{esc(lesson["level"])} · {esc(lesson["lesson_id"])}</div><h1>{esc(lesson["title"])}</h1></header>',
              '<h2><span class="num">1</span> Wortschatz</h2><div class="rule-under"></div>']
     previous = None
     for record in lesson["vocabulary"]:
@@ -451,6 +694,8 @@ def render_html(bundle, draft=False, template_path=TEMPLATE):
         register = f' · {esc(record["register"])}' if record.get("register") else ""
         variants = ''.join(f'<p class="variant">{esc(variant["form"])} — {esc(variant["usage"])}</p>' for variant in record.get("variants", []))
         parts.append(f'<article class="phrase" id="{esc(record["id"])}"><div class="head">{esc(record["frame"])}</div><p class="meaning">{esc(record["gloss"])}</p><div class="when">{esc(record["when"])}{register}</div>{variants}{example_html(record, support)}</article>')
+    if lesson.get("story"):
+        parts.append(story_html(lesson, bundle.node_sections))
     parts.append('</main></body></html>')
     return "\n".join(parts) + "\n"
 
@@ -474,11 +719,13 @@ def main(argv=None):
     parser.add_argument("--lesson", type=Path, required=True)
     parser.add_argument("--review", type=Path)
     parser.add_argument("--source", type=Path)
+    parser.add_argument("--source-text", type=Path,
+                        help="UTF-8 text of the lesson pages, for the originality check (a PDF source is read directly when pymupdf is installed)")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--draft", action="store_true")
     args = parser.parse_args(argv)
     try:
-        bundle = validate_bundle(args.inventory, args.lesson, args.review, args.source)
+        bundle = validate_bundle(args.inventory, args.lesson, args.review, args.source, args.source_text)
         print("MECHANICAL PASS: internal source decisions, mappings, examples and hashes are consistent.")
         print("SEMANTIC REVIEW: " + (bundle.review["method"] if bundle.reviewed else "not accepted for reviewed release"))
         for message in bundle.blockers:

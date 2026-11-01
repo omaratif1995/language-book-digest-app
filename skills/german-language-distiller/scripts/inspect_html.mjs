@@ -89,7 +89,7 @@ try {
           viewport: innerWidth, documentWidth: document.documentElement.scrollWidth,
           sections: [...document.querySelectorAll('h2')].map(el => el.textContent.trim().replace(/^[0-9]+/, '').trim()),
           hiddenRecords: hidden,
-          foldingElements: document.querySelectorAll('details,[hidden],[aria-hidden="true"]').length,
+          foldingElements: [...document.querySelectorAll('details,[hidden],[aria-hidden="true"]')].filter(el => !el.matches('details.story-tr')).length,
           forbiddenMetaPanels: document.querySelectorAll('.goal,.start,.legend,.study-nav,.source-note,.summary,.practice,.quiz').length,
           vocabularyCards: document.querySelectorAll('.voc').length,
           vocabularyWithExamples: [...document.querySelectorAll('.voc')].filter(el => el.querySelector('.ex mark')?.textContent.trim()).length,
@@ -104,13 +104,13 @@ try {
     if (evaluated.exceptionDetails) throw new Error(JSON.stringify(evaluated.exceptionDetails));
     const report = { name, ...evaluated.result.value };
     reports.push(report);
-    for (const [section, index] of [['top', -1], ['vocabulary', 0], ['grammar', 1], ['redemittel', 2]]) {
-      await pageCall('Runtime.evaluate', { expression: index < 0 ? 'scrollTo(0,0)' : `document.querySelectorAll('h2')[${index}].scrollIntoView()` });
+    for (const [section, index] of [['top', -1], ['vocabulary', 0], ['grammar', 1], ['redemittel', 2], ['story', 3]]) {
+      await pageCall('Runtime.evaluate', { expression: index < 0 ? 'scrollTo(0,0)' : `document.querySelectorAll('h2')[${index}]?.scrollIntoView()` });
       const screenshot = await pageCall('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
       await writeFile(path.join(outputDir, `${name}-${section}.png`), Buffer.from(screenshot.data, 'base64'), { flag: 'wx' });
     }
   }
-  const passed = reports.every(report => report.documentWidth <= report.viewport + 1 && JSON.stringify(report.sections) === JSON.stringify(['Wortschatz','Grammatik','Redemittel']) && !report.hiddenRecords.length && !report.foldingElements && !report.forbiddenMetaPanels && !report.brokenLocalLinks.length && !report.overflowing.length && report.vocabularyCards === report.vocabularyWithExamples && report.phraseCards === report.phrasesWithExamples && report.grammarRules === report.grammarWithTwoExamples);
+  const passed = reports.every(report => report.documentWidth <= report.viewport + 1 && ['Wortschatz,Grammatik,Redemittel', 'Wortschatz,Grammatik,Redemittel,Geschichte'].includes(report.sections.join(',')) && !report.hiddenRecords.length && !report.foldingElements && !report.forbiddenMetaPanels && !report.brokenLocalLinks.length && !report.overflowing.length && report.vocabularyCards === report.vocabularyWithExamples && report.phraseCards === report.phrasesWithExamples && report.grammarRules === report.grammarWithTwoExamples);
   const result = { input: path.resolve(input), passed, limitation: 'Layout checks and screenshots are not a source or language review.', temporaryBrowserProfile: profile, reports };
   await writeFile(path.join(outputDir, 'layout-report.json'), JSON.stringify(result, null, 2) + '\n', { flag: 'wx' });
   console.log(JSON.stringify(result, null, 2));

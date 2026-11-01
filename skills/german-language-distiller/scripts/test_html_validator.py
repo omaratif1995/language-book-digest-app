@@ -64,6 +64,22 @@ class HtmlValidatorTests(unittest.TestCase):
         markup = VALID.replace("der <mark>Kollege</mark>", "Später mache ich <mark>Fortschritte</mark> — Later I make progress")
         self.assertEqual(self.run_markup(markup), 0)
 
+    STORY = ('<h2>4 Geschichte</h2><article class="story"><h3>Titel</h3>' + ''.join(
+        f'<div class="story-p"><p><span class="ss">Satz {n}.</span></p><details class="story-tr"><summary>Übersetzung</summary>'
+        f'<p>Sentence {n}.</p></details></div>' for n in (1, 2, 3)) + '</article>')
+
+    def test_closing_story_with_folded_translations_is_allowed(self):
+        self.assertEqual(self.run_markup(VALID.replace("</body>", self.STORY + "</body>")), 0)
+
+    def test_story_must_come_last_and_have_three_paragraphs(self):
+        early = VALID.replace("<h2>3 Redemittel", self.STORY + "<h2>3 Redemittel")
+        self.assertEqual(self.run_markup(early), 1)
+        short = self.STORY.replace('<div class="story-p"><p><span class="ss">Satz 3.', '<div><p><span class="ss">Satz 3.')
+        self.assertEqual(self.run_markup(VALID.replace("</body>", short + "</body>")), 1)
+
+    def test_isbn_in_sheet_fails(self):
+        self.assertEqual(self.run_markup(VALID.replace("der <mark>Kollege</mark>", "der <mark>Kollege</mark> ISBN 978-0-000-00000-0")), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

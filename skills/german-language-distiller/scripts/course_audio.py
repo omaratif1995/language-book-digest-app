@@ -4,6 +4,8 @@
     course_audio.py plan     --course course.json                         # no network: write plan.json, list missing clips
     course_audio.py synth    --course course.json --confirm-external-tts  # synthesize missing clips into the cache
     course_audio.py episodes --course course.json --confirm-external-tts  # one MP3 per unit (needs ffmpeg)
+    course_audio.py episodes --course course.json --confirm-external-tts --kind examples --repeat 2
+                                                                          # only the example sentences, each repeated
 
 Clip ids use the same scheme as embed_audio.build_plan, so a cache filled by either tool serves both.
 Hosted synthesis sends the selected learner text to the Edge TTS service: obtain the user's approval first.
@@ -20,18 +22,20 @@ import subprocess
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from embed_audio import AudioError, build_plan, require, synthesize  # noqa: E402
+from embed_audio import AudioError, lesson_plan, require, synthesize  # noqa: E402
 import speech  # noqa: E402
 
-SECTIONS = ("Wortschatz", "Grammatik", "Redemittel")
 BYTES_PER_SECOND = 6000   # edge-tts delivers 48 kbit/s constant-bitrate MP3
 STEP = 0.4                # silence granularity in seconds
+COURSE_KEYS = {"title", "subtitle", "narration", "voices", "cache", "episodes_dir", "new_per_day", "private_terms", "units"}
 
 
 def load_course(path):
     path = Path(path).resolve()
     course = json.loads(path.read_text(encoding="utf-8-sig"))
     base = path.parent
+    unknown = sorted(set(course) - COURSE_KEYS)   # a misspelt key would silently fall back to a default
+    require(not unknown, f"course.json has unknown key(s) {', '.join(unknown)}; see references/course-app.md")
     require(isinstance(course.get("units"), list) and course["units"], "course.json needs a non-empty units list")
     course["title"] = course.get("title") or "Course"
     course["voices"] = {**speech.DEFAULT_VOICES, **(course.get("voices") or {})}
@@ -39,6 +43,10 @@ def load_course(path):
     course["narration"] = json.loads((base / narration).read_text(encoding="utf-8-sig")) if narration else {}
     course["cache"] = (base / course.get("cache", "_work/audio")).resolve()
     course["episodes_dir"] = (base / course.get("episodes_dir", "Audio")).resolve()
+    course["private_terms"] = [str(term) for term in course.get("private_terms", [])]
+    for term in course["private_terms"]:          # names of the source that must never reach learner output
+        require(not exact_term(course["title"] + " " + course.get("subtitle", ""), term),
+                f"course title or subtitle names the private source term {term!r}")
     seen = set()
     for unit in course["units"]:
         for key in ("id", "label", "lesson", "sheet"):
@@ -53,19 +61,23 @@ def load_course(path):
     return course
 
 
+def exact_term(text, term):
+    return re.search(r"(?<!\w)" + re.escape(term) + r"(?!\w)", text, re.I) is not None
+
+
 def unit_plan(lesson, voices, narration=None, announcement=None):
-    """Full listening order (episodes) plus what the app needs: German controls, grammar explanations, sections."""
-    clips, sequence, controls, explain = build_plan(lesson, voices, narration)
+    """Full listening order (episodes) plus what the app needs: German controls, grammar explanations,
+    sections, the story's sentences per paragraph and the English example clips."""
+    clips, plan = lesson_plan(lesson, voices, narration)
 
     def add(text):
         clip = speech.make_clip(text, "de", voices)
         clips.setdefault(clip.clip_id, clip)
         return clip.clip_id
 
-    plan = {"title": add(lesson["title"]), "sections": {name: add(name) for name in SECTIONS},
-            "sequence": sequence, "controls": controls, "explain": explain}
     if announcement:
         plan["intro"] = add(announcement)            # opens the unit's listening episode
+        plan["intro_examples"] = add(announcement + " Beispiele.")
     return clips, plan
 
 
@@ -119,40 +131,71 @@ def safe_name(name):
     return re.sub(r'[<>:"/\\|?*!„“]', "", name).strip()
 
 
-def build_episodes(course, plan):
-    """Listening order of the sheet; after each German item a pause about as long as the clip, to repeat it."""
+def lesson_steps(unit_plan_):
+    """(clip, pause after it) in the sheet's listening order. German items get a pause about as long as the clip,
+    to repeat them aloud; the story at the end is read straight through, with a breath after each paragraph."""
+    grammar_titles = {cid for gid, chain in unit_plan_["explain"].items() for cid in chain[:1]}
+    repeat = {cid: (0.8 if key.endswith("-head") else 1.0) for key, cid in unit_plan_["controls"].items()
+              if cid not in grammar_titles and not key.startswith("story-")}
+    story_gap = {cid: (1.1 if index == len(paragraph) - 1 else 0.35)
+                 for paragraph in unit_plan_["story"] for index, cid in enumerate(paragraph)}
+    if "story-title" in unit_plan_["controls"]:
+        story_gap[unit_plan_["controls"]["story-title"]] = 0.9
+    sections = set(unit_plan_["sections"].values())
+    steps = [(unit_plan_["intro"], 0.8)]
+    for cid in unit_plan_["sequence"]:
+        steps.append((cid, ("section", 1.2) if cid in sections else ("story", story_gap[cid]) if cid in story_gap
+                      else ("repeat", repeat[cid]) if cid in repeat else ("plain", 0.4)))
+    return steps
+
+
+def example_steps(unit_plan_, lesson, times):
+    """Only the examples: each German sentence `times` times with a pause to repeat it, then its English meaning."""
+    steps = [(unit_plan_["intro_examples"], 1.2)]
+    for section in ("vocabulary", "grammar", "redemittel"):
+        for record in lesson[section]:
+            for index in range(len(record["examples"])):
+                key = f'{record["id"]}-ex-{index}'
+                steps += [(unit_plan_["controls"][key], ("repeat", 1.0))] * times
+                steps.append((unit_plan_["english"][key], ("plain", 1.0)))
+    return steps
+
+
+def build_episodes(course, plan, kind="lesson", times=2):
+    """One MP3 per unit: the whole sheet (kind 'lesson') or only its example sentences (kind 'examples')."""
     ff = ffmpeg_exe()
-    course["episodes_dir"].mkdir(parents=True, exist_ok=True)
+    folder = course["episodes_dir"] / ("Beispiele" if kind == "examples" else "")
+    folder.mkdir(parents=True, exist_ok=True)
     clips_dir, total = course["cache"] / "clips", 0.0
     for number, unit in enumerate(course["units"], 1):
         unit_plan_ = plan["units"][unit["id"]]
-        grammar_titles = {cid for gid, chain in unit_plan_["explain"].items() for cid in chain[:1]}
-        repeat = {cid: (0.8 if key.endswith("-head") else 1.0) for key, cid in unit_plan_["controls"].items()
-                  if cid not in grammar_titles}               # German items get a pause to repeat aloud
-        section_ids = set(unit_plan_["sections"].values())
-        intro = clips_dir / f"{unit_plan_['intro']}.mp3"
-        require(intro.is_file(), f"missing clip {unit_plan_['intro']}: run `course_audio.py synth` first")
-        parts, seconds = [intro, silence(course, 0.8, ff)], intro.stat().st_size / BYTES_PER_SECOND + 0.8
-        for cid in unit_plan_["sequence"]:
+        lesson = json.loads(unit["lesson"].read_text(encoding="utf-8-sig"))
+        steps = lesson_steps(unit_plan_) if kind == "lesson" else example_steps(unit_plan_, lesson, times)
+        parts, seconds = [], 0.0
+        for cid, pause in steps:
             clip = clips_dir / f"{cid}.mp3"
             require(clip.is_file(), f"missing clip {cid}: run `course_audio.py synth` first")
             length = clip.stat().st_size / BYTES_PER_SECOND
-            gap = 1.2 if cid in section_ids else 0.4 + (length * repeat[cid] + 0.4 if cid in repeat else 0)
+            how, value = pause if isinstance(pause, tuple) else ("plain", pause)
+            gap = 0.4 + length * value + 0.4 if how == "repeat" else value
             parts += [clip, silence(course, gap, ff)]
             seconds += length + max(STEP, round(gap / STEP) * STEP)
-        listing = course["cache"] / "episodes" / f"{unit['id']}.txt"
+        listing = course["cache"] / "episodes" / f"{unit['id']}-{kind}.txt"
         listing.parent.mkdir(parents=True, exist_ok=True)
         listing.write_text("".join("file '" + p.as_posix().replace("'", "'\\''") + "'\n" for p in parts), encoding="utf-8")
-        lesson_title = json.loads(unit["lesson"].read_text(encoding="utf-8-sig"))["title"]
-        title = lesson_title if lesson_title.startswith(unit["label"]) else f"{unit['label']} – {lesson_title}"
-        target = course["episodes_dir"] / safe_name(f"{number:02d} {title}.mp3")
+        title = lesson["title"] if lesson["title"].startswith(unit["label"]) else f"{unit['label']} – {lesson['title']}"
+        name = f"{number:02d} {title}" + (" – Beispiele" if kind == "examples" else "")
+        album = f"{course['title']} – " + ("Beispiele" if kind == "examples" else "Hören und Nachsprechen")
+        for term in course["private_terms"]:
+            require(not exact_term(name + " " + album, term), f"episode name or album names the private source term {term!r}")
+        target = folder / safe_name(f"{name}.mp3")
         subprocess.run([ff, "-hide_banner", "-loglevel", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(listing),
-                        "-c", "copy", "-id3v2_version", "3", "-metadata", f"title={title}",
-                        "-metadata", f"album={course['title']} – Hören und Nachsprechen", "-metadata", f"artist={course['title']}",
+                        "-c", "copy", "-id3v2_version", "3", "-metadata", f"title={name[3:]}",
+                        "-metadata", f"album={album}", "-metadata", f"artist={course['title']}",
                         "-metadata", f"track={number}/{len(course['units'])}", str(target)], check=True)
         total += seconds
         print(f"{target.name}: about {seconds / 60:.0f} min", flush=True)
-    print(f"EPISODES: {len(course['units'])} files, about {total / 3600:.1f} hours of listening")
+    print(f"EPISODES ({kind}): {len(course['units'])} files, about {total / 3600:.1f} hours of listening")
 
 
 def main(argv=None):
@@ -160,6 +203,9 @@ def main(argv=None):
     parser.add_argument("command", choices=("plan", "synth", "episodes"))
     parser.add_argument("--course", required=True, type=Path)
     parser.add_argument("--concurrency", type=int, default=6)
+    parser.add_argument("--kind", choices=("lesson", "examples"), default="lesson",
+                        help="episodes: the whole sheet, or only the example sentences (into a Beispiele folder)")
+    parser.add_argument("--repeat", type=int, default=2, help="episodes --kind examples: plays of each German sentence")
     parser.add_argument("--confirm-external-tts", action="store_true",
                         help="Confirm that the selected lesson text may be sent to the Edge TTS service")
     args = parser.parse_args(argv)
@@ -182,7 +228,8 @@ def main(argv=None):
         seconds = sum((course["cache"] / "clips" / f"{cid}.mp3").stat().st_size for cid in clips) / BYTES_PER_SECOND
         print(f"SYNTH: all {len(clips)} clips cached, about {seconds / 60:.0f} minutes of speech")
         if args.command == "episodes":
-            build_episodes(course, plan)
+            require(1 <= args.repeat <= 5, "--repeat must be from 1 to 5")
+            build_episodes(course, plan, args.kind, args.repeat)
         return 0
     except (AudioError, speech.SpeechError, OSError, json.JSONDecodeError, subprocess.CalledProcessError) as error:
         print("FAIL: " + str(error), file=sys.stderr)

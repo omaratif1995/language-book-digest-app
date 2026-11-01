@@ -2,7 +2,7 @@
  "schema_version": 2,
  "lesson_id": "E1",
  "inventory_sha256": "0d749e298fe3fdb42b57939384b4497747dfb035157c56957ab2c118a3afd5c4",
- "lesson_sha256": "13e14b2bb2f96de2e719a0b4c781c8139786b940f14110fb61c2ba59455f99e5",
+ "lesson_sha256": "ef75f8a58d1153c01020946fe9c8dca74bd2a3ac79c69670797f18a84cef45a7",
  "reviewer": "sample author",
  "method": "author-second-pass",
  "checks": {
@@ -12,6 +12,7 @@
   "redemittel_value": "pass",
   "selection_quality": "pass",
   "source_inspection": "pass",
+  "story_quality": "pass",
   "vocabulary_quality": "pass"
  },
  "findings": [],

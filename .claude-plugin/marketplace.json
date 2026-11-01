@@ -9,7 +9,7 @@
     {
       "name": "german-language-distiller",
       "source": "./",
-      "description": "Distill lessons into Wortschatz / Grammatik / Redemittel sheets, an offline study app (German audio that sounds German, one-tap spaced repetition) and MP3 listening episodes."
+      "description": "Distill lessons into Wortschatz / Grammatik / Redemittel sheets with a closing story, an offline study app (German audio that sounds German and repeats on tap, one-tap spaced repetition, lesson games) and MP3 listening episodes."
     }
   ]
 }

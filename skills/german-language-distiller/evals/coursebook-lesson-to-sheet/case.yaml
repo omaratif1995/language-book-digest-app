@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: coursebook-lesson-to-sheet
+expected_outcome: |
+  A reviewed or DRAFT study sheet (HTML) for Lektion 7 with the sections Wortschatz, Grammatik, Redemittel and Geschichte, plus the lesson data under _work. The sheet never names the invented book, publisher, ISBN or its characters, its examples are newly written, specific and natural, verbs show the Perfekt, both grammar points are taught, and the closing story reuses most of the lesson.
+context:
+  scaffold_script: place-files.sh

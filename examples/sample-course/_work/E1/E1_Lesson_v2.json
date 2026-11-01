@@ -31,12 +31,12 @@
    "lemma": "Besprechung",
    "pos": "noun",
    "article": "die",
-   "forms": "Plural: die Besprechungen · eine Besprechung haben",
+   "forms": "Plural: die Besprechungen · in einer Besprechung sein",
    "gloss": "meeting",
    "examples": [
     {
-     "de": "Die Besprechung mit dem Team beginnt um neun Uhr.",
-     "en": "The meeting with the team starts at nine.",
+     "de": "Ich kann gerade nicht telefonieren, ich bin in einer Besprechung.",
+     "en": "I can't talk right now, I'm in a meeting.",
      "targets": [
       "Besprechung"
      ]
@@ -88,8 +88,8 @@
    "gloss": "to get done, take care of",
    "examples": [
     {
-     "de": "Diese Aufgabe erledige ich bis Freitag.",
-     "en": "I'll get this task done by Friday.",
+     "de": "Keine Sorge, das erledige ich gleich nach der Mittagspause.",
+     "en": "Don't worry, I'll take care of that right after lunch.",
      "targets": [
       "erledige"
      ]
@@ -214,5 +214,82 @@
     }
    ]
   }
- ]
+ ],
+ "story": {
+  "title": "Der Drucker hasst mich",
+  "paragraphs": [
+   {
+    "de": "Mein erster Arbeitstag beginnt mit einem Problem: Der Wecker klingelt nicht. Ich ziehe mich in fünf Minuten an und renne zur S-Bahn. Um Viertel vor neun stehe ich vor dem Büro, außer Atem, aber pünktlich.",
+    "en": "My first day at work starts with a problem: the alarm doesn't go off. I get dressed in five minutes and run to the train. At a quarter to nine I'm standing outside the office, out of breath, but on time.",
+    "uses": [
+     {
+      "card": "g1",
+      "form": "ziehe mich in fünf Minuten an"
+     },
+     {
+      "card": "v6",
+      "form": "pünktlich"
+     }
+    ]
+   },
+   {
+    "de": "Ein Kollege mit einer riesigen Tasse Kaffee kommt auf mich zu. „Darf ich mich kurz vorstellen? Ich bin Jonas und arbeite als Techniker.“ Er zeigt mir meinen Platz und erklärt: „Die Besprechung fängt um neun an. Danach hast du deinen ersten Termin mit der Chefin.“",
+    "en": "A colleague with a huge cup of coffee comes up to me. 'May I briefly introduce myself? I'm Jonas and I work as a technician.' He shows me my desk and explains: 'The meeting starts at nine. After that you have your first appointment with the boss.'",
+    "uses": [
+     {
+      "card": "v1",
+      "form": "Kollege"
+     },
+     {
+      "card": "e1",
+      "form": "Darf ich mich kurz vorstellen"
+     },
+     {
+      "card": "v2",
+      "form": "Besprechung"
+     },
+     {
+      "card": "g1",
+      "form": "fängt um neun an"
+     },
+     {
+      "card": "v3",
+      "form": "Termin"
+     }
+    ]
+   },
+   {
+    "de": "In der Besprechung stelle ich mich allen kurz vor. Alle sind nett, nur der Drucker nicht: Er blinkt rot und druckt nichts. Ich frage Jonas: „Könnten Sie mir bitte zeigen, wie der Drucker funktioniert?“ Er lacht. „Sag ruhig du. Und der Drucker funktioniert nie.“",
+    "en": "In the meeting I briefly introduce myself to everyone. Everyone is nice, except the printer: it blinks red and prints nothing. I ask Jonas: 'Could you please show me how the printer works?' He laughs. 'You can say du. And the printer never works.'",
+    "uses": [
+     {
+      "card": "v4",
+      "form": "stelle ich mich allen kurz vor"
+     },
+     {
+      "card": "e2",
+      "form": "Könnten Sie mir bitte zeigen, wie"
+     }
+    ]
+   },
+   {
+    "de": "Am Nachmittag erledige ich zuerst meine E-Mails. Dann bekomme ich meine erste Aufgabe: eine Präsentation für die Kunden. „Bis wann soll ich die Präsentation fertig machen?“, frage ich. „Bis Donnerstag“, sagt die Chefin. Um sechs schalte ich den Computer aus und lächle. Morgen stelle ich den Wecker zweimal.",
+    "en": "In the afternoon I first deal with my e-mails. Then I get my first task: a presentation for the clients. 'By when should I finish the presentation?' I ask. 'By Thursday,' says the boss. At six I switch off the computer and smile. Tomorrow I'll set the alarm twice.",
+    "uses": [
+     {
+      "card": "v5",
+      "form": "erledige"
+     },
+     {
+      "card": "e3",
+      "form": "Bis wann soll ich"
+     },
+     {
+      "card": "g1",
+      "form": "schalte ich den Computer aus"
+     }
+    ]
+   }
+  ]
+ }
 }

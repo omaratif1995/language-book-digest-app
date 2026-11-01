@@ -48,9 +48,12 @@ The learner HTML exposes none of these records.
   ],
   "dependencies": [
     {"id": "audio-1-41", "kind": "audio", "locator": "track 1.41", "status": "missing", "impact": "Spoken-only content and listening performance are not reviewed."}
-  ]
+  ],
+  "private_terms": ["Menschen B1", "Hueber", "Herr Kaminski"]
 }
 ```
+
+`book` and `scope_label` identify the source internally; the learner never sees them. `private_terms` (optional) lists names that must never reach learner output: the source's distinctive title words, publisher, author or teacher, and its character names. The validator refuses any learner string that contains one as a whole word, and any ISBN. Choose terms that cannot occur in ordinary German (not *Menschen* on its own).
 
 Each meaningful source region has at least one candidate or source-only record. `status` is `reviewed`, `pending` or `unreadable`; `method` is `visual`, `text` or `visual+text`.
 
@@ -74,7 +77,7 @@ Dependencies stay internal. `missing` may limit the claimed scope without blocki
 
 ## Lesson
 
-Only these top-level keys are accepted:
+Only these top-level keys are accepted (`story` is optional for older lessons and standard for new ones):
 
 ```json
 {
@@ -87,9 +90,12 @@ Only these top-level keys are accepted:
   "gloss_language": "en",
   "vocabulary": [],
   "grammar": [],
-  "redemittel": []
+  "redemittel": [],
+  "story": {"title": "…", "paragraphs": []}
 }
 ```
+
+`title` is the learner's title for the unit, written from its topic, not the source's chapter title.
 
 ### Vocabulary record
 
@@ -155,6 +161,21 @@ Every selected item has one example. Two are allowed when they teach different i
 
 `register` and `variants` are optional. A variant is `{form, usage}` and is used only when combining it saves repetition without obscuring a meaningful difference.
 
+### Story record
+
+```json
+"story": {
+  "title": "Sonne für alle",
+  "paragraphs": [
+    {"de": "Unser Betriebsausflug findet dieses Jahr am Bodensee statt. Alle freuen sich seit Wochen darauf.",
+     "en": "Our company outing takes place at Lake Constance this year. Everyone has been looking forward to it for weeks.",
+     "uses": [{"card": "v01", "form": "Betriebsausflug"}]}
+  ]
+}
+```
+
+At least three paragraphs. Each `uses` entry names a lesson card and the exact `form` that realizes it in the paragraph; the form must stay inside one sentence. Vocabulary and Redemittel forms are underlined (their first occurrence per paragraph) and must not overlap; grammar forms are only counted. Coverage is checked: a story that never uses a grammar point, or uses fewer than 60 % of the vocabulary cards, blocks reviewed release. The renderer splits each paragraph into sentences (one audio clip each) after `.`, `!`, `?` or `…` before a capital, digit, quotation mark or dash, but not after a single letter (*z. B.*), a day number (*am 3. Mai*) or a common abbreviation. See [story-writing.md](story-writing.md).
+
 All content is plain text. The renderer escapes it and inserts `mark` around exact target spans. Examples have one clear primary target; embedded realizations are visible but need not receive a second highlight.
 
 ## Review
@@ -181,12 +202,12 @@ All content is plain text. The renderer escapes it and inserts `mark` around exa
 }
 ```
 
-Use `independent-source-comparison` when a separate reviewer actually compared the exact source/inventory/lesson. Otherwise use `author-second-pass`. Findings are `{id, severity, issue, status, resolution}`; omit `resolution` only while `status` is `open`. A failed/not-checked check or open finding blocks reviewed release. Hashes bind review to exact inputs.
+Use `independent-source-comparison` when a separate reviewer actually compared the exact source/inventory/lesson. Otherwise use `author-second-pass`. Findings are `{id, severity, issue, status, resolution}`; omit `resolution` only while `status` is `open`. A failed/not-checked check or open finding blocks reviewed release. Hashes bind review to exact inputs. A lesson with a story needs an eighth check, `"story_quality": "pass"`.
 
 ## Renderer behavior
 
-`study_pack.py render` writes one HTML file and no evidence sidecar. Without an accepted review, pass `--draft` and use an output filename containing `DRAFT`. The renderer records status in a non-visible meta element. It never renders inventory, source locations, review notes, dependencies or exclusions.
+`study_pack.py render` writes one HTML file and no evidence sidecar. Without an accepted review, pass `--draft` and use an output filename containing `DRAFT`. The renderer records status in a non-visible meta element. Its header shows only level, unit id and title. It never renders the source's name, inventory, source locations, review notes, dependencies or exclusions.
 
-Mechanical validation checks structure, mappings, examples, exact embedded realizations, hashes and review freshness. It cannot decide whether selection or German is pedagogically good; semantic review must do that.
+Mechanical validation checks structure, mappings, examples, exact embedded realizations, story coverage, private terms, hashes and review freshness. It also prints review notes (never blockers) for very short examples, examples that repeat six or more words of the inventory's evidence quotes, too many examples starting with *Ich*, and verb cards without a Perfekt. With the source's text (a PDF read through `pymupdf`, or `--source-text pages.txt`), it also reports every example and story paragraph that shares a run of six words with the source, unless the run is mostly the card's own target or the story's declared form. It cannot decide whether selection or German is pedagogically good; semantic review must do that.
 
 Whole-book course maps remain internal. They ensure every relevant lesson/module/reference page was inspected before a full-book claim; they are not learner deliverables.

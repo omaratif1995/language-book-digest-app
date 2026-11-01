@@ -1,29 +1,32 @@
 ---
 name: german-language-distiller
-description: Distill German language-course material (course-book or workbook pages, a teacher's lecture slides, handouts, scans or notes) into a compact learner sheet with only Wortschatz, Grammatik and Redemittel, then optionally turn the finished units into one offline study app (listening with neural audio, spaced-repetition flashcards) and MP3 listening episodes. Use when a learner wants a lesson's high-value language without the noise, wants to study it on the phone, or asks for audio or flashcards of their lessons.
+description: Distill German language-course material (course-book or workbook pages, a teacher's lecture slides, handouts, scans or notes) into a compact learner sheet (Wortschatz, Grammatik, Redemittel and a catchy closing story that reuses the lesson), with original examples and nothing that names the source, then optionally turn the finished units into one offline phone study app (neural audio that repeats sentences on tap, an examples-only listening mode, spaced-repetition flashcards, four lesson games) and MP3 listening episodes. Use it whenever a German learner wants a lesson or course book turned into notes, study sheets, flashcards, audio, a listening story, study games or a phone app, even if they don't name the skill.
 ---
 
 # German Language Distiller
 
-Turn a supplied lesson into a psychologically manageable substitute for rereading it. A lesson can be course-book and workbook pages, a lecture's slides, a teacher's handout or the learner's own notes.
+Turn a supplied lesson into a psychologically manageable substitute for rereading it, then make it easy to absorb on the phone. A lesson can be course-book and workbook pages, a lecture's slides, a teacher's handout or the learner's own notes.
 
-**complete source inspection → intelligent learning compression → concise learner sheet**
+**complete source inspection → intelligent learning compression → concise learner sheet → a story that brings it back to life**
 
 Optimize for learning value per line, not extracted-item count. The analysis may be exhaustive; the HTML must not look like an audit, workbook, learning dashboard, or second textbook.
 
 ## Non-negotiable learner output
 
-Put new deliverables in the source’s sibling folder `<filename without final extension> - Digested`. Preserve earlier versions and choose a new versioned filename.
+Put new deliverables in the source's sibling folder `<filename without final extension> - Digested`. Preserve earlier versions and choose a new versioned filename.
 
-The learner-facing HTML contains a small identifying title and exactly these three sections, in this order:
+The learner-facing HTML contains a small identifying header and exactly these sections, in this order:
 
 1. `Wortschatz`
 2. `Grammatik`
 3. `Redemittel`
+4. `Geschichte`: one original, catchy story that reuses the lesson
 
-Do not render goals, Start routes, study instructions, article legends, navigation, source/review notes, coverage tables, cultural commentary sections, exercises, quizzes, summaries, “Later” material, progress UI, inventories, IDs or locations. Internal working JSON/reviews live under `_work` or `_skill_test`, never in the learner route. Read [section-spec.md](references/section-spec.md) before authoring.
+Do not render goals, Start routes, study instructions, article legends, navigation, source/review notes, coverage tables, cultural commentary sections, exercises, quizzes, summaries, "Later" material, progress UI, inventories, IDs or locations. Internal working JSON/reviews live under `_work` or `_skill_test`, never in the learner route. Read [section-spec.md](references/section-spec.md) before authoring.
 
-Work only from material the learner owns or is licensed to use, and keep sources and outputs local. A digest of a commercial course book is for the learner's own study; do not publish the book's pages, audio or the digest itself on the learner's behalf.
+**The learner output never names or copies its source.** No book title, publisher, ISBN, author, teacher or character names; no copied sentences, plots, places or statistics. Write the unit titles, every example and the story yourself. The source is identified only inside `_work`. List distinctive source names in the inventory's `private_terms` and in `course.json`, and the tools refuse output that contains them. Learners may want to share their notes; original wording is what makes the notes their own.
+
+Work only from material the learner owns or is licensed to use, and keep sources local. Never publish anything on the learner's behalf.
 
 Scripts live in this skill's `scripts/` folder. `<skill-dir>` below means the folder that contains this `SKILL.md`, wherever the client installed it. They need Python 3.10+ (`python` below; `py -3` on Windows, `python3` on some systems). Audio additionally needs `edge-tts`, `pyspellchecker` and ffmpeg (`imageio-ffmpeg` provides one).
 
@@ -46,15 +49,21 @@ Classify it as:
 
 Explicit grammar, an explicit Wortfeld/Bildlexikon, and highly reusable communicative/writing patterns are essential and normally standalone. Names, dates, plot facts, one-off itineraries, routine instruction words and ordinary support vocabulary are usually excluded. Read [nugget-compression.md](references/nugget-compression.md) for the selection test. Do not use quotas as a substitute for judgment.
 
+For a whole course, write one small Python author script per unit with [scripts/authoring.py](scripts/authoring.py): one call per card writes the lesson record and its inventory decision together, so they cannot drift; `seal()` chains the hashes before rendering. Editing a card later means editing one line and rerunning the script.
+
 ## 2. Write the three teaching sections
 
 Author the structured lesson data from the selected inventory. The renderer must not mine old sheets, invent filler, or promote every source token.
 
+### Examples carry the teaching
+
+Every example is heard, repeated and replayed in games hundreds of times, so each one must earn it. Read [example-sentence-rules.md](references/example-sentence-rules.md) and hold every sentence to three tests: an adult would really say it, it shows how the target works, and it is worth remembering. Specific beats generic; a B1 example usually carries one connector or second clause the course has taught. Reject silly, empty and A1-flat sentences (*Das Seminar ist interessant.*), sentences that depend on the book's plot, and anything copied from the source.
+
 ### Wortschatz
 
-Choose vocabulary that the lesson explicitly teaches or meaningfully needs: complete small Wortfeld/Bildlexikon sets, recurring topic words, words required for the lesson’s speaking/writing goal, and useful level-appropriate collocations or constructions the lesson wants noticed.
+Choose vocabulary that the lesson explicitly teaches or meaningfully needs: complete small Wortfeld/Bildlexikon sets, recurring topic words, words required for the lesson's speaking/writing goal, and useful level-appropriate collocations or constructions the lesson wants noticed.
 
-Every chosen item earns its card and has one natural, translated example. A second example is only for a genuinely different important usage. Nouns show article, meaning and useful plural when relevant. Verbs show reflexive form, separability, preposition/case or common construction when relevant. Never write filler such as `Die Einladung ist heute wichtig` or grammatically broken dictionary-form examples. Read [example-sentence-rules.md](references/example-sentence-rules.md).
+Every chosen item earns its card and has one natural, translated example. A second example is only for a genuinely different important usage. Nouns show article, meaning and useful plural. Verbs show the Perfekt (*hat/ist* + Partizip II, irregular forms marked "(!)"), reflexive form, separability, preposition/case or common construction when relevant.
 
 Keep coherent small taught sets complete. Do not arbitrarily remove two items from seven workplace events merely to shorten the sheet. Conversely, appearing once in a reading does not make an ordinary word a vocabulary target.
 
@@ -72,24 +81,28 @@ Do not copy a whole reference chapter or omit a distinction because its box is s
 
 ### Redemittel
 
-Extract the best reusable templates from communication boxes, model texts, dialogues and productive tasks—especially writing. Cover the communicative jobs actually taught: invitations, replies, requests, reasons, opinions, formal email, small talk, complaints, or their lesson-specific equivalents.
+Extract the best reusable templates from communication boxes, model texts, dialogues and productive tasks, especially writing. Cover the communicative jobs actually taught: invitations, replies, requests, reasons, opinions, formal email, small talk, complaints, or their lesson-specific equivalents.
 
 Each card shows the reusable template first, a brief use cue, an English meaning and one natural example. Preserve placeholders (`…`) and concise formal/informal variants when they materially affect reuse. Do not copy full letters or create separate writing/reading/culture sections; all reusable language belongs here.
 
-## 3. Use examples for implicit reinforcement
+## 3. Write the Geschichte
+
+Close every sheet with one short original story (four to seven paragraphs, 250–600 words) that puts the lesson back into a living context: a small plot with a pull, adult everyday life, some dialogue, concrete detail. It reuses at least 80 % of the vocabulary cards, every grammar point at least twice and at least half of the Redemittel, naturally, one or two lesson items per sentence. For a course, keep a recurring cast in `_work/story_bible.md` so each unit reads like the next episode. Each paragraph has a faithful English translation and lists the cards it uses with their exact forms; the sheet underlines them. Read [story-writing.md](references/story-writing.md).
+
+## 4. Use examples for implicit reinforcement
 
 Selected examples may naturally recycle a supporting source word, earlier grammar or another useful collocation. This is the preferred way to increase coverage without increasing card count. The sentence must still be short, natural and easy to repeat; it must have one clear primary target.
 
-Do not hide an explicitly taught grammar rule or essential vocabulary item only inside someone else’s example. Embedded coverage is for supporting material that genuinely improves the sentence, not for stuffing several unfamiliar decisions into one line. Record the exact embedded realization internally so it can be checked.
+Do not hide an explicitly taught grammar rule or essential vocabulary item only inside someone else's example. Embedded coverage is for supporting material that genuinely improves the sentence, not for stuffing several unfamiliar decisions into one line. Record the exact embedded realization internally so it can be checked.
 
-## 4. Review selection as well as accuracy
+## 5. Review selection as well as accuracy
 
 Run the mechanical validator, then use [quality-checklist.md](references/quality-checklist.md). Review in both directions:
 
 - source → sheet: did an essential learning point disappear?
 - sheet → source: does every card materially earn its space?
 
-Check every German example, gloss, article/form, grammar statement, template and register. Independently compare the source when available; otherwise record an honest author second pass. Review findings and missing-media limitations remain internal or in the delivery message, never in the HTML.
+Check every German example, gloss, article/form, grammar statement, template, register and story sentence. Act on the validator's review notes (very short examples, verb cards without a Perfekt, and anything "copied from the source"). For the originality check, the validator reads a PDF source's pages directly when `pymupdf` is installed; for slides, notes or a scan, save the lesson's text as UTF-8 and pass `--source-text`. Any six-word run shared with the source must be rewritten, in examples and in the story alike; only the card's own Redemittel frame may match. Independently compare the source when available, ideally through a separate reviewer such as a subagent that sees the pages and the lesson data; otherwise record an honest author second pass. Review findings and missing-media limitations remain internal or in the delivery message, never in the HTML.
 
 Use the bundled version-2 pipeline:
 
@@ -102,20 +115,23 @@ Without a completed review, render only to a filename containing `DRAFT`. Draft/
 
 Use [visual-design-system.md](references/visual-design-system.md) and the shared template. Run the HTML validator and, when possible, inspect desktop/mobile output. For a whole book, process and review each lesson separately and maintain an internal course map before claiming the full PDF is covered.
 
-When the user requests audio, read [embedded-audio.md](references/embedded-audio.md). Keep the same three-section sheet and add unobtrusive pronunciation controls plus one whole-lesson playback control in the header. Generate clear neural speech ahead of time and embed the resulting audio bytes in the HTML; do not rely on browser speech synthesis or external media URLs. The whole-lesson control should reuse the embedded clips in reading order, so it does not duplicate the audio payload. Audio generation through a hosted service requires explicit permission to transmit the selected learner text to that service.
+When the user requests audio for one sheet, read [embedded-audio.md](references/embedded-audio.md). It adds pronunciation controls that repeat a sentence until tapped again, and a header panel to listen to the whole lesson, only its examples or the story, each sentence 1–5 times, once or endlessly. Generate clear neural speech ahead of time and embed it; do not rely on browser speech synthesis or external media URLs. Audio generation through a hosted service requires explicit permission to transmit the selected learner text to that service.
 
 When revising or regression-testing this skill, apply [evaluation-cases.md](references/evaluation-cases.md). They deliberately test both directions of failure: omitting real teaching value and exposing source noise.
 
-Do not promise that a digest alone guarantees competence or exam success. It should deliver the lesson’s concentrated learning value; listening, productive feedback and exam-specific performance require separate evidence. Read [competence-coverage.md](references/competence-coverage.md) only when making broader completion or exam-readiness claims.
+Do not promise that a digest alone guarantees competence or exam success. It should deliver the lesson's concentrated learning value; listening, productive feedback and exam-specific performance require separate evidence. Read [competence-coverage.md](references/competence-coverage.md) only when making broader completion or exam-readiness claims.
 
 Only read the flashcard references when the user explicitly requests Anki/CSV or a trainer. Those exports must use the same selected lesson data and must not broaden the learner sheet.
 
-## 5. Turn finished units into a study app and listening episodes
+## 6. Turn finished units into a study app and listening episodes
 
-When several units are reviewed and the learner wants to study on the phone, listen on the go, or practise with flashcards, read [course-app.md](references/course-app.md). It builds two deliverables from the same reviewed records, so nothing drifts:
+When several units are reviewed and the learner wants to study on the phone, listen on the go, practise or play, read [course-app.md](references/course-app.md). It builds two deliverables from the same reviewed records, so nothing drifts:
 
-- **one offline HTML study app**: *Lernen* (all sheets, 🔊 on every German item, a spoken explanation of each grammar point, and a guided "listen to the whole unit" mode with pauses to repeat) and *Üben* (one card per sheet card, spaced repetition, one tap per card: ✓ moves on with a short undo, ✗ opens the answer; tap to peek, swipe to grade, short rounds, a daily summary);
-- **one MP3 episode per unit** for commuting: German, a pause to repeat aloud, English.
+- **one offline HTML study app**:
+  - *Lernen*: all sheets with their stories. A 🔊 tap repeats until tapped again; a story sentence repeats on tap; an underlined story word shows its meaning. "🎧 Anhören" plays the whole lesson, only its examples, or the story, each sentence 1–5 times, once or endlessly, with the current sentence highlighted.
+  - *Üben*: one card per sheet card, spaced repetition, one tap per card.
+  - *Spielen*: four games per unit for days without motivation (Hör-Bingo, Satzbau, Der · Die · Das, Was sagt man?), made from the unit's own cards.
+- **MP3 episodes per unit** for commuting: the whole lesson with pauses to repeat and the story at the end; optionally an examples-only set where each sentence is repeated.
 
 German is always spoken by a German voice and English by an English voice; German words inside English text are detected and switched (see [course-app.md](references/course-app.md)). For natural grammar audio, write `narration.json`: one short spoken explanation per grammar point, with every German word marked «…».
 
@@ -123,7 +139,8 @@ German is always spoken by a German voice and English by an English voice; Germa
 python <skill-dir>/scripts/course_audio.py plan --course course.json                          # offline: what would be synthesized
 python <skill-dir>/scripts/course_audio.py synth --course course.json --confirm-external-tts   # only after the user approved hosted TTS
 python <skill-dir>/scripts/course_audio.py episodes --course course.json --confirm-external-tts
+python <skill-dir>/scripts/course_audio.py episodes --course course.json --confirm-external-tts --kind examples --repeat 2
 python <skill-dir>/scripts/build_course_app.py --course course.json --output Course_Studienpaket_v1.html
 ```
 
-Only reviewed sheets go into the app. Without approval for hosted speech, build with `--no-audio`. The app is the course-level practice surface; it never changes the three-section sheets.
+Only reviewed sheets go into the app. Without approval for hosted speech, build with `--no-audio`. The app is the course-level practice surface; it never changes the sheets. Name the course yourself (`"title": "Deutsch B1.1"`), never after the source.

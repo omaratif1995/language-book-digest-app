@@ -1,18 +1,18 @@
 # Self-contained lesson audio
 
-Use this mode only when the user requests audio. It extends the compact three-section sheet; it does not change the lesson selection or add a fourth section.
+Use this mode only when the user requests audio for a single sheet. It extends the sheet; it does not change the lesson selection or add a section. For several units, build the course app instead ([course-app.md](course-app.md)); it has the same listening controls plus practice and games.
 
 ## Required result
 
 - Generate natural Standard German neural speech ahead of time. Do not use `speechSynthesis`: installed browser voices vary and may sound poor.
-- Embed every audio payload in the HTML as a `data:audio/mpeg;base64,...` URL. Do not link to local MP3 files, CDNs or hosted audio.
-- Put one compact whole-lesson play/pause control in the header.
-- Put a small speaker control beside each vocabulary headword, German example, grammar example, Redemittel frame and useful German variant.
+- Embed every audio payload in the HTML. Do not link to local MP3 files, CDNs or hosted audio.
+- Put one compact **🎧 Anhören** control in the header. It opens a small panel: *Ganze Lektion*, *Nur Beispiele* and, with a story, *Geschichte*; how often each German sentence is played (1×, 2×, 3×, 5×); and whether the session stops or starts again at the end.
+- Put a small speaker control beside each vocabulary headword, German example, grammar title, Redemittel frame and useful German variant, a **🔊 Ganze Geschichte** button on the story header, and a speaker control beside each story paragraph. A tap on a story sentence plays that sentence.
+- **A tap repeats.** A speaker control plays its clip again and again, with a pause long enough to repeat it aloud, until the learner taps it again (the panel can set 1× or 3× instead). Learners use this to hear a sentence until it sticks.
 - Keep normal speaking speed unless the user asks otherwise.
-- Make the whole-lesson mode reuse the same embedded clips. It may narrate concise English glosses and explanations between German learning strings, but should not duplicate audio bytes.
-- Keep playback sequential and predictable. Starting an individual clip stops whole-lesson playback; starting the whole lesson stops any individual clip. After completion, pressing the whole-lesson control restarts from the beginning.
+- Keep playback predictable. Starting an individual clip stops a session; starting a session stops any clip. A bar at the bottom shows what is playing and stops it.
 
-The whole-lesson sequence should cover the meaningful visible sheet in reading order: title, the three section names, vocabulary headwords/forms/glosses/examples, grammar meaning/rule/patterns/examples/relevant contrast, and Redemittel groups/frames/glosses/use cues/variants/examples. Normalise visual notation such as `…`, `+` and abbreviations into speakable text where needed; do not make the voice read HTML punctuation mechanically.
+The whole-lesson sequence covers the meaningful visible sheet in reading order: title, the section names, vocabulary headwords and examples, grammar explanations and examples, Redemittel frames, variants and examples, then the story read straight through. Normalise visual notation such as `…`, `+` and abbreviations into speakable text where needed; do not make the voice read HTML punctuation mechanically.
 
 ## Voice and privacy
 
@@ -22,7 +22,7 @@ Hosted synthesis sends the selected learner text to the provider. Obtain explici
 
 ## Bundled helper
 
-`scripts/embed_audio.py` synthesizes a reviewed lesson's audio, embeds it in a newly named HTML copy, and adds both control types:
+`scripts/embed_audio.py` synthesizes a reviewed lesson's audio, embeds it in a newly named HTML copy, and adds the controls:
 
 ```text
 python <skill-dir>/scripts/embed_audio.py --lesson L24_Lesson_v2.json --input L24_Studysheet.html --output L24_Studysheet_AudioTest.html --cache-dir _work/audio/L24 --confirm-external-tts

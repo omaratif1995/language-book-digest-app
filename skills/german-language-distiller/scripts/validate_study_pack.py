@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check the compact three-section learner HTML structure."""
+"""Check the compact learner HTML structure: three teaching sections and an optional closing Geschichte."""
 from __future__ import annotations
 
 import argparse
@@ -12,6 +12,8 @@ import sys
 
 VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
 REQUIRED = ("Wortschatz", "Grammatik", "Redemittel")
+STORY = "Geschichte"
+ISBN = re.compile(r"\b97[89](?:[-\s]?\d){10}\b")
 FORBIDDEN_TEXT = ("Start hier", "Start here", "Mini-Abruf", "30-Sekunden-Merkhilfe",
                   "coverage report", "coverage notes", "source coverage", "source review",
                   "source scope", "Later material", "progress tracking", "study route",
@@ -32,6 +34,7 @@ class Parser(HTMLParser):
         self.cards, self.rules = [], []
         self.hidden, self.disclosures, self.vocab_tables = [], [], []
         self.forbidden_classes, self.ids = [], {}
+        self.story_paragraphs = 0
 
     def active(self, kind):
         for _, info in reversed(self.stack):
@@ -45,8 +48,10 @@ class Parser(HTMLParser):
             self.forbidden_classes.append((self.getpos()[0], sorted(cls & FORBIDDEN_CLASSES)))
         if "hidden" in attributes or attributes.get("aria-hidden") == "true" or re.search(r"display\s*:\s*none|visibility\s*:\s*hidden", attributes.get("style", ""), re.I):
             self.hidden.append(self.getpos()[0])
-        if tag == "details":
-            self.disclosures.append(self.getpos()[0])
+        if tag == "details" and not ("story-tr" in cls and self.section == STORY):
+            self.disclosures.append(self.getpos()[0])     # only the story's translations may be folded
+        if "story-p" in cls and self.section == STORY:
+            self.story_paragraphs += 1
         if tag == "table" and self.section == "Wortschatz":
             self.vocab_tables.append(self.getpos()[0])
         if "id" in attributes:
@@ -86,7 +91,7 @@ class Parser(HTMLParser):
         if tag == "h2" and self.heading is not None:
             text = " ".join("".join(self.heading).split())
             self.headings.append(text)
-            self.section = next((name for name in REQUIRED if name.casefold() in text.casefold()), text)
+            self.section = next((name for name in REQUIRED + (STORY,) if name.casefold() in text.casefold()), text)
             self.heading = None
         if tag in VOID:
             return
@@ -106,7 +111,7 @@ def meaningful(example):
 
 def normalized_heading(heading):
     label = re.sub(r"^\s*\d+[.)]?\s*", "", heading).strip()
-    return next((name for name in REQUIRED if label.casefold() == name.casefold()), "")
+    return next((name for name in REQUIRED + (STORY,) if label.casefold() == name.casefold()), "")
 
 
 def style(text):
@@ -135,9 +140,11 @@ def main(argv=None):
         failures.extend(parser.errors)
         if parser.stack:
             failures.append("unclosed tags")
-    normalized = [normalized_heading(heading) for heading in parser.headings]
-    if tuple(normalized) != REQUIRED or len(parser.headings) != 3:
-        failures.append("exactly three h2 sections are required in order: Wortschatz, Grammatik, Redemittel")
+    normalized = tuple(normalized_heading(heading) for heading in parser.headings)
+    if normalized not in (REQUIRED, REQUIRED + (STORY,)):
+        failures.append("the h2 sections must be Wortschatz, Grammatik, Redemittel and optionally Geschichte, in this order")
+    if STORY in normalized and parser.story_paragraphs < 3:
+        failures.append("the Geschichte needs at least three paragraphs")
     for card in parser.cards:
         if not card["examples"] or not all(meaningful(example) for example in card["examples"]):
             failures.append(f"card on line {card['line']} lacks a marked example")
@@ -157,6 +164,8 @@ def main(argv=None):
     for phrase in FORBIDDEN_TEXT:
         if phrase.casefold() in visible_text.casefold():
             failures.append(f"forbidden learner-facing text found: {phrase}")
+    if ISBN.search(visible_text):
+        failures.append("the sheet names an ISBN; learner output never names its source")
     external = re.findall(r"<(?:script|link|img|audio|video)\b[^>]+(?:src|href)=[\"']https?://", text, re.I)
     if external:
         failures.append("external dependency found")
@@ -169,7 +178,8 @@ def main(argv=None):
     phrases = [c for c in parser.cards if "phrase" in c["classes"]]
     print(f"Sheet: {args.sheet.name}")
     print(f"Sections: {' | '.join(parser.headings)}")
-    print(f"Vocabulary: {len(vocabulary)}; grammar: {len(parser.rules)}; Redemittel: {len(phrases)}")
+    print(f"Vocabulary: {len(vocabulary)}; grammar: {len(parser.rules)}; Redemittel: {len(phrases)}; "
+          f"story paragraphs: {parser.story_paragraphs}")
     print("LIMIT: structure only; selection and German require source/language review.")
     for message in warnings:
         print("WARN: " + message)

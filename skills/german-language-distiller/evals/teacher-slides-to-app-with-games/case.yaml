@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: teacher-slides-to-app-with-games
+expected_outcome: |
+  A study sheet (HTML) for the class on visiting the doctor with Wortschatz, Grammatik (modal verbs in the Präteritum), Redemittel and a closing Geschichte, and an offline course app built from it with the Lernen, Üben and Spielen tabs and no audio. Neither file names the teacher or the school.
+context:
+  scaffold_script: place-files.sh

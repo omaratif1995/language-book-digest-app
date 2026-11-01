@@ -46,13 +46,20 @@
   .phrase .variant{font-size:13px;color:#d1e5dc;margin:4px 0;}
   .phrase .ex{background:#303633;border-left-color:var(--phrase-bar);color:#dce8df;}
   .phrase .ex .tr{color:#a9c2b0;}
-  @media(max-width:520px){body{padding:14px 9px 34px}.hero{padding:16px}.hero h1{font-size:24px}.rule{padding:12px}.voc,.phrase{padding:10px 11px}}
+  .story{background:linear-gradient(180deg,#2a2630 0%,#23212a 100%);border:1px solid var(--line);border-left:5px solid var(--yellow);border-radius:14px;padding:16px 18px 6px;margin:11px 0;}
+  .story h3{margin:0 0 12px;font-size:19px;color:#f5e6b3;}
+  .story-p{margin:0 0 14px;}
+  .story-p>p{margin:0;font-size:16.5px;line-height:1.75;}
+  .lw{border-bottom:2px dotted rgba(242,211,107,.75);}
+  .story-tr summary{cursor:pointer;color:var(--muted);font-size:12.5px;margin-top:5px;width:max-content;}
+  .story-tr p{margin:5px 0 0;color:#a9b8c9;font-style:italic;font-size:14px;line-height:1.6;}
+  @media(max-width:520px){body{padding:14px 9px 34px}.hero{padding:16px}.hero h1{font-size:24px}.rule{padding:12px}.voc,.phrase{padding:10px 11px}.story{padding:14px 13px 4px}}
   @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
 <main class="wrap">
-  <header class="hero"><div class="lekt">{{BUCH}} · {{LEVEL}} · {{LEKTION}}</div><h1>{{THEMA}}</h1></header>
+  <header class="hero"><div class="lekt">{{LEVEL}} · {{LEKTION}}</div><h1>{{THEMA}}</h1></header>
 
   <h2><span class="num">1</span> Wortschatz</h2><div class="rule-under"></div>
   <h3>{{SEMANTISCHE GRUPPE}}</h3>
@@ -66,6 +73,11 @@
   <h2><span class="num">3</span> Redemittel</h2><div class="rule-under"></div>
   <h3>{{COMMUNICATIVE FUNCTION}}</h3>
   <article class="phrase"><div class="head">{{REUSABLE TEMPLATE}}</div><p class="meaning">{{MEANING}}</p><div class="when">{{WHEN / REGISTER IF RELEVANT}}</div><div class="ex">{{NATURAL EXAMPLE WITH <mark>TEMPLATE CORE</mark>}} <span class="tr">— {{TRANSLATION}}</span></div></article>
+
+  <h2><span class="num">4</span> Geschichte</h2><div class="rule-under"></div>
+  <article class="story"><h3>{{STORY TITLE}}</h3>
+    <div class="story-p"><p><span class="ss">{{SENTENCE WITH <span class="lw">LESSON WORD</span>}}</span> <span class="ss">{{NEXT SENTENCE}}</span></p><details class="story-tr"><summary>Übersetzung</summary><p>{{ENGLISH PARAGRAPH}}</p></details></div>
+  </article>
 </main>
 </body>
 </html>

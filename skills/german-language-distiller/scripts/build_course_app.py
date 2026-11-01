@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-"""Build one offline study app from a course's reviewed sheets: Lernen (study + listening) and Üben (flashcards).
+"""Build one offline study app from a course's reviewed sheets: Lernen, Üben and Spielen.
 
     build_course_app.py --course course.json --output Course_App_v1.html              # with audio from the cache
-    build_course_app.py --course course.json --output Course_App_v1.html --no-audio   # study + practice only
+    build_course_app.py --course course.json --output Course_App_v1.html --no-audio   # study, practice and games only
 
-Lernen: every reviewed sheet in course order, a 🔊 button on each German headword, example, phrase and variant,
-a "🔊 Erklärung" button on each grammar point (spoken explanation), and "Ganze Lektion anhören", which plays the
-unit as a guided listening session: German vocabulary and expressions with pauses to repeat, grammar explained
-in English with German examples. Üben: one card per sheet card (rendered from the same sheet HTML), a small
-spaced-repetition schedule, ✓/✗ visible at once (✓ = known, next card, its answer shown below with undo;
-✗ = the answer opens), tap to peek, swipe to grade, short rounds and a daily summary.
+Lernen: every reviewed sheet in course order, with its closing story. A 🔊 tap repeats a word or sentence (until
+tapped again, or 1×/3×), a tap on a story sentence repeats that sentence, and a tap on an underlined story word shows
+its meaning. "🎧 Anhören" opens a small panel: Ganze Lektion, Nur Beispiele or Geschichte, each German sentence played
+1–5 times, once or endlessly. Üben: one card per sheet card, a small spaced-repetition schedule, one tap per card.
+Spielen: four short games per unit made from the same cards (Hör-Bingo, Satzbau, Der · Die · Das, Was sagt man?).
 Audio comes from `course_audio.py synth` and is embedded as base64 so the file works without a network.
 See references/course-app.md.
 """
@@ -26,16 +25,20 @@ import subprocess
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from embed_audio import AUDIO_CSS, AudioError, inject_example_buttons, play_button, require, transform_card  # noqa: E402
-from course_audio import build_course_plan, ffmpeg_exe, load_course  # noqa: E402
+from embed_audio import (AUDIO_CSS, LISTEN_HTML, LISTEN_JS, AudioError, examples_order, inject_example_buttons,  # noqa: E402
+                         inject_story_audio, listening_order, number_examples, play_button, require, story_order,
+                         transform_card)
+from course_audio import build_course_plan, exact_term, ffmpeg_exe, load_course  # noqa: E402
 import speech  # noqa: E402
+import study_pack  # noqa: E402
 
 KIND = {"voc": "w", "rule": "g", "phrase": "r"}
 
 
 # ---------------------------------------------------------------- audio placement ---
 def add_audio_buttons(page, lesson, unit_plan, used):
-    """German 🔊 buttons (headwords, examples, phrases, variants) and a 🔊 Erklärung chain per grammar point."""
+    """German 🔊 buttons (headwords, examples, phrases, variants), a 🔊 Erklärung chain per grammar point, and the
+    story's sentence audio, paragraph buttons and word clips."""
     controls = unit_plan["controls"]
 
     def take(key):
@@ -72,38 +75,50 @@ def add_audio_buttons(page, lesson, unit_plan, used):
                            lambda m: m.group(1) + play_button(next(variants), "Play German variant") + m.group(2), block, flags=re.S)
             return inject_example_buttons(block, [take(f'{rec["id"]}-ex-{i}') for i in range(len(rec["examples"]))], rec["id"])
         page = transform_card(page, "phrase", rec["id"], phrase)
+
+    if lesson.get("story"):
+        used.update(cid for paragraph in unit_plan["story"] for cid in paragraph)
+        used.add(controls["story-title"])
+        heads = {rec["id"]: controls[f'{rec["id"]}-head'] for rec in lesson["vocabulary"] + lesson["redemittel"]}
+        page = inject_story_audio(page, unit_plan, heads)
     return page
 
 
-def listening(unit_id, lesson, unit_plan, used):
-    """Guided listening order: [clip, pause factor, card element id]. Pause = factor x clip length (+0.35 s)."""
-    c, seq = unit_plan["controls"], []
+def accepted_articles(record):
+    """Every article the Der · Die · Das game accepts: adjective nouns take two (der/die Bekannte, as «ein Bekannter»
+    in the forms shows), and so does a noun whose forms name two articles (der or das Joghurt)."""
+    article, lemma, forms = record.get("article", ""), re.escape(record["lemma"]), record.get("forms", "")
+    found = {article} if article else set()
+    if article and re.search(rf"\beine? {lemma}r\b", forms):
+        found |= {"der", "die"}
+    for pair in re.finditer(rf"\b(der|die|das)\s*(?:/|\bor\b|\boder\b)\s*(der|die|das) {lemma}\b", forms):
+        found |= set(pair.groups())
+    return [a for a in ("der", "die", "das") if a in found]
 
-    def add(cid, factor, card=None):
-        used.add(cid)
-        seq.append([cid, factor, f"{unit_id}-{card}" if card else None])
 
-    add(unit_plan["title"], 0.3)
-    add(unit_plan["sections"]["Wortschatz"], 0.3)
-    for rec in lesson["vocabulary"]:
-        add(c[f'{rec["id"]}-head'], 0.6, rec["id"])
-        for i in range(len(rec["examples"])):
-            add(c[f'{rec["id"]}-ex-{i}'], 1.0, rec["id"])
-    if lesson["grammar"]:
-        add(unit_plan["sections"]["Grammatik"], 0.3)
-    for rec in lesson["grammar"]:
-        for cid in unit_plan["explain"][rec["id"]]:
-            add(cid, 0.15, rec["id"])
-        for i in range(len(rec["examples"])):
-            add(c[f'{rec["id"]}-ex-{i}'], 1.0, rec["id"])
-    add(unit_plan["sections"]["Redemittel"], 0.3)
-    for rec in lesson["redemittel"]:
-        add(c[f'{rec["id"]}-head'], 0.8, rec["id"])
-        for i in range(len(rec.get("variants", []))):
-            add(c[f'{rec["id"]}-variant-{i}'], 0.8, rec["id"])
-        for i in range(len(rec["examples"])):
-            add(c[f'{rec["id"]}-ex-{i}'], 1.0, rec["id"])
-    return seq
+def game_data(lesson, unit_plan=None):
+    """What the games need, straight from the reviewed lesson data: words, phrases and sentences with their audio."""
+    controls = unit_plan["controls"] if unit_plan else {}
+
+    def example(record, index):
+        item = record["examples"][index]
+        return {"de": item["de"], "en": item["en"], "au": controls.get(f'{record["id"]}-ex-{index}', ""),
+                "t": [list(span) for span in study_pack.target_spans(item, record["id"])]}
+
+    def word(rec):
+        entry = {"a": rec.get("article", ""), "w": rec["lemma"], "g": rec["gloss"], "h": controls.get(f'{rec["id"]}-head', ""),
+                 "x": [example(rec, 0)]}
+        both = accepted_articles(rec)
+        if len(both) > 1:
+            entry["aa"] = both
+        return entry
+
+    return {
+        "v": [word(rec) for rec in lesson["vocabulary"]],
+        "r": [{"f": rec["frame"], "g": rec["gloss"], "w": rec["when"], "reg": rec.get("register", ""), "grp": rec["group"],
+               "au": controls.get(f'{rec["id"]}-head', ""), "x": example(rec, 0)} for rec in lesson["redemittel"]],
+        "s": [example(rec, index) for section in ("vocabulary", "grammar", "redemittel")
+              for rec in lesson[section] for index in range(len(rec["examples"]))]}
 
 
 def compressed(cache, clip_id, bitrate, ff):
@@ -119,6 +134,7 @@ def compressed(cache, clip_id, bitrate, ff):
 
 # ---------------------------------------------------------------- page assets ---
 APP_CSS = r"""
+  [hidden]{display:none !important}
   .bar{position:sticky;top:0;z-index:5;margin:-24px -16px 18px;padding:10px 16px;background:rgba(23,25,31,.95);
        backdrop-filter:blur(8px);border-bottom:1px solid var(--line);display:none;gap:8px;flex-wrap:wrap;align-items:center}
   .js .bar{display:flex}
@@ -141,14 +157,14 @@ APP_CSS = r"""
   .searching article.miss,.searching .unit.empty{display:none !important}
   .searching h2,.searching .rule-under{display:none}
   section.unit + section.unit{margin-top:40px}
-  .follow{outline:2px solid var(--yellow);outline-offset:3px;border-radius:12px}
   .explain-button{border:1px solid rgba(255,255,255,.28);color:#fff;background:rgba(15,23,42,.55);font:inherit;font-size:13px;
        font-weight:700;border-radius:999px;padding:4px 10px;margin-left:8px;cursor:pointer;white-space:nowrap}
   .explain-button.is-playing{background:#0f766e;border-color:#6ee7b7}
-  .mode-practice .lernen{display:none}
-  #practice{display:none}
-  .mode-practice #practice{display:block}
-  .mode-practice .lern-only{display:none !important}
+  .mode-practice .lernen,.mode-games .lernen{display:none}
+  #practice,#games{display:none}
+  .mode-practice #practice,.mode-games #games{display:block}
+  .mode-practice .lern-only,.mode-games .search-only{display:none !important}
+  .mode-practice .now{bottom:calc(150px + env(safe-area-inset-bottom))}
   .tr-top{display:flex;align-items:center;gap:10px;margin:2px 0 12px}
   .tr-bar{flex:1;height:8px;border-radius:99px;background:var(--card);border:1px solid var(--line);overflow:hidden}
   .tr-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),#34d399);transition:width .35s ease}
@@ -201,61 +217,111 @@ APP_CSS = r"""
   .pr .backup button,.pr .backup label{font:inherit;font-size:14px;cursor:pointer;color:var(--ink);background:var(--card);
        border:1px solid var(--line);border-radius:10px;padding:8px 10px}
   .pr .backup input{display:none}
-  @media(prefers-reduced-motion:reduce){.fc,.fc.enter,.fc .back,.tr-bar i{transition:none;animation:none}}
+  /* ---- Spielen ---- */
+  .g-menu{display:grid;gap:10px}
+  .g-lead{color:var(--muted);font-size:14px;margin:2px 0 8px}
+  .g-tile{display:grid;grid-template-columns:54px 1fr;column-gap:12px;align-items:center;text-align:left;padding:14px;border-radius:16px;cursor:pointer;
+          background:var(--card);border:1px solid var(--line);color:var(--ink);font:inherit;transition:transform .12s,border-color .2s}
+  .g-tile:hover{border-color:var(--accent)}
+  .g-tile:active{transform:scale(.98)}
+  .g-icon{grid-row:1 / span 3;font-size:36px;display:grid;place-items:center}
+  .g-name{font-size:18px;font-weight:800}
+  .g-desc{font-size:13.5px;color:var(--muted)}
+  .g-best{font-size:13px;color:var(--yellow);margin-top:2px}
+  .g-random{font:inherit;font-weight:800;font-size:16px;min-height:54px;border-radius:14px;cursor:pointer;background:var(--accent);color:#1a1030;border:0}
+  .g-head{display:flex;align-items:center;gap:10px;margin:0 0 10px}
+  .g-title{font-size:20px;font-weight:800;flex:1}
+  .g-info{color:var(--muted);font-size:14px;white-space:nowrap}
+  .g-close{font:inherit;width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+  .g-acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .g-acts button{flex:1;min-height:50px;font:inherit;font-weight:700;font-size:16px;border-radius:14px;cursor:pointer;background:var(--card);color:var(--ink);border:1px solid var(--line)}
+  .g-acts .main{background:var(--accent);color:#1a1030;border-color:var(--accent)}
+  .g-end{text-align:center;padding:16px 4px}
+  .g-end p{margin:6px 0;color:var(--muted)}
+  .g-big{font-size:58px;line-height:1.1}
+  .g-stars{font-size:32px;color:var(--yellow);letter-spacing:5px;margin:4px 0 8px}
+  .g-end .g-rec{color:#6ee7b7;font-weight:800}
+  .g-ok{color:#6ee7b7;font-weight:800}
+  .g-no{color:#fda4af;font-weight:800}
+  .b-call{display:flex;align-items:center;gap:10px;min-height:66px;padding:12px 14px;border-radius:14px;background:var(--ex-bg);border-left:4px solid var(--ex-bar);margin-bottom:12px}
+  .b-cue{flex:1;font-size:16.5px;line-height:1.45}
+  .b-cue mark{font-weight:700}
+  .b-ear{color:var(--muted)}
+  .b-again{font:inherit;font-size:14px;border-radius:999px;padding:7px 12px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;flex:none}
+  .b-grid{display:grid;gap:8px}
+  .b-cell{position:relative;min-height:76px;padding:8px;border-radius:14px;font:inherit;font-size:15.5px;font-weight:700;line-height:1.25;cursor:pointer;
+          background:var(--card);color:var(--ink);border:2px solid var(--line);overflow-wrap:anywhere;transition:background .2s,border-color .2s}
+  .b-cell.on{background:#145c4d;border-color:#34d399}
+  .b-cell.on::after{content:'✓';position:absolute;top:4px;right:8px;color:#6ee7b7;font-size:15px}
+  .b-cell.hint{animation:hint .6s ease 3}
+  .b-none{width:100%;margin-top:10px;min-height:50px;font:inherit;font-weight:700;border-radius:14px;cursor:pointer;background:transparent;color:var(--ink);border:2px dashed var(--muted)}
+  .b-fb{min-height:76px;margin-top:12px;font-size:14.5px;line-height:1.45}
+  .b-tr{color:#7fb3d9;font-style:italic;margin-top:2px}
+  .b-bingo{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%) rotate(-6deg);font-size:64px;font-weight:900;color:#f2d36b;
+           text-shadow:0 6px 24px rgba(0,0,0,.6);z-index:60;animation:pop .45s ease;pointer-events:none}
+  .gap{display:inline-block;min-width:3em;border-bottom:2px solid var(--yellow);color:transparent}
+  .s-prompt{font-size:17px;margin:4px 0 10px;font-style:italic;color:#c7d2fe}
+  .s-line{min-height:60px;padding:10px;border-radius:14px;border:2px dashed var(--line);display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:17px}
+  .s-word{background:var(--ex-bg);padding:5px 9px;border-radius:9px}
+  .s-tiles{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .s-tile{font:inherit;font-size:17px;padding:9px 13px;border-radius:12px;cursor:pointer;background:var(--card);color:var(--ink);border:1px solid var(--line);min-height:48px}
+  .s-tile.used{visibility:hidden}
+  .s-tile.hint{border-color:var(--yellow);box-shadow:0 0 0 3px rgba(242,211,107,.35)}
+  .s-fb{margin-top:10px;min-height:24px}
+  .a-time{height:9px;border-radius:99px;background:var(--card);overflow:hidden;margin-bottom:10px}
+  .a-time i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#34d399,#f2d36b);transition:width 1s linear}
+  .a-score{text-align:center;color:var(--muted);margin-bottom:8px;min-height:22px}
+  .a-card{min-height:156px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;border-radius:18px;
+          background:var(--card);border:2px solid var(--line);padding:16px;transition:border-color .15s}
+  .a-card.good{border-color:#34d399}
+  .a-card.bad{border-color:#f87171}
+  .a-word{font-size:32px;font-weight:800;overflow-wrap:anywhere}
+  .a-gloss{color:var(--muted);margin-top:6px}
+  .a-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+  .a-btns button{min-height:68px;font:inherit;font-size:22px;font-weight:800;border-radius:16px;cursor:pointer;border:0;color:#10141c}
+  .a-der{background:var(--der)} .a-die{background:var(--die)} .a-das{background:var(--das)}
+  .r-sit{padding:14px;border-radius:14px;background:var(--ex-bg);border-left:4px solid var(--phrase-bar);font-size:17px;margin-bottom:12px}
+  .r-reg{color:var(--muted);font-size:13px;margin-top:4px}
+  .r-opts{display:grid;gap:8px}
+  .r-opt{text-align:left;font:inherit;font-size:16px;padding:12px 14px;border-radius:14px;cursor:pointer;background:var(--card);color:#6ee7b7;border:2px solid var(--line);font-weight:700}
+  .r-opt.ok{border-color:#34d399;background:#145c4d;color:#e7fff6}
+  .r-opt.no{border-color:#f87171;background:#5b2333;color:#ffe4ea}
+  .r-fb{margin-top:12px;font-size:14.5px;line-height:1.45}
+  .shake{animation:shake .35s}
+  @keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+  @keyframes hint{50%{box-shadow:0 0 0 5px rgba(242,211,107,.45)}}
+  @keyframes pop{from{transform:translate(-50%,-50%) scale(.4) rotate(-6deg)}}
+  .confetti{position:fixed;inset:0;pointer-events:none;z-index:55;overflow:hidden}
+  .confetti i{position:absolute;top:-14px;width:9px;height:14px;border-radius:2px;animation:fall linear forwards}
+  @keyframes fall{to{transform:translateY(108vh) rotate(600deg)}}
+  @media(prefers-reduced-motion:reduce){.fc,.fc.enter,.fc .back,.tr-bar i{transition:none;animation:none}.shake,.b-cell.hint,.b-bingo{animation:none}}
 """
 
 APP_JS = r"""
 (function(){
   'use strict';
   var d=document, root=d.documentElement; root.classList.add('js');
-  var A={}, IDX=__INDEX__, SEQ=__SEQUENCES__, CARDS=__CARDS__, ORDER=__ORDER__, CFG=__CONFIG__;
+  var AU={}, IDX=__INDEX__, SEQ=__SEQUENCES__, EXS=__EXAMPLES__, STO=__STORIES__, CARDS=__CARDS__, ORDER=__ORDER__, CFG=__CONFIG__, G=__GAME__;
   var K=CFG.key;
   function load(k,dflt){try{var v=localStorage.getItem(K+':'+k);return v?JSON.parse(v):dflt;}catch(e){return dflt;}}
   function save(k,v){try{localStorage.setItem(K+':'+k,JSON.stringify(v));}catch(e){}}
   var ui=load('ui',{}), state=load('srs',{}), meta=load('meta',{day:0,fresh:0,extra:0,streak:0,last:-9,done:0,good:0});
   function today(){var t=new Date();return Math.floor((t.getTime()-t.getTimezoneOffset()*60000)/86400000);}
-
-  /* ---------------- audio: single clips, chains, guided listening ---------------- */
-  var player=new Audio(), active=null, run=null;
-  function mark(el,on){ if(el) el.classList.toggle('is-playing',on); }
-  function stopAll(){ player.pause(); player.onended=null; mark(active,false); active=null;
-    if(run){ clearTimeout(run.timer); if(run.btn){ mark(run.btn,false); if(run.label) run.btn.textContent=run.label; } if(run.card) run.card.classList.remove('follow'); run=null; } }
-  function need(id){ if(A[id]!==undefined) return A[id]; var k=IDX[id], el=k===undefined?null:d.getElementById('au-'+k);
-    if(el && !el.getAttribute('data-read')){ el.textContent.split(';').forEach(function(p){ var i=p.indexOf(':'); if(i>0) A[p.slice(0,i)]=p.slice(i+1); }); el.setAttribute('data-read','1'); }
-    return A[id]||''; }
-  function clip(id,el,done){ var data=need(id);
-    if(!data && IDX[id]!==undefined && d.readyState==='loading'){ mark(el,true);   /* audio still loading: play when it has arrived */
-      d.addEventListener('DOMContentLoaded',function(){ mark(el,false); clip(id,el,done); },{once:true}); return; }
-    if(!data){ if(done) setTimeout(done,0); return; }
-    player.pause(); mark(active,false); active=el||null; mark(active,true);
-    player.onended=function(){ mark(active,false); active=null; if(done) done(); };
-    player.src='data:audio/mpeg;base64,'+data; var p=player.play(); if(p) p.catch(function(){ mark(active,false); active=null; }); }
-  function chain(items,btn,label,follow){ stopAll(); run={i:0,timer:null,btn:btn,label:label,card:null}; mark(btn,true); if(label) btn.textContent='❚❚ Stopp';
-    (function step(){ if(!run) return; if(run.card){ run.card.classList.remove('follow'); run.card=null; }
-      if(run.i>=items.length){ stopAll(); return; }
-      var it=items[run.i++];
-      if(follow && it[2]){ var c=d.getElementById(it[2]); if(c){ c.classList.add('follow'); c.scrollIntoView({block:'center',behavior:'smooth'}); run.card=c; } }
-      clip(it[0],null,function(){ if(!run) return; run.timer=setTimeout(step,(player.duration||1.2)*1000*it[1]+350); });
-    })(); }
-  d.addEventListener('click',function(e){
-    var b=e.target.closest('.speak-button,.explain-button,.listen-all'); if(!b) return;
-    e.stopPropagation();
-    if(run && run.btn===b){ stopAll(); return; }
-    if(b.classList.contains('listen-all')){ chain(SEQ[b.getAttribute('data-unit')],b,b.textContent,true); return; }
-    if(b.classList.contains('explain-button')){ chain(b.getAttribute('data-chain').split(' ').map(function(id){return [id,0.12,null];}),b,null,false); return; }
-    if(run) stopAll();
-    if(active===b && !player.paused){ player.pause(); mark(b,false); active=null; return; }
-    clip(b.getAttribute('data-audio'),b);
-  },true);
-
+  /* audio sits in per-unit text blocks after this script; a unit's clips are unpacked on first use */
+  function need(id){ if(AU[id]!==undefined) return AU[id]; var k=IDX[id], el=k===undefined?null:d.getElementById('au-'+k);
+    if(el && !el.getAttribute('data-read')){ el.textContent.split(';').forEach(function(p){ var i=p.indexOf(':'); if(i>0) AU[p.slice(0,i)]=p.slice(i+1); }); el.setAttribute('data-read','1'); }
+    return AU[id]||''; }
+  function pending(id){ return IDX[id]!==undefined && d.readyState==='loading'; }
+__LISTEN__
   /* ---------------- Lernen: unit picker and search ---------------- */
   var units=[].slice.call(d.querySelectorAll('section.unit')), sel=d.getElementById('pick'), q=d.getElementById('q'), hits=d.getElementById('hits');
   function show(id,scroll){ if(!units.some(function(u){return u.id===id;})) id=units[0].id;
     units.forEach(function(u){u.classList.toggle('on',u.id===id);}); sel.value=id; ui.unit=id; save('ui',ui); if(scroll) window.scrollTo(0,0); }
-  function step(n){ var i=units.findIndex(function(u){return u.id===sel.value;}); i=Math.max(0,Math.min(units.length-1,i+n)); stopAll(); show(units[i].id,true); }
-  sel.addEventListener('change',function(){stopAll(); show(sel.value,true);});
-  d.getElementById('prev').addEventListener('click',function(){step(-1);});
-  d.getElementById('next').addEventListener('click',function(){step(1);});
+  function stepUnit(n){ var i=units.findIndex(function(u){return u.id===sel.value;}); i=Math.max(0,Math.min(units.length-1,i+n)); stopAll(); show(units[i].id,true); unitChanged(); }
+  function unitChanged(){ if(d.body.classList.contains('mode-games')) Games.open(); }
+  sel.addEventListener('change',function(){stopAll(); show(sel.value,true); unitChanged();});
+  d.getElementById('prev').addEventListener('click',function(){stepUnit(-1);});
+  d.getElementById('next').addEventListener('click',function(){stepUnit(1);});
   function norm(s){return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/ß/g,'ss');}
   var arts=[].slice.call(d.querySelectorAll('section.unit article')).map(function(a){return [a,norm(a.textContent)];}), tq;
   q.addEventListener('input',function(){clearTimeout(tq); tq=setTimeout(search,150);});
@@ -267,10 +333,11 @@ APP_JS = r"""
     hits.textContent=n+(n===1?' Karte':' Karten')+' gefunden'; }
 
   /* ---------------- tabs ---------------- */
-  var tabL=d.getElementById('tab-l'), tabP=d.getElementById('tab-p');
-  function mode(m){ stopAll(); d.body.classList.toggle('mode-practice',m==='p'); tabL.setAttribute('aria-pressed',m!=='p'); tabP.setAttribute('aria-pressed',m==='p');
-    ui.tab=m; save('ui',ui); if(m==='p') start(); window.scrollTo(0,0); }
-  tabL.addEventListener('click',function(){mode('l');}); tabP.addEventListener('click',function(){mode('p');});
+  var tabs={l:d.getElementById('tab-l'),p:d.getElementById('tab-p'),g:d.getElementById('tab-g')};
+  function mode(m){ stopAll(); Games.stop(); d.body.classList.toggle('mode-practice',m==='p'); d.body.classList.toggle('mode-games',m==='g');
+    Object.keys(tabs).forEach(function(k){ tabs[k].setAttribute('aria-pressed',String(k===m)); });
+    ui.tab=m; save('ui',ui); if(m==='p') start(); if(m==='g') Games.open(); window.scrollTo(0,0); }
+  Object.keys(tabs).forEach(function(k){ tabs[k].addEventListener('click',function(){ mode(k); }); });
 
   /* ---------------- Üben: spaced repetition with rounds ---------------- */
   var DAYS=[0,1,3,7,14,30,60], KIND={w:'Wortschatz',g:'Grammatik',r:'Redemittel'};
@@ -291,11 +358,11 @@ APP_JS = r"""
     ses={inRound:0,rg:0,ra:0};
     if(!p.length){ cur=null; view='empty'; render(); return; }
     next(); }
-  function next(){ cur=queue.shift()||null; shown=false; missed=false; view=cur?'card':'done'; readyAt=Date.now()+250;   /* a double tap must not grade the next card */
+  function next(){ stopAll(); cur=queue.shift()||null; shown=false; missed=false; view=cur?'card':'done'; readyAt=Date.now()+250;   /* a double tap must not grade the next card */
     fc.style.transition='none'; render(); void fc.offsetWidth; fc.style.transition=''; fc.classList.add('enter');
     if(cur) autoFront(); }
-  function autoFront(){ if(S.auto && cur.k==='w' && S.dir==='de' && cur.fa) clip(cur.fa,null); }
-  function autoBack(){ if(!S.auto) return; if(cur.k==='w' && S.dir==='en' && cur.fa) clip(cur.fa,null); else if(cur.k==='r' && cur.ba) clip(cur.ba,null); }
+  function autoFront(){ if(S.auto && cur.k==='w' && S.dir==='de' && cur.fa) clip(cur.fa); }
+  function autoBack(){ if(!S.auto) return; if(cur.k==='w' && S.dir==='en' && cur.fa) clip(cur.fa); else if(cur.k==='r' && cur.ba) clip(cur.ba); }
   function topbar(){ var t=d.getElementById('tr-count'), bar=d.getElementById('tr-fill'), st=d.getElementById('tr-streak');
     if(S.browse){ t.textContent=(bList.length?(bIdx+1)+' / '+bList.length:'0'); bar.style.width=(bList.length?100*(bIdx+1)/bList.length:0)+'%'; }
     else { var left=queue.length+(cur && view==='card'?1:0), all=(meta.done||0)+left; t.textContent='Heute '+(meta.done||0)+' / '+all; bar.style.width=(all?100*(meta.done||0)/all:0)+'%'; }
@@ -346,7 +413,7 @@ APP_JS = r"""
     if(u.s) state[u.card.id]=u.s; else delete state[u.card.id];
     meta=JSON.parse(u.meta); ses=JSON.parse(u.ses); queue=u.queue; cur=u.card; shown=true; missed=false; view='card';
     save('srs',state); save('meta',meta); render(); autoBack(); }
-  function browseMove(n){ bIdx=Math.max(0,Math.min(bList.length-1,bIdx+n)); cur=bList[bIdx]; shown=false; render(); }
+  function browseMove(n){ bIdx=Math.max(0,Math.min(bList.length-1,bIdx+n)); cur=bList[bIdx]; shown=false; stopAll(); render(); }
   acts.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; var a=b.getAttribute('data-a');
     if(a==='good') good(); else if(a==='again') again(); else if(a==='go') advance(); else if(a==='flip') peek();
     else if(a==='resume'){ next(); } else if(a==='pause'){ dropUndo(); view='paused'; render(); }
@@ -394,14 +461,175 @@ APP_JS = r"""
     d.getElementById('s-stat').textContent='Neu '+n.neu+' · Lerne ich '+n.lern+' · Sicher '+n.sicher+' · Fest '+n.fest; }
   d.getElementById('all-u').addEventListener('click',function(){ S.units=S.units.length===ORDER.length?[]:ORDER.slice(); persist(); start(); });
   d.getElementById('save-btn').addEventListener('click',function(){
-    var blob=new Blob([JSON.stringify({v:2,key:K,state:state,meta:meta})],{type:'application/json'}), a=d.createElement('a');
+    var blob=new Blob([JSON.stringify({v:2,key:K,state:state,meta:meta,games:load('games',{})})],{type:'application/json'}), a=d.createElement('a');
     a.href=URL.createObjectURL(blob); a.download=K+'-fortschritt-'+new Date().toISOString().slice(0,10)+'.json'; d.body.appendChild(a); a.click(); a.remove(); });
   d.getElementById('load-in').addEventListener('change',function(e){ var f=e.target.files[0]; if(!f) return; var r=new FileReader();
-    r.onload=function(){ try{ var o=JSON.parse(r.result); if(o && o.state){ state=o.state; meta=o.meta||meta; save('srs',state); save('meta',meta); start(); alert('Fortschritt geladen.'); } }catch(err){ alert('Diese Datei ist keine Sicherung.'); } };
+    r.onload=function(){ try{ var o=JSON.parse(r.result); if(o && o.state){ state=o.state; meta=o.meta||meta; save('srs',state); save('meta',meta); if(o.games) save('games',o.games); start(); alert('Fortschritt geladen.'); } }catch(err){ alert('Diese Datei ist keine Sicherung.'); } };
     r.readAsText(f); });
 
+  /* ---------------- Spielen: four short games per unit, made from its cards ---------------- */
+  var Games=(function(){
+    var box=d.getElementById('g-box'), menu=d.getElementById('g-menu'), best=load('games',{}), timers=[], live=null, ac=null;
+    var HAS_AUDIO=Object.keys(IDX).length>0;
+    function later(f,ms){ timers.push(setTimeout(f,ms)); }
+    function stop(){ timers.forEach(clearTimeout); timers=[]; if(live) live(); live=null; }
+    function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)), t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+    function pick(a,n){ return shuffle(a).slice(0,Math.max(0,n)); }
+    function esc(s){ return String(s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+    function el(tag,cls,markup){ var e=d.createElement(tag); if(cls) e.className=cls; if(markup!==undefined) e.innerHTML=markup; return e; }
+    function btn(cls,markup,fn){ var b=el('button',cls,markup); b.type='button'; b.addEventListener('click',function(){ fn(b); }); return b; }
+    function say(id){ if(HAS_AUDIO&&S.auto&&id){ stopAll(); clip(id); } }
+    function canHear(){ return HAS_AUDIO&&S.auto; }
+    function blip(ok){ if(navigator.vibrate) navigator.vibrate(ok?12:[30,40,30]); if(!S.auto) return;
+      try{ ac=ac||new (window.AudioContext||window.webkitAudioContext)(); var t=ac.currentTime, o=ac.createOscillator(), g=ac.createGain();
+        o.type=ok?'triangle':'sine'; o.frequency.setValueAtTime(ok?587:196,t); o.frequency.exponentialRampToValueAtTime(ok?880:150,t+0.14);
+        g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.12,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+0.28);
+        o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+0.3); }catch(e){} }
+    function confetti(){ if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      var c=el('div','confetti'), colors=['#f2d36b','#34d399','#b19ac8','#7f9fbd','#c58fa3'];
+      for(var i=0;i<46;i++){ var p=el('i'); p.style.left=(Math.random()*100)+'%'; p.style.background=colors[i%5];
+        p.style.animationDelay=(Math.random()*0.35)+'s'; p.style.animationDuration=(1.1+Math.random()*0.9)+'s'; c.appendChild(p); }
+      d.body.appendChild(c); setTimeout(function(){ c.remove(); },2600); }
+    function marked(x){ var s=x.de, out='', at=0; x.t.forEach(function(sp){ out+=esc(s.slice(at,sp[0]))+'<mark>'+esc(s.slice(sp[0],sp[1]))+'</mark>'; at=sp[1]; }); return out+esc(s.slice(at)); }
+    function cloze(x){ var s=x.de, out='', at=0; x.t.forEach(function(sp){ out+=esc(s.slice(at,sp[0]))+'<span class="gap">'+esc(s.slice(sp[0],sp[1]))+'</span>'; at=sp[1]; }); return out+esc(s.slice(at)); }
+    function artLabel(v){ return v.aa?v.aa.join('/'):v.a; }
+    function word(v){ return (v.a?'<span class="art-'+v.a+'">'+artLabel(v)+'</span> ':'')+esc(v.w); }
+    function unit(){ return sel.value; }
+    function data(){ return G[unit()]||{v:[],r:[],s:[]}; }
+    function head(title){ box.innerHTML=''; var h=el('div','g-head'); h.appendChild(el('div','g-title',title)); var info=el('div','g-info','');
+      h.appendChild(info); h.appendChild(btn('g-close','✕',function(){ open(); })); box.appendChild(h); return info; }
+    function stars(n){ return '★★★'.slice(0,n)+'☆☆☆'.slice(0,3-n); }
+    function finish(key,got,score,lines){ stop(); var u=unit(); best[u]=best[u]||{}; var old=best[u][key]||{s:0,p:0}, record=old.p>0&&score>old.p;
+      best[u][key]={s:Math.max(old.s,got),p:Math.max(old.p,score)}; save('games',best);
+      box.innerHTML=''; var m=el('div','g-end'); m.appendChild(el('div','g-big',got>=3?'🏆':got===2?'🎉':'👍'));
+      m.appendChild(el('div','g-stars',stars(got)));
+      lines.forEach(function(l){ var p=el('p'); p.textContent=l; m.appendChild(p); });
+      if(record) m.appendChild(el('p','g-rec','Neuer Rekord!'));
+      var a=el('div','g-acts'); a.appendChild(btn('main','Nochmal',function(){ play(key); })); a.appendChild(btn('','Andere Spiele',function(){ open(); }));
+      m.appendChild(a); box.appendChild(m); if(got>=3) confetti(); }
+    function toks(s){ return s.trim().split(/\s+/); }
+    function satzPool(g){ return g.s.filter(function(s){ var n=toks(s.de).length; return n>=4&&n<=11&&!/[„“"«»…]| – /.test(s.de); }); }
+    function nouns(g){ return g.v.filter(function(v){ return v.a; }); }
+    var LIST=[
+      {k:'bingo',icon:'🎱',name:'Hör-Bingo',desc:'Hör einen Satz und finde das Wort auf deiner Karte.',ok:function(g){ return g.v.length>=4; },go:bingo},
+      {k:'satz',icon:'🧩',name:'Satzbau',desc:'Tippe die Wörter in die richtige Reihenfolge.',ok:function(g){ return satzPool(g).length>=3; },go:satz},
+      {k:'art',icon:'⚡',name:'Der · Die · Das',desc:'60 Sekunden: Welcher Artikel passt?',ok:function(g){ return nouns(g).length>=3; },go:artikel},
+      {k:'red',icon:'💬',name:'Was sagt man?',desc:'Welche Wendung passt zur Situation?',ok:function(g){ return g.r.length>=3; },go:wendung}];
+    function open(){ stop(); stopAll(); box.hidden=true; menu.hidden=false; var g=data(), u=unit(); menu.innerHTML='';
+      menu.appendChild(el('p','g-lead',esc(CFG.labels[u]||u)+' als Spiel: ein paar Minuten, ganz ohne Lernstress.'));
+      var ready=LIST.filter(function(x){ return x.ok(g); });
+      ready.forEach(function(x){ var b=best[u]&&best[u][x.k];
+        menu.appendChild(btn('g-tile','<span class="g-icon">'+x.icon+'</span><span class="g-name">'+x.name+'</span><span class="g-desc">'+x.desc+'</span>'+
+          '<span class="g-best">'+(b?stars(b.s)+(x.k==='art'?' · Rekord '+b.p:''):'Neu')+'</span>',function(){ play(x.k); })); });
+      if(ready.length>1) menu.appendChild(btn('g-random','🎲 Überrasch mich',function(){ play(ready[Math.floor(Math.random()*ready.length)].k); }));
+      if(!ready.length) menu.appendChild(el('p','g-lead','Diese Lektion hat zu wenige Karten für ein Spiel.')); }
+    function play(k){ stop(); stopAll(); var x=LIST.filter(function(y){ return y.k===k; })[0]; menu.hidden=true; box.hidden=false; window.scrollTo(0,0); x.go(data()); }
+
+    /* 🎱 Hör-Bingo: a sentence is played (or shown with a gap); find its word on your card, or say it isn't there */
+    function bingo(g){
+      var vs=g.v.filter(function(v){ return v.x.length; }), n=vs.length>=12?9:vs.length>=8?6:4, cols=n===4?2:3, rows=n/cols;
+      var board=pick(vs,n), rest=vs.filter(function(v){ return board.indexOf(v)<0; });
+      var calls=shuffle(board.concat(pick(rest,Math.ceil(n/2)))), ci=-1, open_=false, miss=0, bingoDone=false, on={};
+      var info=head('🎱 Hör-Bingo');
+      box.appendChild(el('p','g-lead',canHear()?'Hör den Satz. Ist ein Wort daraus auf deiner Karte? Tippe es an.':'Lies den Satz. Welches Wort fehlt? Ist es auf deiner Karte?'));
+      var call=el('div','b-call'), cue=el('div','b-cue'); call.appendChild(cue);
+      if(canHear()) call.appendChild(btn('b-again','🔊 Nochmal',function(){ if(ci>=0&&ci<calls.length) say(calls[ci].x[0].au); }));
+      box.appendChild(call);
+      var grid=el('div','b-grid'); grid.style.gridTemplateColumns='repeat('+cols+',1fr)';
+      board.forEach(function(v,i){ grid.appendChild(btn('b-cell',word(v),function(b){ tap(i,b); })); });
+      box.appendChild(grid); box.appendChild(btn('b-none','Nicht auf meiner Karte',function(b){ tap(-1,b); }));
+      var fb=el('div','b-fb'); box.appendChild(fb);
+      function nextCall(){ ci++; fb.innerHTML=''; if(ci>=calls.length) return end(); open_=true; info.textContent=(ci+1)+' / '+calls.length;
+        var x=calls[ci].x[0]; if(canHear()&&x.au){ cue.innerHTML='<span class="b-ear">👂 Hör gut zu …</span>'; later(function(){ say(x.au); },300); } else cue.innerHTML=cloze(x); }
+      function reveal(ok,text){ var x=calls[ci].x[0]; open_=false; cue.innerHTML=marked(x);
+        fb.innerHTML='<div class="'+(ok?'g-ok':'g-no')+'">'+text+'</div><div class="b-tr">'+esc(x.en)+'</div>'; later(nextCall,ok?1800:2800); }
+      function stamp(i){ on[i]=1; grid.children[i].classList.add('on'); if(bingoDone) return; var lines=[], r, c, k;
+        for(r=0;r<rows;r++){ var row=[]; for(c=0;c<cols;c++) row.push(r*cols+c); lines.push(row); }
+        if(rows>2) for(c=0;c<cols;c++){ var col=[]; for(r=0;r<rows;r++) col.push(r*cols+c); lines.push(col); }
+        if(rows===cols){ var a=[], b=[]; for(k=0;k<cols;k++){ a.push(k*cols+k); b.push(k*cols+cols-1-k); } lines.push(a,b); }
+        if(lines.some(function(line){ return line.every(function(j){ return on[j]; }); })){ bingoDone=true; var big=el('div','b-bingo','BINGO!'); d.body.appendChild(big); confetti(); later(function(){ big.remove(); },1500); } }
+      function shake(b){ b.classList.add('shake'); setTimeout(function(){ b.classList.remove('shake'); },400); }
+      function tap(i,b){ if(!open_) return; var v=calls[ci], at=board.indexOf(v);
+        if((i>=0&&i===at)||(i<0&&at<0)){ blip(true); if(i>=0) stamp(i); reveal(true,i>=0?'✓ '+word(v):'✓ Richtig, '+word(v)+' ist nicht auf deiner Karte.'); return; }
+        blip(false); miss++; shake(b);
+        if(i>=0&&at>=0) return;                                   /* another cell: look again */
+        if(i<0){ var c=grid.children[at]; c.classList.add('hint'); later(function(){ c.classList.remove('hint'); },2000); stamp(at); reveal(false,'Doch, auf deiner Karte: '+word(v)); }
+        else reveal(false,'Nicht auf deiner Karte: '+word(v)); }
+      function end(){ finish('bingo',miss===0?3:miss<=2?2:1,Math.max(0,n*10-miss*3),[(bingoDone?'Bingo! ':'')+'Fehler: '+miss,
+        'Du hast '+calls.length+' Sätze '+(canHear()?'gehört':'gelesen')+' und '+n+' Wörter gefunden.']); }
+      nextCall(); }
+
+    /* 🧩 Satzbau: the English meaning is shown; tap the German words in order (a wrong tile just shakes) */
+    function satz(g){
+      var round=pick(satzPool(g),6), i=-1, clean=0, info=head('🧩 Satzbau');
+      box.appendChild(el('p','g-lead','Bau den deutschen Satz: Tippe die Wörter der Reihe nach an.'));
+      var prompt=el('div','s-prompt'), line=el('div','s-line'), tiles=el('div','s-tiles'), fb=el('div','s-fb'), acts_=el('div','g-acts');
+      [prompt,line,tiles,fb,acts_].forEach(function(e){ box.appendChild(e); });
+      function nextSentence(){ i++; if(i>=round.length) return finish('satz',clean===round.length?3:clean>=Math.ceil(round.length*0.6)?2:1,clean*10,['Fehlerfrei: '+clean+' von '+round.length+' Sätzen']);
+        var s=round[i], want=toks(s.de), at=0, errs=0, order; info.textContent=(i+1)+' / '+round.length;
+        prompt.textContent=s.en; line.innerHTML=''; tiles.innerHTML=''; fb.innerHTML=''; acts_.innerHTML='';
+        if(canHear()&&s.au) acts_.appendChild(btn('','🔊 Anhören',function(){ say(s.au); }));
+        do { order=shuffle(want.map(function(w,k){ return k; })); } while(want.length>2&&order.every(function(k,j){ return want[k]===want[j]; }));
+        order.forEach(function(k){ var t=btn('s-tile',esc(want[k]),function(b){ choose(b); }); t.setAttribute('data-w',want[k]); tiles.appendChild(t); });
+        function choose(t){ if(t.disabled||at>=want.length) return;
+          if(t.getAttribute('data-w')===want[at]){ t.disabled=true; t.classList.add('used'); line.appendChild(el('span','s-word',esc(want[at]))); at++;
+            [].forEach.call(tiles.children,function(x){ x.classList.remove('hint'); });
+            if(at===want.length){ if(!errs) clean++; solved(s,errs); } return; }
+          errs++; blip(false); t.classList.add('shake'); setTimeout(function(){ t.classList.remove('shake'); },400);
+          if(errs>=2) [].some.call(tiles.children,function(x){ if(!x.disabled&&x.getAttribute('data-w')===want[at]){ x.classList.add('hint'); return true; } return false; }); } }
+      function solved(s,errs){ blip(true); line.innerHTML='<span>'+marked(s)+'</span>'; say(s.au);
+        fb.innerHTML=errs?'<span class="g-no">Geschafft, mit '+errs+' Fehler'+(errs>1?'n':'')+'.</span>':'<span class="g-ok">✓ Perfekt!</span>';
+        acts_.innerHTML=''; if(canHear()&&s.au) acts_.appendChild(btn('','🔊 Nochmal',function(){ say(s.au); })); acts_.appendChild(btn('main','Weiter ›',nextSentence)); }
+      nextSentence(); }
+
+    /* ⚡ Der · Die · Das: 60 seconds of nouns; a streak multiplies the points, a miss comes back soon */
+    function artikel(g){
+      var pool_=nouns(g); if(pool_.length<12){ var more=[]; ORDER.forEach(function(u){ if(u!==unit()&&G[u]) more=more.concat(nouns(G[u])); }); pool_=pool_.concat(pick(more,12-pool_.length)); }
+      var q_=shuffle(pool_), cur_=null, score=0, streak=0, top=0, misses=[], left=60, wait=false, info=head('⚡ Der · Die · Das');
+      var bar=el('div','a-time'), fill=el('i'); bar.appendChild(fill); box.appendChild(bar);
+      var sc=el('div','a-score'), card=el('div','a-card'); box.appendChild(sc); box.appendChild(card);
+      var row=el('div','a-btns'); ['der','die','das'].forEach(function(a){ row.appendChild(btn('a-'+a,a,function(){ answer(a); })); }); box.appendChild(row);
+      function key(e){ var a={'1':'der','2':'die','3':'das'}[e.key]; if(a&&!e.repeat){ e.preventDefault(); answer(a); } }
+      d.addEventListener('keydown',key);
+      var tm=setInterval(function(){ left--; fill.style.width=(left/60*100)+'%'; info.textContent=left+' s'; if(left<=0) over(); },1000);
+      live=function(){ clearInterval(tm); d.removeEventListener('keydown',key); };
+      function mult(){ return Math.min(4,1+Math.floor(streak/3)); }
+      function showNext(){ if(!q_.length) q_=shuffle(pool_); cur_=q_.shift();
+        card.innerHTML='<div class="a-word">'+esc(cur_.w)+'</div><div class="a-gloss">'+esc(cur_.g)+'</div>'; sc.textContent=score+' Punkte'+(streak>=3?' · 🔥 ×'+mult():''); }
+      function answer(a){ if(wait||left<=0) return; wait=true;
+        if((cur_.aa||[cur_.a]).indexOf(a)>=0){ score+=10*mult(); streak++; top=Math.max(top,streak); blip(true); say(cur_.h); card.classList.add('good');
+          setTimeout(function(){ card.classList.remove('good'); wait=false; if(left>0) showNext(); },260); return; }
+        streak=0; blip(false); misses.push(cur_); q_.splice(Math.min(4,q_.length),0,cur_);
+        card.innerHTML='<div class="a-word">'+word(cur_)+'</div><div class="a-gloss">'+esc(cur_.g)+'</div>'; card.classList.add('bad'); say(cur_.h);
+        setTimeout(function(){ card.classList.remove('bad'); wait=false; if(left>0) showNext(); },1200); }
+      function over(){ var seen={}, list=misses.filter(function(v){ var k=v.a+' '+v.w; if(seen[k]) return false; seen[k]=1; return true; });
+        finish('art',score>=300?3:score>=150?2:1,score,[score+' Punkte · beste Serie '+top].concat(list.length?['Merk dir: '+list.map(function(v){ return artLabel(v)+' '+v.w; }).join(', ')]:['Kein einziger Fehler!'])); }
+      info.textContent='60 s'; showNext(); }
+
+    /* 💬 Was sagt man?: a situation, three phrases from the lesson; pick the one that fits */
+    function wendung(g){
+      var all=g.r, qs=pick(all,Math.min(8,all.length)), i=-1, right=0, info=head('💬 Was sagt man?');
+      box.appendChild(el('p','g-lead','Lies die Situation und wähle die passende Wendung.'));
+      var sit=el('div','r-sit'), opts=el('div','r-opts'), fb=el('div','r-fb'), acts_=el('div','g-acts');
+      [sit,opts,fb,acts_].forEach(function(e){ box.appendChild(e); });
+      function others(r){ var o=all.filter(function(x){ return x!==r&&x.grp!==r.grp; });
+        if(o.length<2) o=all.filter(function(x){ return x!==r; });
+        if(o.length<2) ORDER.forEach(function(u){ if(u!==unit()&&G[u]) o=o.concat(G[u].r); });
+        return pick(o,2); }
+      function ask(){ i++; if(i>=qs.length) return finish('red',right===qs.length?3:right>=Math.ceil(qs.length*0.6)?2:1,right*10,['Richtig: '+right+' von '+qs.length]);
+        var r=qs[i], answered=false; info.textContent=(i+1)+' / '+qs.length; fb.innerHTML=''; acts_.innerHTML='';
+        sit.innerHTML='<div>'+esc(r.w)+'</div>'+(r.reg?'<div class="r-reg">'+esc(r.reg)+'</div>':''); opts.innerHTML='';
+        shuffle([r].concat(others(r))).forEach(function(x){ opts.appendChild(btn('r-opt',esc(x.f),function(b){ if(answered) return; answered=true;
+          if(x===r){ right++; blip(true); b.classList.add('ok'); }
+          else { blip(false); b.classList.add('no'); [].forEach.call(opts.children,function(o,k){ if(o.textContent===r.f) o.classList.add('ok'); }); }
+          say(r.au); fb.innerHTML='<div class="'+(x===r?'g-ok':'g-no')+'">'+(x===r?'✓ Genau!':'So sagt man es:')+' '+esc(r.g)+'</div><div>'+marked(r.x)+'</div><div class="b-tr">'+esc(r.x.en)+'</div>';
+          acts_.appendChild(btn('main','Weiter ›',ask)); })); }); }
+      ask(); }
+    return {open:open, stop:stop};
+  })();
+
   show(ui.unit||units[0].id,false);
-  mode(ui.tab==='p'?'p':'l');
+  mode(ui.tab==='p'||ui.tab==='g'?ui.tab:'l');
 })();
 """
 
@@ -417,11 +645,18 @@ PRACTICE = """
 <div class="group"><div class="lab">Neue Karten pro Tag</div><div class="chips" id="s-new"></div></div>
 <div class="group"><div class="lab">Pause nach … Karten</div><div class="chips" id="s-round"></div></div>
 <div class="group"><div class="lab">Modus</div><div class="chips" id="s-mode"></div></div>
-<div class="group"><div class="lab">Aussprache automatisch</div><div class="chips" id="s-auto"></div></div>
+<div class="group"><div class="lab">Ton (Aussprache und Spiele)</div><div class="chips" id="s-auto"></div></div>
 <div class="group"><div class="lab">Fortschritt</div><p class="stat" id="s-stat"></p>
 <div class="backup"><button type="button" id="save-btn">Sichern</button><label for="load-in">Laden</label><input type="file" id="load-in" accept="application/json,.json"></div>
 <p class="stat">Der Fortschritt bleibt in diesem Browser auf diesem Gerät. Mit „Sichern“ nimmst du ihn mit.</p></div>
 </details>
+</section>
+"""
+
+GAMES = """
+<section id="games" aria-label="Spielen">
+<div class="g-menu" id="g-menu"></div>
+<div class="g-box" id="g-box" hidden></div>
 </section>
 """
 
@@ -436,9 +671,14 @@ def plain(fragment):
     return " ".join(html.unescape(text).split())
 
 
+def compact(value):
+    return json.dumps(value, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+
+
 def build(course, output, audio=True, bitrate="32k", explain_bitrate="24k", placeholder_audio=False):
     plan = build_course_plan(course)[1] if audio else None
-    css, sections, options, cards, sequences = None, [], [], [], {}
+    css, sections, options, cards = None, [], [], []
+    sequences, examples, stories, games = {}, {}, {}, {}
     used_german, used_explain, first_unit = set(), set(), {}
     for unit in course["units"]:
         uid, label = unit["id"], unit["label"]
@@ -446,19 +686,23 @@ def build(course, output, audio=True, bitrate="32k", explain_bitrate="24k", plac
         require('name="study-pack-status" content="reviewed"' in page, f"{uid}: only reviewed sheets go into the app")
         lesson = json.loads(unit["lesson"].read_text(encoding="utf-8-sig"))
         css = css or re.search(r"<style>(.*?)</style>", page, re.S).group(1)
+        unit_plan = plan["units"][uid] if audio else None
         if audio:
-            unit_plan = plan["units"][uid]
             page = add_audio_buttons(page, lesson, unit_plan, used_german)
-            sequences[uid] = listening(uid, lesson, unit_plan, set())
+            sequences[uid] = listening_order(f"{uid}-", lesson, unit_plan)
+            examples[uid] = examples_order(f"{uid}-", lesson, unit_plan)
+            stories[uid] = story_order(f"{uid}-", unit_plan)
             for chain in unit_plan["explain"].values():
                 used_explain.update(chain)
             used_german.update([unit_plan["title"]] + list(unit_plan["sections"].values()))
             for cid in used_german | used_explain:
                 first_unit.setdefault(cid, len(sections))
+        page = number_examples(page, lesson)
+        games[uid] = game_data(lesson, unit_plan)
         body = re.search(r'<main class="wrap">(.*?)</main>', page, re.S).group(1)
         if audio:
-            body = body.replace("</header>", f'<div class="listen-row"><button type="button" class="listen-all" data-unit="{uid}">'
-                                             f'▶ Ganze Lektion anhören</button></div></header>', 1)
+            body = body.replace("</header>", f'<div class="listen-row"><button type="button" class="listen-open" data-unit="{uid}">'
+                                             f'🎧 Anhören</button></div></header>', 1)
         title = html.unescape(re.search(r"<h1>(.*?)</h1>", body).group(1))
         options.append(f'<option value="{uid}">{html.escape(label)} · {html.escape(title.split(" – ")[0])}</option>')
         for kind, cid, inner in re.findall(r'<article class="(voc|rule|phrase)" id="([^"]+)">(.*?)</article>', body, re.S):
@@ -467,7 +711,7 @@ def build(course, output, audio=True, bitrate="32k", explain_bitrate="24k", plac
                 m = re.search(r'<span class="de">(.*?)</span>(?:<button[^>]*>.*?</button>)?<span class="en">(.*?)</span>', inner, re.S)
                 card.update(f=m.group(1), r=m.group(2), a=f"{plain(m.group(1))} = {plain(m.group(2))}")
                 if audio:
-                    card["fa"] = plan["units"][uid]["controls"][f"{cid}-head"]
+                    card["fa"] = unit_plan["controls"][f"{cid}-head"]
             elif kind == "rule":
                 card["f"] = re.sub(r"<button.*?</button>", "", re.search(r"<h3>(.*?)</h3>", inner, re.S).group(1), flags=re.S)
                 card["a"] = plain(card["f"])
@@ -477,7 +721,7 @@ def build(course, output, audio=True, bitrate="32k", explain_bitrate="24k", plac
                 card["f"] = f'<span class="q-mean">{meaning}</span><span class="q-when">{when}</span>'
                 card["a"] = plain(re.search(r'<div class="head">(.*?)</div>', inner, re.S).group(1))
                 if audio:
-                    card["ba"] = plan["units"][uid]["controls"][f"{cid}-head"]
+                    card["ba"] = unit_plan["controls"][f"{cid}-head"]
             cards.append(card)
         body = re.sub(r' id="([^"]+)"', lambda m: f' id="{uid}-{m.group(1)}"', body)
         sections.append(f'<section class="unit" id="{uid}">{body}</section>')
@@ -490,46 +734,55 @@ def build(course, output, audio=True, bitrate="32k", explain_bitrate="24k", plac
             for cid, data in zip([j[0] for j in jobs], pool.map(lambda j: compressed(course["cache"], j[0], j[1], ff), jobs)):
                 payloads[cid] = data
     config = {"key": slug(course["title"]), "perDay": int(course.get("new_per_day", 20)),
-              "units": [[u["id"], u["id"]] for u in course["units"]]}
+              "units": [[u["id"], u["id"]] for u in course["units"]], "labels": {u["id"]: u["label"] for u in course["units"]}}
     blocks = {}
     for cid, data in payloads.items():
         blocks.setdefault(first_unit[cid], []).append(f"{cid}:{data}")
     audio_blocks = "".join(f'<script type="text/plain" id="au-{k}">{";".join(v)}</script>\n' for k, v in sorted(blocks.items()))
     index = {cid: first_unit[cid] for cid in payloads}
-    js = (APP_JS.replace("__INDEX__", json.dumps(index, separators=(",", ":")))
-          .replace("__SEQUENCES__", json.dumps(sequences, separators=(",", ":")))
-          .replace("__CARDS__", json.dumps(cards, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/"))
+    js = (APP_JS.replace("__LISTEN__", LISTEN_JS)
+          .replace("__INDEX__", json.dumps(index, separators=(",", ":")))
+          .replace("__SEQUENCES__", compact(sequences))
+          .replace("__EXAMPLES__", compact(examples))
+          .replace("__STORIES__", compact(stories))
+          .replace("__CARDS__", compact(cards))
           .replace("__ORDER__", json.dumps([u["id"] for u in course["units"]]))
-          .replace("__CONFIG__", json.dumps(config, ensure_ascii=False)))
+          .replace("__CONFIG__", compact(config))
+          .replace("__GAME__", compact(games)))
     subtitle = html.escape(course.get("subtitle", f"{len(course['units'])} Lektionen · Wortschatz · Grammatik · Redemittel"))
     doc = f"""<!DOCTYPE html>
 <html lang="de"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="study-pack-app" content="course v1">
+<meta name="study-pack-app" content="course v2">
 <title>{html.escape(course['title'])}</title>
-<style>{css}{AUDIO_CSS if audio else ''}{APP_CSS}</style>
+<style>{css}{AUDIO_CSS}{APP_CSS}</style>
 </head>
 <body><main class="wrap">
 <nav class="bar" aria-label="Navigation">
-<div class="tabs"><button type="button" id="tab-l" aria-pressed="true">Lernen</button><button type="button" id="tab-p" aria-pressed="false">Üben</button></div>
+<div class="tabs"><button type="button" id="tab-l" aria-pressed="true">Lernen</button><button type="button" id="tab-p" aria-pressed="false">Üben</button><button type="button" id="tab-g" aria-pressed="false">Spielen</button></div>
 <button class="nav lern-only" id="prev" type="button" aria-label="Vorherige Lektion">‹</button>
 <select class="lern-only" id="pick" aria-label="Lektion wählen">{''.join(options)}</select>
 <button class="nav lern-only" id="next" type="button" aria-label="Nächste Lektion">›</button>
-<input class="lern-only" id="q" type="search" placeholder="Suchen…" aria-label="Suchen">
-<div class="hits lern-only" id="hits"></div>
+<input class="lern-only search-only" id="q" type="search" placeholder="Suchen…" aria-label="Suchen">
+<div class="hits lern-only search-only" id="hits"></div>
 </nav>
-<noscript><p class="cover">Audio und Üben brauchen einen Browser mit JavaScript.</p></noscript>
+<noscript><p class="cover">Audio, Üben und Spielen brauchen einen Browser mit JavaScript.</p></noscript>
 <div class="lernen">
 <div class="cover"><b>{html.escape(course['title'])}</b>{subtitle}</div>
 {''.join(sections)}
 </div>
 {PRACTICE}
+{GAMES}
+{LISTEN_HTML}
 </main>
 <script>{js}</script>
 {audio_blocks}
 </body></html>
 """
     require("http://" not in doc and "https://" not in doc, "output unexpectedly contains an external URL")
+    for term in course.get("private_terms", []):
+        require(not exact_term(re.sub(r'<script type="text/plain".*?</script>', "", doc, flags=re.S), term),
+                f"the app names the private source term {term!r}")
     output = Path(output)
     with output.open("x", encoding="utf-8", newline="\n") as stream:
         stream.write(doc)
@@ -540,7 +793,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--course", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--no-audio", action="store_true", help="Study and practice only, no embedded audio")
+    parser.add_argument("--no-audio", action="store_true", help="Study, practice and games only, no embedded audio")
     parser.add_argument("--bitrate", default="32k", help="German clips (default 32k)")
     parser.add_argument("--explain-bitrate", default="24k", help="English grammar explanations (default 24k)")
     parser.add_argument("--placeholder-audio", action="store_true", help=argparse.SUPPRESS)  # silent buttons, for tests/screenshots
@@ -554,7 +807,8 @@ def main(argv=None):
         print(f"WROTE: {args.output} ({result['bytes'] / 1e6:.1f} MB): {len(course['units'])} units, "
               f"{result['cards']} cards, {result['clips']} embedded clips")
         return 0
-    except (AudioError, speech.SpeechError, OSError, json.JSONDecodeError, subprocess.CalledProcessError, AttributeError) as error:
+    except (AudioError, speech.SpeechError, study_pack.PackError, OSError, json.JSONDecodeError,
+            subprocess.CalledProcessError, AttributeError) as error:
         print("FAIL: " + str(error), file=sys.stderr)
         return 1
 

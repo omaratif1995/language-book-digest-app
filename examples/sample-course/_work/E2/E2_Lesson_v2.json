@@ -35,8 +35,8 @@
    "gloss": "arrangement to meet, date",
    "examples": [
     {
-     "de": "Ich habe heute Abend eine Verabredung mit Lena.",
-     "en": "I'm meeting Lena tonight.",
+     "de": "Tut mir leid, heute Abend habe ich schon eine Verabredung.",
+     "en": "Sorry, I already have plans to meet someone tonight.",
      "targets": [
       "Verabredung"
      ]
@@ -195,5 +195,74 @@
     }
    ]
   }
- ]
+ ],
+ "story": {
+  "title": "Der perfekte Samstag",
+  "paragraphs": [
+   {
+    "de": "Am Freitagabend schreibt mir Lena: „Hast du Lust, am Samstag mit uns zu grillen?“ Ich schaue sofort in die Wetter-App. Das Wetter soll perfekt werden: Sonne, 25 Grad, kein Wind.",
+    "en": "On Friday evening Lena texts me: 'Do you feel like having a barbecue with us on Saturday?' I check the weather app straight away. The weather is supposed to be perfect: sun, 25 degrees, no wind.",
+    "uses": [
+     {
+      "card": "e1",
+      "form": "Hast du Lust"
+     },
+     {
+      "card": "v5",
+      "form": "Wetter"
+     }
+    ]
+   },
+   {
+    "de": "Ich antworte: „Samstag passt mir gut! Aber wie wäre es mit einem Ausflug an den See? Wir könnten dort grillen und schwimmen.“ Lena findet die Idee toll, nur Tom ist skeptisch.",
+    "en": "I reply: 'Saturday suits me! But how about a trip to the lake? We could have a barbecue there and go swimming.' Lena loves the idea, only Tom is sceptical.",
+    "uses": [
+     {
+      "card": "e3",
+      "form": "passt mir gut"
+     },
+     {
+      "card": "e2",
+      "form": "wie wäre es mit"
+     },
+     {
+      "card": "v1",
+      "form": "Ausflug"
+     },
+     {
+      "card": "g1",
+      "form": "Wir könnten dort grillen"
+     }
+    ]
+   },
+   {
+    "de": "Tom schlägt vor, dass wir lieber ins Kino gehen. „Bei dem Wetter? Hättest du nicht Lust, mal etwas Neues zu machen?“, frage ich. Er gibt auf.",
+    "en": "Tom suggests that we'd rather go to the cinema. 'In this weather? Wouldn't you like to do something new for once?' I ask. He gives in.",
+    "uses": [
+     {
+      "card": "v3",
+      "form": "schlägt vor"
+     },
+     {
+      "card": "g1",
+      "form": "Hättest du nicht Lust"
+     }
+    ]
+   },
+   {
+    "de": "Am Samstag regnet es. Natürlich. Wir sitzen zu dritt in Lenas Küche, essen Würstchen aus der Pfanne und lachen viel. Ganz spontan sagt Tom: „Und morgen gehen wir ins Kino?“ Diesmal sage ich ja. Unsere nächste Verabredung steht.",
+    "en": "On Saturday it rains. Of course. The three of us sit in Lena's kitchen, eat sausages from the pan and laugh a lot. Quite spontaneously Tom says: 'And tomorrow we go to the cinema?' This time I say yes. Our next date is set.",
+    "uses": [
+     {
+      "card": "v4",
+      "form": "spontan"
+     },
+     {
+      "card": "v2",
+      "form": "Verabredung"
+     }
+    ]
+   }
+  ]
+ }
 }

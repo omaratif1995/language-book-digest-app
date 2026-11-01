@@ -29,6 +29,13 @@ Use these cases when revising the skill. Test with raw lesson pages, not an old 
 - Inspect model emails, prompts, and response tasks for reusable Redemittel even when no box is labelled `Redemittel`.
 - Preserve useful placeholders and register differences without reproducing the full model text.
 
+### Story and originality
+
+- The Geschichte is a real story with a pull, reuses at least 80 % of the vocabulary cards, every grammar point and half of the Redemittel, and still reads naturally.
+- Nothing in the sheet names the source: a course book with its title, publisher, ISBN and character names on every page produces a sheet with none of them, and with the learner's own unit title.
+- Examples are newly written: no character from the book, no copied sentence, no book statistic.
+- Examples pass the quality bar: adult, specific, useful, level-appropriate; neither silly nor A1-flat.
+
 ## Mechanical failure cases
 
 The pipeline must reject:
@@ -41,8 +48,11 @@ The pipeline must reject:
 - stale source, inventory, lesson, or review hashes;
 - old lesson fields for goals, Start material, practice, recap, coverage, or source notes;
 - HTML with a fourth learner section, audit/status prose, a legend, exercise, summary, fold, hidden content, or vocabulary table;
-- a truncated verb lemma such as `sich` or `jemandem` without the actual verb; and
-- grammar with fewer than two examples.
+- a truncated verb lemma such as `sich` or `jemandem` without the actual verb;
+- grammar with fewer than two examples;
+- learner text containing a `private_terms` name or an ISBN;
+- a story form that does not occur in its paragraph, underlined forms that overlap, a story that skips a grammar point or uses under 60 % of the vocabulary; and
+- a story without a `story_quality` review check.
 
 ## Semantic failure cases
 
@@ -55,7 +65,9 @@ A fresh evaluator must fail a sheet that is mechanically valid but has any of th
 - overloaded examples that hide several unfamiliar targets in one sentence;
 - false or missing register guidance;
 - copied grammar tables without meaning, use, or a memorable rule;
-- Redemittel limited to a labelled box while reusable writing patterns are missed; or
+- Redemittel limited to a labelled box while reusable writing patterns are missed;
+- silly, empty or A1-flat examples (*Das Seminar ist interessant.*);
+- a story that is a list of lesson words, retells the source, or stuffs several new items into each sentence; or
 - V5.1-style inventories, source machinery, or coverage accounting exposed in learner HTML.
 
 ## Acceptance comparison

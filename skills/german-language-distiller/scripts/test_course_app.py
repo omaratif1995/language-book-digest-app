@@ -16,7 +16,19 @@ import speech
 NEEDS_DICTS = unittest.skipUnless(speech.dictionaries_available(), "pip install pyspellchecker")
 
 
-def bundle(root, lesson_id, title, word, article, grammar_title, frame):
+def tiny_story(word, frame):
+    stem = frame.replace(" …", "")
+    return {"title": "Ein langer Tag", "paragraphs": [
+        {"de": f"Hier ist der {word}. Alle warten schon.", "en": "Here it is. Everyone is already waiting.",
+         "uses": [{"card": "v1", "form": word}]},
+        {"de": "Trotz des Regens gehen wir los. Es wird ein langer Tag.", "en": "Despite the rain we set off. It will be a long day.",
+         "uses": [{"card": "g1", "form": "Trotz des Regens"}]},
+        {"de": f"Am Abend sage ich: {stem}, ob wir morgen frei haben. Alle lachen.",
+         "en": "In the evening I say: I wanted to ask whether we have tomorrow off. Everyone laughs.",
+         "uses": [{"card": "e1", "form": stem}]}]}
+
+
+def bundle(root, lesson_id, title, word, article, grammar_title, frame, story=False):
     """A tiny valid reviewed lesson, rendered with the normal sheet renderer."""
     source = root / "source.txt"
     if not source.exists():
@@ -51,6 +63,9 @@ def bundle(root, lesson_id, title, word, article, grammar_title, frame):
     review = {"schema_version": 2, "lesson_id": lesson_id, "inventory_sha256": "0" * 64, "lesson_sha256": "0" * 64,
               "reviewer": "synthetic", "method": "independent-source-comparison",
               "checks": dict.fromkeys(pack.CHECKS, "pass"), "findings": [], "scope_note": "synthetic"}
+    if story:
+        lesson["story"] = tiny_story(word, frame)
+        review["checks"][pack.STORY_CHECK] = "pass"
     paths = {name: root / f"{lesson_id}_{name}_v2.json" for name in ("Inventory", "Lesson", "Review")}
     paths["Inventory"].write_text(json.dumps(inventory, ensure_ascii=False), encoding="utf-8")
     lesson["inventory_sha256"] = pack.file_hash(paths["Inventory"])
@@ -72,7 +87,7 @@ class CourseAppTests(unittest.TestCase):
         units = []
         for uid, title, word, art, gt, frame in (("U1", "Erste Einheit", "Termin", "der", "trotz + Genitiv", "Ich wollte fragen …"),
                                                  ("U2", "Zweite Einheit", "Ausflug", "der", "wegen + Genitiv", "Wie wäre es mit …")):
-            lesson, sheet = bundle(self.root, uid, title, word, art, gt, frame)
+            lesson, sheet = bundle(self.root, uid, title, word, art, gt, frame, story=uid == "U1")
             units.append({"id": uid, "label": f"Einheit {uid[1:]}", "lesson": lesson.name, "sheet": sheet.name})
         self.course_path = self.root / "course.json"
         self.course_path.write_text(json.dumps({"title": "Test Kurs", "cache": "_work/audio", "units": units}), encoding="utf-8")
@@ -130,11 +145,61 @@ class CourseAppTests(unittest.TestCase):
         out = self.root / "app_audio.html"
         build_course_app.build(course_audio.load_course(self.course_path), out, audio=True, placeholder_audio=True)
         page = out.read_text(encoding="utf-8")
-        self.assertEqual(page.count('class="listen-all"'), 2)
+        self.assertEqual(page.count('class="listen-open"'), 2)       # 🎧 Anhören opens the listening panel
         self.assertEqual(page.count('class="explain-button"'), 2)
         self.assertGreaterEqual(page.count('class="speak-button"'), 10)
+        self.assertEqual(page.count('class="story-play"'), 1)
+        self.assertEqual(page.count('class="speak-button para-play"'), 3)   # one 🔊 per story paragraph (U1 only)
+        self.assertEqual(page.count('class="ss" id="U1-story-s'), 6)
+        self.assertEqual(len(re.findall(r'class="ss" id="U1-story-s\d+" data-audio="a_', page)), 6)
+        self.assertIn('data-m="ex"', page)                           # Nur Beispiele
         self.assertNotIn('type="text/plain" id="au-', page)   # placeholder: no payload blocks
         self.assertLess(page.index("<script>"), page.rindex("</main>") + 20)
+        sequences = {name: json.loads(re.search(name + r"=(\{.*?\}), ", page, re.S).group(1)) for name in ("EXS", "STO")}
+        self.assertEqual([step[2] for step in sequences["EXS"]["U1"]], ["U1-v1-x0", "U1-g1-x0", "U1-g1-x1", "U1-e1-x0"])
+        self.assertEqual(sequences["STO"]["U2"], [])
+        self.assertEqual(sequences["STO"]["U1"][0][2], "U1-story")
+        self.assertEqual(len(sequences["STO"]["U1"]), 7)               # title + six sentences
+
+    def test_games_and_story_are_built_from_the_lesson_data(self):
+        out = self.root / "app_games.html"
+        build_course_app.build(course_audio.load_course(self.course_path), out, audio=False)
+        page = out.read_text(encoding="utf-8")
+        self.assertIn('id="tab-g"', page)
+        for name in ("Hör-Bingo", "Satzbau", "Der · Die · Das", "Was sagt man?"):
+            self.assertIn(name, page)
+        games = json.loads(re.search(r", G=(\{.*?\});\n", page, re.S).group(1).replace("<\\/", "</"))
+        self.assertEqual(games["U1"]["v"][0]["a"], "der")
+        self.assertEqual(games["U1"]["v"][0]["x"][0]["t"], [[13, 19]])    # «Termin» in «Hier ist der Termin.»
+        self.assertEqual(len(games["U1"]["s"]), 4)                         # every example sentence feeds Satzbau
+        self.assertEqual(games["U2"]["r"][0]["f"], "Wie wäre es mit …")
+        self.assertIn('class="lw" data-card="v1"', page)                   # underlined story word with its meaning
+        self.assertIn('id="U1-v1-x0"', page)
+
+    def test_article_game_accepts_both_articles_of_adjective_nouns(self):
+        def card(lemma, article, forms):
+            return {"lemma": lemma, "article": article, "forms": forms}
+        accepted = build_course_app.accepted_articles
+        self.assertEqual(accepted(card("Bekannte", "der", "die Bekannte · ein Bekannter · Plural: die Bekannten")), ["der", "die"])
+        self.assertEqual(accepted(card("Joghurt", "der", "der or das Joghurt · Plural: die Joghurts")), ["der", "das"])
+        self.assertEqual(accepted(card("Ansicht", "die", "Plural: die Ansichten · der Ansicht sein, dass …")), ["die"])
+        self.assertEqual(accepted(card("Zweifel", "der", "Plural: die Zweifel · Zweifel haben")), ["der"])
+        self.assertIn("(cur_.aa||[cur_.a]).indexOf(a)>=0", build_course_app.APP_JS)
+
+    def test_unknown_course_key_is_refused(self):
+        data = json.loads(self.course_path.read_text(encoding="utf-8"))
+        self.course_path.write_text(json.dumps({**data, "episodes_out": "../Audio"}), encoding="utf-8")
+        with self.assertRaisesRegex(Exception, "unknown key.*episodes_out"):
+            course_audio.load_course(self.course_path)
+
+    def test_private_terms_keep_the_source_name_out(self):
+        data = json.loads(self.course_path.read_text(encoding="utf-8"))
+        self.course_path.write_text(json.dumps({**data, "private_terms": ["Test"]}), encoding="utf-8")
+        with self.assertRaisesRegex(Exception, "private source term"):
+            course_audio.load_course(self.course_path)
+        self.course_path.write_text(json.dumps({**data, "private_terms": ["Termin"]}), encoding="utf-8")
+        with self.assertRaisesRegex(Exception, "private source term"):
+            build_course_app.build(course_audio.load_course(self.course_path), self.root / "leak.html", audio=False)
 
     @NEEDS_DICTS
     def test_explanations_are_not_counted_as_german_clips(self):
