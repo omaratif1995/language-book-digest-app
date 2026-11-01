@@ -155,9 +155,11 @@ class CourseAppTests(unittest.TestCase):
         self.assertIn('data-m="ex"', page)                           # Nur Beispiele
         self.assertNotIn('type="text/plain" id="au-', page)   # placeholder: no payload blocks
         self.assertLess(page.index("<script>"), page.rindex("</main>") + 20)
-        sequences = {name: json.loads(re.search(name + r"=(\{.*?\}), ", page, re.S).group(1)) for name in ("EXS", "STO")}
+        sequences = {name: json.loads(re.search(name + r"=(\{.*?\}), ", page, re.S).group(1)) for name in ("SEQ", "EXS", "STO")}
         self.assertEqual([step[2] for step in sequences["EXS"]["U1"]], ["U1-v1-x0", "U1-g1-x0", "U1-g1-x1", "U1-e1-x0"])
         self.assertEqual(sequences["STO"]["U2"], [])
+        explain = [step for step in sequences["SEQ"]["U1"] if step[2] == "U1-g1" and not step[3]]
+        self.assertTrue(explain and all(step[1] == 0.4 for step in explain))   # a breath after the spoken explanation
         self.assertEqual(sequences["STO"]["U1"][0][2], "U1-story")
         self.assertEqual(len(sequences["STO"]["U1"]), 7)               # title + six sentences
 
@@ -191,6 +193,15 @@ class CourseAppTests(unittest.TestCase):
         self.course_path.write_text(json.dumps({**data, "episodes_out": "../Audio"}), encoding="utf-8")
         with self.assertRaisesRegex(Exception, "unknown key.*episodes_out"):
             course_audio.load_course(self.course_path)
+
+    def test_listening_engine_names_do_not_clash_with_the_app(self):
+        # Both scripts share one function scope; a later declaration with the same name silently replaces the engine's.
+        def top_level_functions(js):
+            return set(re.findall(r"^  function ([A-Za-z_$][\w$]*)\(", js, re.M))
+        engine = top_level_functions(build_course_app.LISTEN_JS)
+        app = top_level_functions(build_course_app.APP_JS.replace("__LISTEN__", ""))
+        self.assertTrue(engine and app)
+        self.assertEqual(engine & app, set())
 
     def test_private_terms_keep_the_source_name_out(self):
         data = json.loads(self.course_path.read_text(encoding="utf-8"))

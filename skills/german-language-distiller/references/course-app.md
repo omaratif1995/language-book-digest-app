@@ -86,16 +86,19 @@ Requirements: `pip install edge-tts pyspellchecker imageio-ffmpeg` (or a system 
 
 **Lernen**
 - All reviewed sheets in course order, a unit picker with ‹ ›, and a search over all cards.
-- 🔊 on every German headword, example, phrase and variant. **A tap repeats**: by default the clip plays again and again, with a pause to repeat it aloud, until the learner taps it again or presses ⏹. The listening panel switches this to 1× or 3×.
+- 🔊 on every German headword, example, phrase and variant. **A tap repeats**: by default the clip plays again and again, with a short pause, until the learner taps it again or presses ⏹. The listening panel switches this to 1× or 3×.
 - `🔊 Erklärung` on each grammar point plays its spoken explanation once.
 - The **Geschichte** at the end of each unit: a **🔊 Ganze Geschichte** button on the story header to play the whole story straight through, a 🔊 per paragraph, and a tap on any sentence repeats that sentence. A tap on an underlined word shows its meaning and speaks it.
 - **🎧 Anhören** opens a small panel in the unit's header:
+  - **▶ Weiter** (once a session was stopped): goes on where it stopped;
   - three ways to listen: **Ganze Lektion** (German vocabulary and expressions, grammar explained, then the story), **Nur Beispiele** (only the German example sentences) and **Geschichte**;
   - **Jeder Satz 1× · 2× · 3× · 5×**: how often each German sentence is played before the next one;
   - **Am Ende Einmal · ⟳ Endlos**: stop at the end, or start the unit again;
   - **🔊-Taste 1× · 3× · ∞**: what a single 🔊 tap does.
 
-  The current card or sentence is highlighted and scrolled into view, a bar at the bottom shows what is playing with a ⏹ Stopp button, and the screen stays on while a session runs. The settings are remembered.
+  The session is joined on the device into one continuous audio track with lock-screen and headphone controls (⏯ ⏮ ⏭), so playback continues when the phone screen turns off; when the screen is on, the current card or sentence is highlighted and scrolled into view. A bar at the bottom shows what is playing, with ⏮ (this sentence again; right at its start, the one before), ⏸ / ▶ (pause, then go on in the same sentence), ⏭ (the next sentence now) and ✕ (end). A 🔊 tap during a session pauses it and plays that clip; when the clip stops, the session waits, paused, in the bar. Settings changed during a session apply at once, and all settings are remembered.
+
+  Pauses separate without dragging: before the same sentence again about 0.8 s after a word and 1.35 s after a sentence; before the next one about 1.5–2 s after an example, less after headwords and story sentences, more at the end of a paragraph.
 
 **Üben**
 - One card per sheet card. Vocabulary goes German → English, with English → German optional. Grammar shows its title and asks for the rule and examples. Redemittel show the situation and meaning in English and ask for the German frame, because that is the choice the learner makes while speaking or writing.
@@ -128,7 +131,7 @@ Measured with headless Chrome at 4× CPU slowdown on a 41 MB, 16-unit course: us
 - **Sending it:** messengers and cloud drives handle the file; most mail servers reject 40 MB.
 - **Android:** opens the file in Chrome with everything working.
 - **iPhone:** the Files and messenger preview shows the text but runs no JavaScript, so audio, practice and games need a hosted link.
-- **Screen off:** browsers may pause a web page in the background. For listening with the screen off, use the MP3 episodes, especially the Beispiele set.
+- **Screen off:** each listening session is joined into one continuous audio track with lock-screen and headphone controls (⏯ ⏮ ⏭), so playback continues with the screen off. The MP3 episodes also work in any music player.
 - **Progress:** stays in one browser on one device. The backup button moves it between devices.
 
 ## Verify before delivery

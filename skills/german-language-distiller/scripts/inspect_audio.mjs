@@ -91,16 +91,36 @@ try {
         await wait(150);
         const panelOpen = !document.getElementById('lp').hidden;
         document.querySelector('#lp [data-m="ex"]').click();
-        await wait(350);
-        const examplesStarted = open.classList.contains('is-playing') && open.textContent.includes('Stopp') && !!document.querySelector('.ex.follow');
-        open.click();
+        for (let i = 0; i < 40; i++) {
+          await wait(150);
+          const s = document.getElementById('now-s')?.textContent || '';
+          if (s && !s.includes('vorbereitet')) break;
+        }
         await wait(250);
-        const sessionStopped = !open.classList.contains('is-playing') && document.getElementById('now').hidden;
+        const now = document.getElementById('now'), at = () => document.getElementById('now-s').textContent.split(' · ')[0];
+        const examplesStarted = open.classList.contains('is-playing') && !document.getElementById('now-c').hidden && !!document.querySelector('.ex.follow');
+        document.getElementById('now-p').click();                              // ⏸ keeps the place
+        await wait(1200);
+        const pausedAt = at(), paused = now.classList.contains('paused') && !open.classList.contains('is-playing');
+        document.getElementById('now-p').click();                              // ▶ goes on in the same sentence
+        await wait(300);
+        const resumed = !now.classList.contains('paused') && at() === pausedAt;
+        document.getElementById('now-n').click();                              // ⏭ the next sentence now
+        await wait(300);
+        const skipped = at() !== pausedAt;
+        document.getElementById('now-x').click();                              // ✕ ends, and the panel offers Weiter
+        await wait(250);
+        const sessionStopped = !open.classList.contains('is-playing') && now.hidden;
+        open.click();
+        await wait(150);
+        const weiterOffered = !document.getElementById('lp-go').hidden;
         return {
-          passed: meta === 'embedded' && individualStarted && individualRepeats && individualStopped && panelOpen && examplesStarted && sessionStopped,
+          passed: meta === 'embedded' && individualStarted && individualRepeats && individualStopped && panelOpen && examplesStarted
+            && paused && resumed && skipped && sessionStopped && weiterOffered,
           embeddedMeta: meta,
           speakerButtons: document.querySelectorAll('.speak-button').length,
-          individualStarted, individualRepeats, individualStopped, panelOpen, examplesStarted, sessionStopped,
+          individualStarted, individualRepeats, individualStopped, panelOpen, examplesStarted,
+          paused, resumed, skipped, sessionStopped, weiterOffered,
           nowPlaying: document.getElementById('now-t').textContent,
         };
       })()`

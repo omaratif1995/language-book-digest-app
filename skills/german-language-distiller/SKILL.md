@@ -128,7 +128,7 @@ Only read the flashcard references when the user explicitly requests Anki/CSV or
 When several units are reviewed and the learner wants to study on the phone, listen on the go, practise or play, read [course-app.md](references/course-app.md). It builds two deliverables from the same reviewed records, so nothing drifts:
 
 - **one offline HTML study app**:
-  - *Lernen*: all sheets with their stories. A 🔊 tap repeats until tapped again; a story sentence repeats on tap; an underlined story word shows its meaning. "🎧 Anhören" plays the whole lesson, only its examples, or the story, each sentence 1–5 times, once or endlessly, with the current sentence highlighted.
+  - *Lernen*: all sheets with their stories. A 🔊 tap repeats until tapped again; a story sentence repeats on tap; an underlined story word shows its meaning. "🎧 Anhören" plays the whole lesson, only its examples, or the story, each sentence 1–5 times, once or endlessly, with the current sentence highlighted; a bar at the bottom pauses, goes back and skips, and *Weiter* goes on where a session stopped.
   - *Üben*: one card per sheet card, spaced repetition, one tap per card.
   - *Spielen*: four games per unit for days without motivation (Hör-Bingo, Satzbau, Der · Die · Das, Was sagt man?), made from the unit's own cards.
 - **MP3 episodes per unit** for commuting: the whole lesson with pauses to repeat and the story at the end; optionally an examples-only set where each sentence is repeated.

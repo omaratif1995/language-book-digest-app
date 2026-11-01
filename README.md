@@ -12,7 +12,7 @@ You give it a lesson you're studying: pages from a course book you own, your tea
    - **Redemittel**: reusable phrases for e-mails, opinions, requests and small talk, each with a use cue and an example.
    - **Geschichte**: a short, catchy story that reuses most of the lesson's words, grammar and phrases, so you meet them again in context. The lesson's words are underlined, and each paragraph's translation is one tap away.
 2. **One offline study app for the whole course**, a single HTML file that runs on your phone:
-   - **Lernen:** every sheet and story, with 🔊 neural audio on every German word, example, phrase and story sentence. A 🔊 tap **repeats the sentence until you tap again**, so it can sink in. "🎧 Anhören" plays the whole lesson, **only the examples**, or the story, each sentence 1–5 times, once or endlessly, while the app follows along on screen.
+   - **Lernen:** every sheet and story, with 🔊 neural audio on every German word, example, phrase and story sentence. A 🔊 tap **repeats the sentence until you tap again**, so it can sink in. "🎧 Anhören" plays the whole lesson, **only the examples**, or the story, each sentence 1–5 times, once or endlessly, while the app follows along on screen. Pause, go back or skip ahead at any time, and pick up where you stopped.
    - **Üben:** flashcards with spaced repetition and one tap per card. Tap ✓ when you know it, and the next card appears; tap ✗ when you don't, and the answer opens. Practise in short rounds of 10, with a daily goal and a streak.
    - **Spielen:** four quick games per lesson for days without motivation: **Hör-Bingo** (hear a sentence, find its word on your card), **Satzbau** (put the words in order), **Der · Die · Das** (60-second article sprint) and **Was sagt man?** (pick the phrase that fits the situation).
 3. **MP3 listening episodes**, one per lesson (15–30 minutes): German, a pause to repeat, English, and the story at the end. An optional examples-only set repeats every example sentence for the commute.
@@ -88,7 +88,7 @@ The skill's [references](skills/german-language-distiller/references/) document 
 
 - **For German learners:** the sheets, the voices and the app are built for German, tested with B1 material.
 - **iPhone:** the Files and messenger previews don't run the app's buttons. Open the file in a browser that runs local files, or host it privately. The MP3s play everywhere.
-- **Screen off:** phones may pause a web page in the background, so for listening with the screen off use the MP3 episodes.
+- **Screen off:** the app joins a listening session into one continuous audio track with lock-screen and headphone buttons (⏯ ⏮ ⏭), so playback keeps going when the screen turns off. The MP3 episodes also work in any music player.
 - **A study aid, not a guarantee.** A digest replaces rereading, not practice. Listening to real-speed German, speaking with a partner and timed exam practice are still on you.
 
 ## Repository layout

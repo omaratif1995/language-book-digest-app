@@ -7,7 +7,8 @@
 Lernen: every reviewed sheet in course order, with its closing story. A 🔊 tap repeats a word or sentence (until
 tapped again, or 1×/3×), a tap on a story sentence repeats that sentence, and a tap on an underlined story word shows
 its meaning. "🎧 Anhören" opens a small panel: Ganze Lektion, Nur Beispiele or Geschichte, each German sentence played
-1–5 times, once or endlessly. Üben: one card per sheet card, a small spaced-repetition schedule, one tap per card.
+1–5 times, once or endlessly; a bar at the bottom pauses, goes back and skips, and "▶ Weiter" goes on where a session
+stopped. Üben: one card per sheet card, a small spaced-repetition schedule, one tap per card.
 Spielen: four short games per unit made from the same cards (Hör-Bingo, Satzbau, Der · Die · Das, Was sagt man?).
 Audio comes from `course_audio.py synth` and is embedded as base64 so the file works without a network.
 See references/course-app.md.
@@ -311,7 +312,6 @@ APP_JS = r"""
   function need(id){ if(AU[id]!==undefined) return AU[id]; var k=IDX[id], el=k===undefined?null:d.getElementById('au-'+k);
     if(el && !el.getAttribute('data-read')){ el.textContent.split(';').forEach(function(p){ var i=p.indexOf(':'); if(i>0) AU[p.slice(0,i)]=p.slice(i+1); }); el.setAttribute('data-read','1'); }
     return AU[id]||''; }
-  function pending(id){ return IDX[id]!==undefined && d.readyState==='loading'; }
 __LISTEN__
   /* ---------------- Lernen: unit picker and search ---------------- */
   var units=[].slice.call(d.querySelectorAll('section.unit')), sel=d.getElementById('pick'), q=d.getElementById('q'), hits=d.getElementById('hits');

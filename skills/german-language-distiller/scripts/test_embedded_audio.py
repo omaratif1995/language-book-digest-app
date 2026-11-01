@@ -54,6 +54,8 @@ class EmbeddedAudioTests(unittest.TestCase):
         self.assertEqual(len(plan["controls"]), 8)
         self.assertIn('class="listen-open"', result)
         self.assertIn('id="lp"', result)                    # the listening panel: whole lesson, examples, story
+        for control in ('id="now-b"', 'id="now-p"', 'id="now-n"', 'id="lp-go"'):   # ⏮ ⏸ ⏭ in the bar, Weiter in the panel
+            self.assertIn(control, result)
         self.assertIn('id="v01-x0"', result)                # examples carry ids, so a session can highlight them
         self.assertEqual(result.count("data:audio/mpeg;base64,"), 1)
         self.assertNotIn("https://", result)
