@@ -98,7 +98,7 @@ Requirements: `pip install edge-tts pyspellchecker imageio-ffmpeg` (or a system 
 
   The session is joined on the device into one continuous audio track with lock-screen and headphone controls (⏯ ⏮ ⏭), so playback continues when the phone screen turns off; when the screen is on, the current card or sentence is highlighted and scrolled into view. A bar at the bottom shows what is playing, with ⏮ (this sentence again; right at its start, the one before), ⏸ / ▶ (pause, then go on in the same sentence), ⏭ (the next sentence now) and ✕ (end). A 🔊 tap during a session pauses it and plays that clip; when the clip stops, the session waits, paused, in the bar. Settings changed during a session apply at once, and all settings are remembered.
 
-  Pauses separate without dragging: before the same sentence again about 0.8 s after a word and 1.35 s after a sentence; before the next one about 1.5–2 s after an example, less after headwords and story sentences, more at the end of a paragraph.
+  Pauses separate without dragging: before the same sentence again about 0.8 s after a word and 1.35 s after a sentence; before the next one about 1.5–2 s after an example, less after headwords and story sentences, more at the end of a paragraph. They are measured from the voice: each clip's own lead-in and tail are trimmed when the track is built.
 
 **Üben**
 - One card per sheet card. Vocabulary goes German → English, with English → German optional. Grammar shows its title and asks for the rule and examples. Redemittel show the situation and meaning in English and ask for the German frame, because that is the choice the learner makes while speaking or writing.
@@ -111,14 +111,15 @@ Requirements: `pip install edge-tts pyspellchecker imageio-ffmpeg` (or a system 
 - Schedule: new cards in course order up to the daily limit, interleaved with due reviews. "Gewusst" moves a card through the intervals 1 → 3 → 7 → 14 → 30 → 60 days. "Nochmal" brings it back after three cards and restarts its interval.
 - Settings live in a closed panel: units, parts, direction, new cards per day, round size, browse mode, sound and a progress backup file.
 
-**Spielen**: for days without motivation. Four short games per unit, made automatically from the unit's reviewed cards, so they never show anything the sheet does not teach and never show wrong German:
+**Spielen**: for days without motivation. Five short games per unit, made automatically from the unit's reviewed cards, so they never show anything the sheet does not teach and never show wrong German. Every round has exactly one right answer, and the build checks that:
 
-- **🎱 Hör-Bingo.** A card of 4–9 lesson words. A sentence is played (without sound: shown with a gap); the learner taps its word, or "Nicht auf meiner Karte" for a decoy. Every answer shows the sentence and its meaning. A line is a BINGO. Trains listening and recognizing inflected forms.
-- **🧩 Satzbau.** The English meaning is shown; the learner taps the German words in the right order. A wrong tile only shakes, and after two misses the right one glows. Trains word order, the heart of B1 grammar.
+- **🎱 Hör-Bingo.** A card of 4–9 lesson words. A sentence is played (without sound: shown with a gap); the learner taps a word of the card that it contains, or "Nicht auf meiner Karte". The build lists, for every example, the other words of the unit it contains: their lemma, the forms the lesson marks for them and near forms (*verpasse* for *verpassen*), without small words such as *sich* or *an*. The game calls only a sentence that holds no other word of the card, and a tap on any word of the card that the sentence really holds counts as right. A right answer moves on by itself; a wrong one shows the sentence, its meaning and the right word until the learner taps *Weiter*. A line is a BINGO. Trains listening for known words in new sentences.
+- **🃏 Wortpaare.** Up to three rounds of five German words (with their article colours) and their meanings, all different within a round; tap a word, then its meaning. A German word speaks when tapped. Time and mistakes give the stars.
+- **🧩 Satzbau.** The English meaning is shown; the learner taps the German words in the right order. Only plain sentences of 5–9 words are used: no colons, quotes, brackets or dashes, so there is one clear order and nothing but words to place. A wrong tile only shakes, and after two misses the right one glows. Trains word order, the heart of B1 grammar.
 - **⚡ Der · Die · Das.** Sixty seconds of the unit's nouns; streaks multiply the points, a miss comes back soon, and the end screen lists the articles to remember. A noun with two correct articles accepts both: an adjective noun whose forms show «ein Bekannter» (der/die Bekannte), or forms that name both (der or das Joghurt).
-- **💬 Was sagt man?** A situation and three phrases from the lesson; pick the one that fits, then hear it and see it in use.
+- **💬 Was sagt man?** A situation and three phrases from the lesson; the two wrong ones come from other groups and never repeat the right one's words. Pick the one that fits, then hear it and see it in use.
 
-"🎲 Überrasch mich" starts a random one. Stars and records are kept per unit and go into the progress backup. Sound effects follow the Ton setting.
+A tap is ignored for 0.3 s after a new question appears, so a tap meant for the last question never answers the next one. "🎲 Überrasch mich" starts a random one. Stars and records are kept per unit and go into the progress backup. Sound effects follow the Ton setting.
 
 ## Size and performance
 

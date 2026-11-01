@@ -9,7 +9,8 @@ tapped again, or 1×/3×), a tap on a story sentence repeats that sentence, and 
 its meaning. "🎧 Anhören" opens a small panel: Ganze Lektion, Nur Beispiele or Geschichte, each German sentence played
 1–5 times, once or endlessly; a bar at the bottom pauses, goes back and skips, and "▶ Weiter" goes on where a session
 stopped. Üben: one card per sheet card, a small spaced-repetition schedule, one tap per card.
-Spielen: four short games per unit made from the same cards (Hör-Bingo, Satzbau, Der · Die · Das, Was sagt man?).
+Spielen: five short games per unit made from the same cards (Hör-Bingo, Wortpaare, Satzbau, Der · Die · Das, Was sagt
+man?).
 Audio comes from `course_audio.py synth` and is embedded as base64 so the file works without a network.
 See references/course-app.md.
 """
@@ -97,29 +98,70 @@ def accepted_articles(record):
     return [a for a in ("der", "die", "das") if a in found]
 
 
+FUNCTION_WORDS = set("""der die das den dem des ein eine einen einem einer eines kein keine keinen keinem keiner
+ich du er sie es wir ihr mich dich sich mir dir uns euch ihm ihn ihnen man mein meine dein deine sein seine unser euer
+zu zum zur an am ans auf aus bei beim mit nach von vom vor in im ins über unter um für gegen ohne durch bis seit
+und oder aber denn dass ob wenn als wie so auch nicht noch schon sehr nur hat habe haben hast hatte ist bin bist sind
+war waren wird werden wurde kann können will wollen muss müssen soll sollen darf dürfen mag möchte etwas jemand""".split())
+
+
+def word_forms(record, lesson):
+    """The forms a vocabulary card can take in a sentence: its lemma and every form the lesson marks for it,
+    without the small words around them (sich, an, hat …)."""
+    texts = [record["lemma"]] + [target for example in record["examples"] for target in example.get("targets", [])]
+    texts += [use["form"] for paragraph in (lesson.get("story") or {}).get("paragraphs", [])
+              for use in paragraph.get("uses", []) if use["card"] == record["id"]]
+    return {token for text in texts for token in re.findall(r"\w+", text.casefold())
+            if len(token) > 2 and token not in FUNCTION_WORDS}
+
+
+def mentions(sentence, forms):
+    """Whether a sentence contains one of the forms, or a near form of a long one (erinnern: erinnert, erinnerte)."""
+    tokens = re.findall(r"\w+", sentence.casefold())
+    for form in forms:
+        stem = form[:-2] if len(form) >= 7 and form.endswith(("en", "rn", "ln")) else None
+        if any(token == form or (stem and token.startswith(stem) and len(token) <= len(form) + 2) for token in tokens):
+            return True
+    return False
+
+
+def puzzle_sentence(text):
+    """A sentence for Satzbau: 5 to 9 words and one plain sentence (no quotes, colons, brackets or dashes), so the
+    words have one clear order and nothing but words is left to place."""
+    return 5 <= len(text.split()) <= 9 and not re.search(r'[„“"«»…:;/()\[\]]| – ', text)
+
+
 def game_data(lesson, unit_plan=None):
-    """What the games need, straight from the reviewed lesson data: words, phrases and sentences with their audio."""
+    """What the games need, straight from the reviewed lesson data: words, phrases and sentences with their audio.
+
+    Every vocabulary example lists the other words of the unit it contains ("m"), so Hör-Bingo calls a sentence only
+    when its answer is clear, and still accepts any word of the card that the sentence really contains."""
     controls = unit_plan["controls"] if unit_plan else {}
+    vocabulary = lesson["vocabulary"]
+    forms = [word_forms(rec, lesson) for rec in vocabulary]
 
     def example(record, index):
         item = record["examples"][index]
         return {"de": item["de"], "en": item["en"], "au": controls.get(f'{record["id"]}-ex-{index}', ""),
                 "t": [list(span) for span in study_pack.target_spans(item, record["id"])]}
 
-    def word(rec):
+    def word(position, rec):
+        examples = [dict(example(rec, index), m=[other for other, found in enumerate(forms)
+                                                 if other != position and mentions(item["de"], found)])
+                    for index, item in enumerate(rec["examples"])]
         entry = {"a": rec.get("article", ""), "w": rec["lemma"], "g": rec["gloss"], "h": controls.get(f'{rec["id"]}-head', ""),
-                 "x": [example(rec, 0)]}
+                 "x": examples}
         both = accepted_articles(rec)
         if len(both) > 1:
             entry["aa"] = both
         return entry
 
     return {
-        "v": [word(rec) for rec in lesson["vocabulary"]],
+        "v": [word(position, rec) for position, rec in enumerate(vocabulary)],
         "r": [{"f": rec["frame"], "g": rec["gloss"], "w": rec["when"], "reg": rec.get("register", ""), "grp": rec["group"],
                "au": controls.get(f'{rec["id"]}-head', ""), "x": example(rec, 0)} for rec in lesson["redemittel"]],
         "s": [example(rec, index) for section in ("vocabulary", "grammar", "redemittel")
-              for rec in lesson[section] for index in range(len(rec["examples"]))]}
+              for rec in lesson[section] for index, item in enumerate(rec["examples"]) if puzzle_sentence(item["de"])]}
 
 
 def compressed(cache, clip_id, bitrate, ff):
@@ -288,6 +330,13 @@ APP_CSS = r"""
   .r-opt.ok{border-color:#34d399;background:#145c4d;color:#e7fff6}
   .r-opt.no{border-color:#f87171;background:#5b2333;color:#ffe4ea}
   .r-fb{margin-top:12px;font-size:14.5px;line-height:1.45}
+  .p-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+  .p-col{display:grid;gap:8px;align-content:start}
+  .p-card{min-height:62px;padding:8px 10px;border-radius:14px;font:inherit;font-size:15.5px;font-weight:700;line-height:1.25;cursor:pointer;
+          background:var(--card);color:var(--ink);border:2px solid var(--line);overflow-wrap:anywhere}
+  .p-en{font-weight:600;font-size:14.5px;color:#c7d2fe}
+  .p-card.sel{border-color:var(--yellow);box-shadow:0 0 0 3px rgba(242,211,107,.3)}
+  .p-card.done{opacity:.3;border-color:#34d399;cursor:default}
   .shake{animation:shake .35s}
   @keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
   @keyframes hint{50%{box-shadow:0 0 0 5px rgba(242,211,107,.45)}}
@@ -467,7 +516,7 @@ __LISTEN__
     r.onload=function(){ try{ var o=JSON.parse(r.result); if(o && o.state){ state=o.state; meta=o.meta||meta; save('srs',state); save('meta',meta); if(o.games) save('games',o.games); start(); alert('Fortschritt geladen.'); } }catch(err){ alert('Diese Datei ist keine Sicherung.'); } };
     r.readAsText(f); });
 
-  /* ---------------- Spielen: four short games per unit, made from its cards ---------------- */
+  /* ---------------- Spielen: five short games per unit, made from its cards ---------------- */
   var Games=(function(){
     var box=d.getElementById('g-box'), menu=d.getElementById('g-menu'), best=load('games',{}), timers=[], live=null, ac=null;
     var HAS_AUDIO=Object.keys(IDX).length>0;
@@ -508,10 +557,12 @@ __LISTEN__
       var a=el('div','g-acts'); a.appendChild(btn('main','Nochmal',function(){ play(key); })); a.appendChild(btn('','Andere Spiele',function(){ open(); }));
       m.appendChild(a); box.appendChild(m); if(got>=3) confetti(); }
     function toks(s){ return s.trim().split(/\s+/); }
-    function satzPool(g){ return g.s.filter(function(s){ var n=toks(s.de).length; return n>=4&&n<=11&&!/[„“"«»…]| – /.test(s.de); }); }
+    function satzPool(g){ return g.s; }                                     /* the build keeps plain sentences of 5–9 words */
     function nouns(g){ return g.v.filter(function(v){ return v.a; }); }
+    function pairPool(g){ var seen={}; return g.v.filter(function(v){ var k=(v.g||'').toLowerCase(); if(!k||seen[k]) return false; seen[k]=1; return true; }); }
     var LIST=[
       {k:'bingo',icon:'🎱',name:'Hör-Bingo',desc:'Hör einen Satz und finde das Wort auf deiner Karte.',ok:function(g){ return g.v.length>=4; },go:bingo},
+      {k:'paare',icon:'🃏',name:'Wortpaare',desc:'Finde zu jedem Wort seine Bedeutung, so schnell du kannst.',ok:function(g){ return pairPool(g).length>=5; },go:paare},
       {k:'satz',icon:'🧩',name:'Satzbau',desc:'Tippe die Wörter in die richtige Reihenfolge.',ok:function(g){ return satzPool(g).length>=3; },go:satz},
       {k:'art',icon:'⚡',name:'Der · Die · Das',desc:'60 Sekunden: Welcher Artikel passt?',ok:function(g){ return nouns(g).length>=3; },go:artikel},
       {k:'red',icon:'💬',name:'Was sagt man?',desc:'Welche Wendung passt zur Situation?',ok:function(g){ return g.r.length>=3; },go:wendung}];
@@ -520,41 +571,52 @@ __LISTEN__
       var ready=LIST.filter(function(x){ return x.ok(g); });
       ready.forEach(function(x){ var b=best[u]&&best[u][x.k];
         menu.appendChild(btn('g-tile','<span class="g-icon">'+x.icon+'</span><span class="g-name">'+x.name+'</span><span class="g-desc">'+x.desc+'</span>'+
-          '<span class="g-best">'+(b?stars(b.s)+(x.k==='art'?' · Rekord '+b.p:''):'Neu')+'</span>',function(){ play(x.k); })); });
+          '<span class="g-best">'+(b?stars(b.s)+(x.k==='art'||x.k==='paare'?' · Rekord '+b.p:''):'Neu')+'</span>',function(){ play(x.k); })); });
       if(ready.length>1) menu.appendChild(btn('g-random','🎲 Überrasch mich',function(){ play(ready[Math.floor(Math.random()*ready.length)].k); }));
       if(!ready.length) menu.appendChild(el('p','g-lead','Diese Lektion hat zu wenige Karten für ein Spiel.')); }
     function play(k){ stop(); stopAll(); var x=LIST.filter(function(y){ return y.k===k; })[0]; menu.hidden=true; box.hidden=false; window.scrollTo(0,0); x.go(data()); }
 
-    /* 🎱 Hör-Bingo: a sentence is played (or shown with a gap); find its word on your card, or say it isn't there */
+    /* 🎱 Hör-Bingo: a sentence is played (or shown with a gap); tap a word of your card that it contains, or say none is there.
+       Every call has one clear answer: its sentence holds no other word of the card (the build lists the words each sentence holds). */
     function bingo(g){
       var vs=g.v.filter(function(v){ return v.x.length; }), n=vs.length>=12?9:vs.length>=8?6:4, cols=n===4?2:3, rows=n/cols;
-      var board=pick(vs,n), rest=vs.filter(function(v){ return board.indexOf(v)<0; });
-      var calls=shuffle(board.concat(pick(rest,Math.ceil(n/2)))), ci=-1, open_=false, miss=0, bingoDone=false, on={};
+      var board, places, calls, tries=0, ci=-1, open_=false, miss=0, wrong=0, bingoDone=false, on={}, readyAt=0;
+      function holds(x){ return places.map(function(p,k){ return x.m.indexOf(p)>=0?k:-1; }).filter(function(k){ return k>=0; }); }
+      function call(v){ var own=board.indexOf(v), fit=v.x.filter(function(x){ return holds(x).every(function(k){ return k===own; }); });
+        return fit.length?{v:v,x:pick(fit,1)[0]}:null; }
+      do { board=pick(vs,n); places=board.map(function(v){ return g.v.indexOf(v); }); calls=board.map(call); }
+      while(calls.some(function(c){ return !c; })&&++tries<25);                   /* every word on the card can be called */
+      var decoys=shuffle(vs.filter(function(v){ return board.indexOf(v)<0; })).map(call).filter(Boolean);
+      calls=shuffle(calls.filter(Boolean).concat(decoys.slice(0,Math.ceil(n/2))));
       var info=head('🎱 Hör-Bingo');
-      box.appendChild(el('p','g-lead',canHear()?'Hör den Satz. Ist ein Wort daraus auf deiner Karte? Tippe es an.':'Lies den Satz. Welches Wort fehlt? Ist es auf deiner Karte?'));
-      var call=el('div','b-call'), cue=el('div','b-cue'); call.appendChild(cue);
-      if(canHear()) call.appendChild(btn('b-again','🔊 Nochmal',function(){ if(ci>=0&&ci<calls.length) say(calls[ci].x[0].au); }));
-      box.appendChild(call);
+      box.appendChild(el('p','g-lead',canHear()?'Hör den Satz. Kommt ein Wort deiner Karte darin vor? Tippe es an.':'Lies den Satz. Welches Wort fehlt? Ist es auf deiner Karte?'));
+      var callBox=el('div','b-call'), cue=el('div','b-cue'); callBox.appendChild(cue);
+      if(canHear()) callBox.appendChild(btn('b-again','🔊 Nochmal',function(){ if(ci>=0&&ci<calls.length) say(calls[ci].x.au); }));
+      box.appendChild(callBox);
       var grid=el('div','b-grid'); grid.style.gridTemplateColumns='repeat('+cols+',1fr)';
       board.forEach(function(v,i){ grid.appendChild(btn('b-cell',word(v),function(b){ tap(i,b); })); });
       box.appendChild(grid); box.appendChild(btn('b-none','Nicht auf meiner Karte',function(b){ tap(-1,b); }));
-      var fb=el('div','b-fb'); box.appendChild(fb);
-      function nextCall(){ ci++; fb.innerHTML=''; if(ci>=calls.length) return end(); open_=true; info.textContent=(ci+1)+' / '+calls.length;
-        var x=calls[ci].x[0]; if(canHear()&&x.au){ cue.innerHTML='<span class="b-ear">👂 Hör gut zu …</span>'; later(function(){ say(x.au); },300); } else cue.innerHTML=cloze(x); }
-      function reveal(ok,text){ var x=calls[ci].x[0]; open_=false; cue.innerHTML=marked(x);
-        fb.innerHTML='<div class="'+(ok?'g-ok':'g-no')+'">'+text+'</div><div class="b-tr">'+esc(x.en)+'</div>'; later(nextCall,ok?1800:2800); }
+      var fb=el('div','b-fb'), acts_=el('div','g-acts'); box.appendChild(fb); box.appendChild(acts_);
+      function nextCall(){ ci++; wrong=0; fb.innerHTML=''; acts_.innerHTML=''; if(ci>=calls.length) return end();
+        open_=true; readyAt=Date.now()+300; info.textContent=(ci+1)+' / '+calls.length;           /* a tap meant for the last call does not count */
+        var x=calls[ci].x; if(canHear()&&x.au){ cue.innerHTML='<span class="b-ear">👂 Hör gut zu …</span>'; later(function(){ say(x.au); },300); } else cue.innerHTML=cloze(x); }
+      function reveal(ok,text){ var x=calls[ci].x; open_=false; cue.innerHTML=marked(x);
+        fb.innerHTML='<div class="'+(ok?'g-ok':'g-no')+'">'+text+'</div><div class="b-tr">'+esc(x.en)+'</div>';
+        if(ok) later(nextCall,1500); else acts_.appendChild(btn('main','Weiter ›',nextCall)); }         /* a mistake stays until you have read it */
       function stamp(i){ on[i]=1; grid.children[i].classList.add('on'); if(bingoDone) return; var lines=[], r, c, k;
         for(r=0;r<rows;r++){ var row=[]; for(c=0;c<cols;c++) row.push(r*cols+c); lines.push(row); }
         if(rows>2) for(c=0;c<cols;c++){ var col=[]; for(r=0;r<rows;r++) col.push(r*cols+c); lines.push(col); }
         if(rows===cols){ var a=[], b=[]; for(k=0;k<cols;k++){ a.push(k*cols+k); b.push(k*cols+cols-1-k); } lines.push(a,b); }
         if(lines.some(function(line){ return line.every(function(j){ return on[j]; }); })){ bingoDone=true; var big=el('div','b-bingo','BINGO!'); d.body.appendChild(big); confetti(); later(function(){ big.remove(); },1500); } }
       function shake(b){ b.classList.add('shake'); setTimeout(function(){ b.classList.remove('shake'); },400); }
-      function tap(i,b){ if(!open_) return; var v=calls[ci], at=board.indexOf(v);
-        if((i>=0&&i===at)||(i<0&&at<0)){ blip(true); if(i>=0) stamp(i); reveal(true,i>=0?'✓ '+word(v):'✓ Richtig, '+word(v)+' ist nicht auf deiner Karte.'); return; }
+      function tap(i,b){ if(!open_||Date.now()<readyAt) return; var c=calls[ci], own=board.indexOf(c.v), hits=holds(c.x);
+        if(own>=0&&hits.indexOf(own)<0) hits.push(own);
+        if(i>=0&&hits.indexOf(i)>=0){ blip(true); stamp(i); reveal(true,'✓ '+word(board[i])); return; }       /* any word of the card it contains */
+        if(i<0&&!hits.length){ blip(true); reveal(true,'✓ Richtig, '+word(c.v)+' ist nicht auf deiner Karte.'); return; }
         blip(false); miss++; shake(b);
-        if(i>=0&&at>=0) return;                                   /* another cell: look again */
-        if(i<0){ var c=grid.children[at]; c.classList.add('hint'); later(function(){ c.classList.remove('hint'); },2000); stamp(at); reveal(false,'Doch, auf deiner Karte: '+word(v)); }
-        else reveal(false,'Nicht auf deiner Karte: '+word(v)); }
+        if(i>=0&&hits.length&&++wrong<2) return;                                 /* another cell: look again, once */
+        hits.forEach(function(k){ var cell=grid.children[k]; cell.classList.add('hint'); later(function(){ cell.classList.remove('hint'); },2000); stamp(k); });
+        reveal(false,hits.length?'Auf deiner Karte: '+hits.map(function(k){ return word(board[k]); }).join(', '):'Nicht auf deiner Karte: '+word(c.v)); }
       function end(){ finish('bingo',miss===0?3:miss<=2?2:1,Math.max(0,n*10-miss*3),[(bingoDone?'Bingo! ':'')+'Fehler: '+miss,
         'Du hast '+calls.length+' Sätze '+(canHear()?'gehört':'gelesen')+' und '+n+' Wörter gefunden.']); }
       nextCall(); }
@@ -585,7 +647,7 @@ __LISTEN__
     /* ⚡ Der · Die · Das: 60 seconds of nouns; a streak multiplies the points, a miss comes back soon */
     function artikel(g){
       var pool_=nouns(g); if(pool_.length<12){ var more=[]; ORDER.forEach(function(u){ if(u!==unit()&&G[u]) more=more.concat(nouns(G[u])); }); pool_=pool_.concat(pick(more,12-pool_.length)); }
-      var q_=shuffle(pool_), cur_=null, score=0, streak=0, top=0, misses=[], left=60, wait=false, info=head('⚡ Der · Die · Das');
+      var q_=shuffle(pool_), cur_=null, score=0, streak=0, top=0, misses=[], left=60, wait=false, readyAt=0, info=head('⚡ Der · Die · Das');
       var bar=el('div','a-time'), fill=el('i'); bar.appendChild(fill); box.appendChild(bar);
       var sc=el('div','a-score'), card=el('div','a-card'); box.appendChild(sc); box.appendChild(card);
       var row=el('div','a-btns'); ['der','die','das'].forEach(function(a){ row.appendChild(btn('a-'+a,a,function(){ answer(a); })); }); box.appendChild(row);
@@ -595,13 +657,14 @@ __LISTEN__
       live=function(){ clearInterval(tm); d.removeEventListener('keydown',key); };
       function mult(){ return Math.min(4,1+Math.floor(streak/3)); }
       function showNext(){ if(!q_.length) q_=shuffle(pool_); cur_=q_.shift();
-        card.innerHTML='<div class="a-word">'+esc(cur_.w)+'</div><div class="a-gloss">'+esc(cur_.g)+'</div>'; sc.textContent=score+' Punkte'+(streak>=3?' · 🔥 ×'+mult():''); }
-      function answer(a){ if(wait||left<=0) return; wait=true;
+        card.innerHTML='<div class="a-word">'+esc(cur_.w)+'</div><div class="a-gloss">'+esc(cur_.g)+'</div>'; sc.textContent=score+' Punkte'+(streak>=3?' · 🔥 ×'+mult():'');
+        readyAt=Date.now()+300; }                                                  /* a tap meant for the last word does not count */
+      function answer(a){ if(wait||left<=0||Date.now()<readyAt) return; wait=true;
         if((cur_.aa||[cur_.a]).indexOf(a)>=0){ score+=10*mult(); streak++; top=Math.max(top,streak); blip(true); say(cur_.h); card.classList.add('good');
           setTimeout(function(){ card.classList.remove('good'); wait=false; if(left>0) showNext(); },260); return; }
         streak=0; blip(false); misses.push(cur_); q_.splice(Math.min(4,q_.length),0,cur_);
         card.innerHTML='<div class="a-word">'+word(cur_)+'</div><div class="a-gloss">'+esc(cur_.g)+'</div>'; card.classList.add('bad'); say(cur_.h);
-        setTimeout(function(){ card.classList.remove('bad'); wait=false; if(left>0) showNext(); },1200); }
+        setTimeout(function(){ card.classList.remove('bad'); wait=false; if(left>0) showNext(); },1600); }
       function over(){ var seen={}, list=misses.filter(function(v){ var k=v.a+' '+v.w; if(seen[k]) return false; seen[k]=1; return true; });
         finish('art',score>=300?3:score>=150?2:1,score,[score+' Punkte · beste Serie '+top].concat(list.length?['Merk dir: '+list.map(function(v){ return artLabel(v)+' '+v.w; }).join(', ')]:['Kein einziger Fehler!'])); }
       info.textContent='60 s'; showNext(); }
@@ -612,10 +675,12 @@ __LISTEN__
       box.appendChild(el('p','g-lead','Lies die Situation und wähle die passende Wendung.'));
       var sit=el('div','r-sit'), opts=el('div','r-opts'), fb=el('div','r-fb'), acts_=el('div','g-acts');
       [sit,opts,fb,acts_].forEach(function(e){ box.appendChild(e); });
-      function others(r){ var o=all.filter(function(x){ return x!==r&&x.grp!==r.grp; });
-        if(o.length<2) o=all.filter(function(x){ return x!==r; });
-        if(o.length<2) ORDER.forEach(function(u){ if(u!==unit()&&G[u]) o=o.concat(G[u].r); });
-        return pick(o,2); }
+      function others(r){ var seen={}; seen[r.f]=1;                             /* two other phrases, never the same words twice */
+        function fresh(x){ if(seen[x.f]) return false; seen[x.f]=1; return true; }
+        var o=shuffle(all.filter(function(x){ return x.grp!==r.grp; })).filter(fresh);
+        if(o.length<2) o=o.concat(shuffle(all.filter(function(x){ return x.grp===r.grp; })).filter(fresh));
+        if(o.length<2) ORDER.forEach(function(u){ if(u!==unit()&&G[u]) o=o.concat(shuffle(G[u].r).filter(fresh)); });
+        return o.slice(0,2); }
       function ask(){ i++; if(i>=qs.length) return finish('red',right===qs.length?3:right>=Math.ceil(qs.length*0.6)?2:1,right*10,['Richtig: '+right+' von '+qs.length]);
         var r=qs[i], answered=false; info.textContent=(i+1)+' / '+qs.length; fb.innerHTML=''; acts_.innerHTML='';
         sit.innerHTML='<div>'+esc(r.w)+'</div>'+(r.reg?'<div class="r-reg">'+esc(r.reg)+'</div>':''); opts.innerHTML='';
@@ -625,6 +690,27 @@ __LISTEN__
           say(r.au); fb.innerHTML='<div class="'+(x===r?'g-ok':'g-no')+'">'+(x===r?'✓ Genau!':'So sagt man es:')+' '+esc(r.g)+'</div><div>'+marked(r.x)+'</div><div class="b-tr">'+esc(r.x.en)+'</div>';
           acts_.appendChild(btn('main','Weiter ›',ask)); })); }); }
       ask(); }
+
+    /* 🃏 Wortpaare: tap a German word, then its meaning; up to three rounds of five pairs against the clock */
+    function paare(g){
+      var pool_=pick(pairPool(g),15), sets=[], k, round=-1, misses=0, t0=Date.now(), info=head('🃏 Wortpaare');
+      for(k=0;k+3<=pool_.length;k+=5) sets.push(pool_.slice(k,k+5));            /* a round has three to five pairs */
+      box.appendChild(el('p','g-lead','Tippe ein deutsches Wort und dann seine Bedeutung.'));
+      var grid=el('div','p-grid'), left=el('div','p-col'), right=el('div','p-col'); grid.appendChild(left); grid.appendChild(right); box.appendChild(grid);
+      function deal(){ round++; if(round>=sets.length) return done(); var set=sets[round], picked=null, paired=0;
+        info.textContent='Runde '+(round+1)+' / '+sets.length; left.innerHTML=''; right.innerHTML='';
+        shuffle(set).forEach(function(v){ left.appendChild(card(v,'de',word(v))); });
+        shuffle(set).forEach(function(v){ right.appendChild(card(v,'en',esc(v.g))); });
+        function card(v,side,markup){ var b=btn('p-card p-'+side,markup,function(){ choose(b,v,side); }); return b; }
+        function choose(b,v,side){ if(b.disabled) return;
+          if(!picked||picked.side===side){ if(picked) picked.b.classList.remove('sel'); picked={b:b,v:v,side:side}; b.classList.add('sel'); if(side==='de') say(v.h); return; }
+          var a=picked; picked=null;
+          if(a.v===v){ blip(true); [a.b,b].forEach(function(x){ x.classList.remove('sel'); x.classList.add('done'); x.disabled=true; });
+            if(++paired===set.length) later(deal,450); return; }
+          blip(false); misses++; [a.b,b].forEach(function(x){ x.classList.remove('sel'); x.classList.add('shake'); setTimeout(function(){ x.classList.remove('shake'); },400); }); } }
+      function done(){ var secs=Math.round((Date.now()-t0)/1000), n=pool_.length;
+        finish('paare',misses===0&&secs<=n*4?3:misses<=Math.ceil(n/5)?2:1,Math.max(10,n*20-secs*2-misses*10),['Zeit: '+secs+' s · Fehler: '+misses]); }
+      deal(); }
     return {open:open, stop:stop};
   })();
 

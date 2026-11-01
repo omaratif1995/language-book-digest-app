@@ -168,12 +168,13 @@ class CourseAppTests(unittest.TestCase):
         build_course_app.build(course_audio.load_course(self.course_path), out, audio=False)
         page = out.read_text(encoding="utf-8")
         self.assertIn('id="tab-g"', page)
-        for name in ("Hör-Bingo", "Satzbau", "Der · Die · Das", "Was sagt man?"):
+        for name in ("Hör-Bingo", "Wortpaare", "Satzbau", "Der · Die · Das", "Was sagt man?"):
             self.assertIn(name, page)
         games = json.loads(re.search(r", G=(\{.*?\});\n", page, re.S).group(1).replace("<\\/", "</"))
         self.assertEqual(games["U1"]["v"][0]["a"], "der")
         self.assertEqual(games["U1"]["v"][0]["x"][0]["t"], [[13, 19]])    # «Termin» in «Hier ist der Termin.»
-        self.assertEqual(len(games["U1"]["s"]), 4)                         # every example sentence feeds Satzbau
+        self.assertEqual([s["de"] for s in games["U1"]["s"]],               # Satzbau: the plain sentences of 5–9 words
+                         ["Trotz des Regens gehen wir.", "Trotz der Kälte bleiben wir."])
         self.assertEqual(games["U2"]["r"][0]["f"], "Wie wäre es mit …")
         self.assertIn('class="lw" data-card="v1"', page)                   # underlined story word with its meaning
         self.assertIn('id="U1-v1-x0"', page)
@@ -187,6 +188,27 @@ class CourseAppTests(unittest.TestCase):
         self.assertEqual(accepted(card("Ansicht", "die", "Plural: die Ansichten · der Ansicht sein, dass …")), ["die"])
         self.assertEqual(accepted(card("Zweifel", "der", "Plural: die Zweifel · Zweifel haben")), ["der"])
         self.assertIn("(cur_.aa||[cur_.a]).indexOf(a)>=0", build_course_app.APP_JS)
+
+    def test_bingo_knows_which_unit_words_each_example_holds(self):
+        def card(lemma, sentence, *targets):
+            return {"id": lemma[:4], "lemma": lemma, "gloss": "-", "examples": [{"de": sentence, "en": "-", "targets": list(targets)}]}
+        lesson = {"vocabulary": [card("Bahnhof", "Wir treffen uns am Bahnhof neben dem Kiosk.", "Bahnhof"),
+                                 card("Kiosk", "Am Kiosk kaufe ich jeden Morgen eine Zeitung.", "Kiosk"),
+                                 card("sich beeilen", "Ich beeile mich, sonst verpasse ich den Zug.", "beeile", "mich"),
+                                 card("verpassen", "Gestern haben wir den Bus verpasst.", "verpasst")],
+                  "grammar": [], "redemittel": []}
+        words = build_course_app.game_data(lesson)["v"]
+        # a call for «Bahnhof» also holds «Kiosk», so Hör-Bingo never calls it while both are on the card;
+        # «verpasse» is a form of «verpassen» even though the lesson only marks «verpasst»; «mich» is not a word of its own
+        self.assertEqual([w["x"][0]["m"] for w in words], [[1], [], [3], []])
+
+    def test_satzbau_takes_plain_sentences_of_five_to_nine_words(self):
+        ok = build_course_app.puzzle_sentence
+        self.assertTrue(ok("Am Samstag backe ich mit meiner Tochter Brot."))
+        self.assertFalse(ok("Hier ist der Termin."))                                          # too short to be a puzzle
+        self.assertFalse(ok("Betreff: Anfrage wegen der Wohnung im zweiten Stock"))           # a heading, not a sentence
+        self.assertFalse(ok("Das kenne ich gut: Ich verliere ständig meine Schlüssel."))      # two sentences in one
+        self.assertFalse(ok("Am Sonntag besuchen wir mit den Kindern die Großeltern auf ihrem Bauernhof."))   # over nine words
 
     def test_unknown_course_key_is_refused(self):
         data = json.loads(self.course_path.read_text(encoding="utf-8"))

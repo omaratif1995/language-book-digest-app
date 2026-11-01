@@ -371,7 +371,10 @@ LISTEN_JS = r"""
     if(!decoder){ var C=window.OfflineAudioContext||window.webkitOfflineAudioContext; decoder=new C(1,1,RATE); }
     return new Promise(function(ok){ decoder.decodeAudioData(raw.buffer,function(a){ var f=a.getChannelData(0), s=new Int16Array(f.length);
         for(var i=0;i<f.length;i++){ var v=f[i]; s[i]=v<=-1?-32768:v>=1?32767:v*32767; }
-        cached+=s.length; ok(PCM[id]={b:new Blob([s]),n:s.length}); },function(){ ok(PCM[id]=null); }); }); }
+        s=voiceOnly(s); cached+=s.length; ok(PCM[id]={b:new Blob([s]),n:s.length}); },function(){ ok(PCM[id]=null); }); }); }
+  /* a clip without the voice's own lead-in and tail (about a second at each join), so the pauses are what gapAgain and gapNext say */
+  function voiceOnly(s){ var a=0, z=s.length-1; while(a<z&&Math.abs(s[a])<330) a++; while(z>a&&Math.abs(s[z])<330) z--;
+    return z<=a?s:s.subarray(Math.max(0,a-Math.round(RATE*0.04)),Math.min(s.length,z+Math.round(RATE*0.1))); }
   function quiet(ms){ var n=Math.round(ms*RATE/1000); return SIL[n]||(SIL[n]={b:new Blob([new Int16Array(n)]),n:n}); }
   function decodeAll(list,k,fn){ var i=0, w=[]; function more(){ return i<list.length?fn(list[i++]).then(more):null; }
     for(var j=0;j<k;j++) w.push(more()); return Promise.all(w); }
