@@ -26,7 +26,9 @@ List units in course order. Use the newest reviewed sheet of each unit; drafts a
 
 **Name the course yourself, never after the source.** The title, subtitle, unit labels and lesson titles are spoken in the episodes and shown in the app. `private_terms` lists names that must never appear in the app or the episode names: the course book's distinctive title words, its publisher, the teacher. The tools refuse to write output that contains one.
 
-## Pronunciation: German is always spoken by a German voice
+## Pronunciation: the target language is always spoken by its own voice
+
+German is the example below. Another language uses its profile's voice, word lists and dictionary in the same way ([languages.md](languages.md)); `course.json` may still set `voices`. All units of a course share one target language, and the app's own texts are German for a German course and English for any other.
 
 Multilingual neural voices guess the language of each request, and the Edge service marks every request as American English. Short German words inside English ("als", "rund", "total") then come out with English pronunciation. `scripts/speech.py` therefore never asks one voice to speak both languages:
 
@@ -116,7 +118,7 @@ Requirements: `pip install edge-tts pyspellchecker imageio-ffmpeg` (or a system 
 - **🎱 Hör-Bingo.** A card of 4–9 lesson words. A sentence is played (without sound: shown with a gap); the learner taps a word of the card that it contains, or "Nicht auf meiner Karte". The build lists, for every example, the other words of the unit it contains: their lemma, the forms the lesson marks for them and near forms (*verpasse* for *verpassen*), without small words such as *sich* or *an*. The game calls only a sentence that holds no other word of the card, and a tap on any word of the card that the sentence really holds counts as right. A right answer moves on by itself; a wrong one shows the sentence, its meaning and the right word until the learner taps *Weiter*. A line is a BINGO. Trains listening for known words in new sentences.
 - **🃏 Wortpaare.** Up to three rounds of five German words (with their article colours) and their meanings, all different within a round; tap a word, then its meaning. A German word speaks when tapped. Time and mistakes give the stars.
 - **🧩 Satzbau.** The English meaning is shown; the learner taps the German words in the right order. Only plain sentences of 5–9 words are used: no colons, quotes, brackets or dashes, so there is one clear order and nothing but words to place. A wrong tile only shakes, and after two misses the right one glows. Trains word order, the heart of B1 grammar.
-- **⚡ Der · Die · Das.** Sixty seconds of the unit's nouns; streaks multiply the points, a miss comes back soon, and the end screen lists the articles to remember. A noun with two correct articles accepts both: an adjective noun whose forms show «ein Bekannter» (der/die Bekannte), or forms that name both (der or das Joghurt).
+- **⚡ Der · Die · Das** (the article game: its buttons and title are the profile's articles, *El · La* for Spanish; a language without articles has no article game). Sixty seconds of the unit's nouns; streaks multiply the points, a miss comes back soon, and the end screen lists the articles to remember. A noun with two correct articles accepts both: an adjective noun whose forms show «ein Bekannter» (der/die Bekannte), or forms that name both (der or das Joghurt).
 - **💬 Was sagt man?** A situation and three phrases from the lesson; the two wrong ones come from other groups and never repeat the right one's words. Pick the one that fits, then hear it and see it in use.
 
 A tap is ignored for 0.3 s after a new question appears, so a tap meant for the last question never answers the next one. "🎲 Überrasch mich" starts a random one. Stars and records are kept per unit and go into the progress backup. Sound effects follow the Ton setting.

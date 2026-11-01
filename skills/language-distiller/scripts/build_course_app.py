@@ -31,6 +31,7 @@ from embed_audio import (AUDIO_CSS, LISTEN_HTML, LISTEN_JS, AudioError, examples
                          inject_story_audio, listening_order, number_examples, play_button, require, story_order,
                          transform_card)
 from course_audio import build_course_plan, exact_term, ffmpeg_exe, load_course  # noqa: E402
+import language  # noqa: E402
 import speech  # noqa: E402
 import study_pack  # noqa: E402
 
@@ -38,10 +39,11 @@ KIND = {"voc": "w", "rule": "g", "phrase": "r"}
 
 
 # ---------------------------------------------------------------- audio placement ---
-def add_audio_buttons(page, lesson, unit_plan, used):
-    """German 🔊 buttons (headwords, examples, phrases, variants), a 🔊 Erklärung chain per grammar point, and the
-    story's sentence audio, paragraph buttons and word clips."""
-    controls = unit_plan["controls"]
+def add_audio_buttons(page, lesson, unit_plan, used, prof=None, ui=None):
+    """Target-language 🔊 buttons (headwords, examples, phrases, variants), a 🔊 Erklärung chain per grammar point,
+    and the story's sentence audio, paragraph buttons and word clips. `ui` translates the German labels."""
+    controls, ui = unit_plan["controls"], ui or {}
+    name = (prof or language.profile(lesson.get("target_language", "de")))["name"]
 
     def take(key):
         used.add(controls[key])
@@ -51,7 +53,7 @@ def add_audio_buttons(page, lesson, unit_plan, used):
         def voc(block, rec=rec):
             head = take(f'{rec["id"]}-head')
             block, n = re.subn(r'(<div class="top"><span class="de">.*?</span>)(?=<span class="en">)',
-                               lambda m: m.group(1) + play_button(head, "Play German headword"), block, count=1, flags=re.S)
+                               lambda m: m.group(1) + play_button(head, f"Play {name} headword"), block, count=1, flags=re.S)
             require(n == 1, f"cannot place headword audio for {rec['id']}")
             return inject_example_buttons(block, [take(f'{rec["id"]}-ex-{i}') for i in range(len(rec["examples"]))], rec["id"])
         page = transform_card(page, "voc", rec["id"], voc)
@@ -60,7 +62,7 @@ def add_audio_buttons(page, lesson, unit_plan, used):
         def rule(block, rec=rec):
             chain = unit_plan["explain"][rec["id"]]            # title + spoken explanation (embedded at the explain bitrate)
             button = (f'<button type="button" class="explain-button" data-chain="{" ".join(chain)}" '
-                      f'aria-label="Listen to the explanation">🔊 Erklärung</button>')
+                      f'aria-label="Listen to the explanation">{html.escape(ui.get("🔊 Erklärung", "🔊 Erklärung"))}</button>')
             block, n = re.subn(r"</h3>", lambda m: button + "</h3>", block, count=1)
             require(n == 1, f"cannot place explanation audio for {rec['id']}")
             return inject_example_buttons(block, [take(f'{rec["id"]}-ex-{i}') for i in range(len(rec["examples"]))], rec["id"])
@@ -70,11 +72,11 @@ def add_audio_buttons(page, lesson, unit_plan, used):
         def phrase(block, rec=rec):
             head = take(f'{rec["id"]}-head')
             block, n = re.subn(r'(<div class="head">.*?)(</div>)',
-                               lambda m: m.group(1) + play_button(head, "Play German expression") + m.group(2), block, count=1, flags=re.S)
+                               lambda m: m.group(1) + play_button(head, f"Play {name} expression") + m.group(2), block, count=1, flags=re.S)
             require(n == 1, f"cannot place expression audio for {rec['id']}")
             variants = iter([take(f'{rec["id"]}-variant-{i}') for i in range(len(rec.get("variants", [])))])
             block = re.sub(r'(<p class="variant">.*?)(</p>)',
-                           lambda m: m.group(1) + play_button(next(variants), "Play German variant") + m.group(2), block, flags=re.S)
+                           lambda m: m.group(1) + play_button(next(variants), f"Play {name} variant") + m.group(2), block, flags=re.S)
             return inject_example_buttons(block, [take(f'{rec["id"]}-ex-{i}') for i in range(len(rec["examples"]))], rec["id"])
         page = transform_card(page, "phrase", rec["id"], phrase)
 
@@ -82,44 +84,39 @@ def add_audio_buttons(page, lesson, unit_plan, used):
         used.update(cid for paragraph in unit_plan["story"] for cid in paragraph)
         used.add(controls["story-title"])
         heads = {rec["id"]: controls[f'{rec["id"]}-head'] for rec in lesson["vocabulary"] + lesson["redemittel"]}
-        page = inject_story_audio(page, unit_plan, heads)
+        page = inject_story_audio(page, unit_plan, heads, ui)
     return page
 
 
-def accepted_articles(record):
-    """Every article the Der · Die · Das game accepts: adjective nouns take two (der/die Bekannte, as «ein Bekannter»
-    in the forms shows), and so does a noun whose forms name two articles (der or das Joghurt)."""
+def accepted_articles(record, prof=None):
+    """Every article the article game accepts: in German an adjective noun takes two (der/die Bekannte, as «ein
+    Bekannter» in the forms shows), and in any language a noun whose forms name two articles (der or das Joghurt)."""
+    prof = prof or language.profile("de")
     article, lemma, forms = record.get("article", ""), re.escape(record["lemma"]), record.get("forms", "")
-    found = {article} if article else set()
-    if article and re.search(rf"\beine? {lemma}r\b", forms):
+    found, names = ({article} if article else set()), "|".join(map(re.escape, prof["articles"]))
+    if article and prof.get("adjective_nouns") and re.search(rf"\beine? {lemma}r\b", forms):
         found |= {"der", "die"}
-    for pair in re.finditer(rf"\b(der|die|das)\s*(?:/|\bor\b|\boder\b)\s*(der|die|das) {lemma}\b", forms):
+    for pair in re.finditer(rf"\b({names})\s*(?:/|\bor\b|\boder\b)\s*({names}) {lemma}\b", forms) if names else ():
         found |= set(pair.groups())
-    return [a for a in ("der", "die", "das") if a in found]
+    return [a for a in prof["articles"] if a in found]
 
 
-FUNCTION_WORDS = set("""der die das den dem des ein eine einen einem einer eines kein keine keinen keinem keiner
-ich du er sie es wir ihr mich dich sich mir dir uns euch ihm ihn ihnen man mein meine dein deine sein seine unser euer
-zu zum zur an am ans auf aus bei beim mit nach von vom vor in im ins über unter um für gegen ohne durch bis seit
-und oder aber denn dass ob wenn als wie so auch nicht noch schon sehr nur hat habe haben hast hatte ist bin bist sind
-war waren wird werden wurde kann können will wollen muss müssen soll sollen darf dürfen mag möchte etwas jemand""".split())
-
-
-def word_forms(record, lesson):
+def word_forms(record, lesson, small=frozenset()):
     """The forms a vocabulary card can take in a sentence: its lemma and every form the lesson marks for it,
-    without the small words around them (sich, an, hat …)."""
+    without the small words around them (`small`, from the language profile: sich, an, hat …)."""
     texts = [record["lemma"]] + [target for example in record["examples"] for target in example.get("targets", [])]
     texts += [use["form"] for paragraph in (lesson.get("story") or {}).get("paragraphs", [])
               for use in paragraph.get("uses", []) if use["card"] == record["id"]]
     return {token for text in texts for token in re.findall(r"\w+", text.casefold())
-            if len(token) > 2 and token not in FUNCTION_WORDS}
+            if len(token) > 2 and token not in small}
 
 
-def mentions(sentence, forms):
-    """Whether a sentence contains one of the forms, or a near form of a long one (erinnern: erinnert, erinnerte)."""
+def mentions(sentence, forms, endings=("en", "rn", "ln")):
+    """Whether a sentence contains one of the forms, or a near form of a long one (erinnern: erinnert, erinnerte;
+    `endings` are the language's verb endings)."""
     tokens = re.findall(r"\w+", sentence.casefold())
     for form in forms:
-        stem = form[:-2] if len(form) >= 7 and form.endswith(("en", "rn", "ln")) else None
+        stem = form[:-2] if len(form) >= 7 and form.endswith(tuple(endings)) else None
         if any(token == form or (stem and token.startswith(stem) and len(token) <= len(form) + 2) for token in tokens):
             return True
     return False
@@ -137,8 +134,10 @@ def game_data(lesson, unit_plan=None):
     Every vocabulary example lists the other words of the unit it contains ("m"), so Hör-Bingo calls a sentence only
     when its answer is clear, and still accepts any word of the card that the sentence really contains."""
     controls = unit_plan["controls"] if unit_plan else {}
+    prof = language.profile(lesson.get("target_language", "de"))
+    small, endings = set(prof["bingo"]["function_words"].split()), prof["bingo"]["verb_endings"]
     vocabulary = lesson["vocabulary"]
-    forms = [word_forms(rec, lesson) for rec in vocabulary]
+    forms = [word_forms(rec, lesson, small) for rec in vocabulary]
 
     def example(record, index):
         item = record["examples"][index]
@@ -147,11 +146,11 @@ def game_data(lesson, unit_plan=None):
 
     def word(position, rec):
         examples = [dict(example(rec, index), m=[other for other, found in enumerate(forms)
-                                                 if other != position and mentions(item["de"], found)])
+                                                 if other != position and mentions(item["de"], found, endings)])
                     for index, item in enumerate(rec["examples"])]
         entry = {"a": rec.get("article", ""), "w": rec["lemma"], "g": rec["gloss"], "h": controls.get(f'{rec["id"]}-head', ""),
                  "x": examples}
-        both = accepted_articles(rec)
+        both = accepted_articles(rec, prof)
         if len(both) > 1:
             entry["aa"] = both
         return entry
@@ -352,7 +351,7 @@ APP_JS = r"""
   'use strict';
   var d=document, root=d.documentElement; root.classList.add('js');
   var AU={}, IDX=__INDEX__, SEQ=__SEQUENCES__, EXS=__EXAMPLES__, STO=__STORIES__, CARDS=__CARDS__, ORDER=__ORDER__, CFG=__CONFIG__, G=__GAME__;
-  var K=CFG.key;
+  var K=CFG.key, ARTS=CFG.arts||[], COL=CFG.col||{};                 /* the language's articles and their colours */
   function load(k,dflt){try{var v=localStorage.getItem(K+':'+k);return v?JSON.parse(v):dflt;}catch(e){return dflt;}}
   function save(k,v){try{localStorage.setItem(K+':'+k,JSON.stringify(v));}catch(e){}}
   var ui=load('ui',{}), state=load('srs',{}), meta=load('meta',{day:0,fresh:0,extra:0,streak:0,last:-9,done:0,good:0});
@@ -542,7 +541,7 @@ __LISTEN__
     function marked(x){ var s=x.de, out='', at=0; x.t.forEach(function(sp){ out+=esc(s.slice(at,sp[0]))+'<mark>'+esc(s.slice(sp[0],sp[1]))+'</mark>'; at=sp[1]; }); return out+esc(s.slice(at)); }
     function cloze(x){ var s=x.de, out='', at=0; x.t.forEach(function(sp){ out+=esc(s.slice(at,sp[0]))+'<span class="gap">'+esc(s.slice(sp[0],sp[1]))+'</span>'; at=sp[1]; }); return out+esc(s.slice(at)); }
     function artLabel(v){ return v.aa?v.aa.join('/'):v.a; }
-    function word(v){ return (v.a?'<span class="art-'+v.a+'">'+artLabel(v)+'</span> ':'')+esc(v.w); }
+    function word(v){ return (v.a?'<span class="art-'+(COL[v.a]||v.a)+'">'+artLabel(v)+'</span> ':'')+esc(v.w); }
     function unit(){ return sel.value; }
     function data(){ return G[unit()]||{v:[],r:[],s:[]}; }
     function head(title){ box.innerHTML=''; var h=el('div','g-head'); h.appendChild(el('div','g-title',title)); var info=el('div','g-info','');
@@ -557,6 +556,7 @@ __LISTEN__
       var a=el('div','g-acts'); a.appendChild(btn('main','Nochmal',function(){ play(key); })); a.appendChild(btn('','Andere Spiele',function(){ open(); }));
       m.appendChild(a); box.appendChild(m); if(got>=3) confetti(); }
     function toks(s){ return s.trim().split(/\s+/); }
+    function fill(s,o){ return s.replace(/\{(\w+)\}/g,function(m,k){ return o[k]; }); }      /* a sentence with numbers in it */
     function satzPool(g){ return g.s; }                                     /* the build keeps plain sentences of 5–9 words */
     function nouns(g){ return g.v.filter(function(v){ return v.a; }); }
     function pairPool(g){ var seen={}; return g.v.filter(function(v){ var k=(v.g||'').toLowerCase(); if(!k||seen[k]) return false; seen[k]=1; return true; }); }
@@ -564,7 +564,7 @@ __LISTEN__
       {k:'bingo',icon:'🎱',name:'Hör-Bingo',desc:'Hör einen Satz und finde das Wort auf deiner Karte.',ok:function(g){ return g.v.length>=4; },go:bingo},
       {k:'paare',icon:'🃏',name:'Wortpaare',desc:'Finde zu jedem Wort seine Bedeutung, so schnell du kannst.',ok:function(g){ return pairPool(g).length>=5; },go:paare},
       {k:'satz',icon:'🧩',name:'Satzbau',desc:'Tippe die Wörter in die richtige Reihenfolge.',ok:function(g){ return satzPool(g).length>=3; },go:satz},
-      {k:'art',icon:'⚡',name:'Der · Die · Das',desc:'60 Sekunden: Welcher Artikel passt?',ok:function(g){ return nouns(g).length>=3; },go:artikel},
+      {k:'art',icon:'⚡',name:'Der · Die · Das',desc:'60 Sekunden: Welcher Artikel passt?',ok:function(g){ return ARTS.length>1&&nouns(g).length>=3; },go:artikel},
       {k:'red',icon:'💬',name:'Was sagt man?',desc:'Welche Wendung passt zur Situation?',ok:function(g){ return g.r.length>=3; },go:wendung}];
     function open(){ stop(); stopAll(); box.hidden=true; menu.hidden=false; var g=data(), u=unit(); menu.innerHTML='';
       menu.appendChild(el('p','g-lead',esc(CFG.labels[u]||u)+' als Spiel: ein paar Minuten, ganz ohne Lernstress.'));
@@ -618,7 +618,7 @@ __LISTEN__
         hits.forEach(function(k){ var cell=grid.children[k]; cell.classList.add('hint'); later(function(){ cell.classList.remove('hint'); },2000); stamp(k); });
         reveal(false,hits.length?'Auf deiner Karte: '+hits.map(function(k){ return word(board[k]); }).join(', '):'Nicht auf deiner Karte: '+word(c.v)); }
       function end(){ finish('bingo',miss===0?3:miss<=2?2:1,Math.max(0,n*10-miss*3),[(bingoDone?'Bingo! ':'')+'Fehler: '+miss,
-        'Du hast '+calls.length+' Sätze '+(canHear()?'gehört':'gelesen')+' und '+n+' Wörter gefunden.']); }
+        fill(canHear()?'Du hast {n} Sätze gehört und {w} Wörter gefunden.':'Du hast {n} Sätze gelesen und {w} Wörter gefunden.',{n:calls.length,w:n})]); }
       nextCall(); }
 
     /* 🧩 Satzbau: the English meaning is shown; tap the German words in order (a wrong tile just shakes) */
@@ -640,7 +640,7 @@ __LISTEN__
           errs++; blip(false); t.classList.add('shake'); setTimeout(function(){ t.classList.remove('shake'); },400);
           if(errs>=2) [].some.call(tiles.children,function(x){ if(!x.disabled&&x.getAttribute('data-w')===want[at]){ x.classList.add('hint'); return true; } return false; }); } }
       function solved(s,errs){ blip(true); line.innerHTML='<span>'+marked(s)+'</span>'; say(s.au);
-        fb.innerHTML=errs?'<span class="g-no">Geschafft, mit '+errs+' Fehler'+(errs>1?'n':'')+'.</span>':'<span class="g-ok">✓ Perfekt!</span>';
+        fb.innerHTML=errs?'<span class="g-no">'+(errs>1?fill('Geschafft, mit {n} Fehlern.',{n:errs}):'Geschafft, mit 1 Fehler.')+'</span>':'<span class="g-ok">✓ Perfekt!</span>';
         acts_.innerHTML=''; if(canHear()&&s.au) acts_.appendChild(btn('','🔊 Nochmal',function(){ say(s.au); })); acts_.appendChild(btn('main','Weiter ›',nextSentence)); }
       nextSentence(); }
 
@@ -650,8 +650,9 @@ __LISTEN__
       var q_=shuffle(pool_), cur_=null, score=0, streak=0, top=0, misses=[], left=60, wait=false, readyAt=0, info=head('⚡ Der · Die · Das');
       var bar=el('div','a-time'), fill=el('i'); bar.appendChild(fill); box.appendChild(bar);
       var sc=el('div','a-score'), card=el('div','a-card'); box.appendChild(sc); box.appendChild(card);
-      var row=el('div','a-btns'); ['der','die','das'].forEach(function(a){ row.appendChild(btn('a-'+a,a,function(){ answer(a); })); }); box.appendChild(row);
-      function key(e){ var a={'1':'der','2':'die','3':'das'}[e.key]; if(a&&!e.repeat){ e.preventDefault(); answer(a); } }
+      var row=el('div','a-btns'); row.style.gridTemplateColumns='repeat('+ARTS.length+',1fr)';
+      ARTS.forEach(function(a){ row.appendChild(btn('a-'+(COL[a]||a),a,function(){ answer(a); })); }); box.appendChild(row);
+      function key(e){ var a=ARTS[+e.key-1]; if(a&&!e.repeat){ e.preventDefault(); answer(a); } }
       d.addEventListener('keydown',key);
       var tm=setInterval(function(){ left--; fill.style.width=(left/60*100)+'%'; info.textContent=left+' s'; if(left<=0) over(); },1000);
       live=function(){ clearInterval(tm); d.removeEventListener('keydown',key); };
@@ -747,6 +748,17 @@ GAMES = """
 """
 
 
+FRAME = """<nav class="bar" aria-label="Navigation">
+<div class="tabs"><button type="button" id="tab-l" aria-pressed="true">Lernen</button><button type="button" id="tab-p" aria-pressed="false">Üben</button><button type="button" id="tab-g" aria-pressed="false">Spielen</button></div>
+<button class="nav lern-only" id="prev" type="button" aria-label="Vorherige Lektion">‹</button>
+<select class="lern-only" id="pick" aria-label="Lektion wählen">__OPTIONS__</select>
+<button class="nav lern-only" id="next" type="button" aria-label="Nächste Lektion">›</button>
+<input class="lern-only search-only" id="q" type="search" placeholder="Suchen…" aria-label="Suchen">
+<div class="hits lern-only search-only" id="hits"></div>
+</nav>
+<noscript><p class="cover">Audio, Üben und Spielen brauchen einen Browser mit JavaScript.</p></noscript>"""
+
+
 def slug(text):
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-") or "course"
 
@@ -762,6 +774,8 @@ def compact(value):
 
 
 def build(course, output, audio=True, bitrate="32k", explain_bitrate="24k", placeholder_audio=False):
+    prof = course.get("profile") or language.profile("de")
+    ui = language.ui_table(prof)
     plan = build_course_plan(course)[1] if audio else None
     css, sections, options, cards = None, [], [], []
     sequences, examples, stories, games = {}, {}, {}, {}
@@ -774,7 +788,7 @@ def build(course, output, audio=True, bitrate="32k", explain_bitrate="24k", plac
         css = css or re.search(r"<style>(.*?)</style>", page, re.S).group(1)
         unit_plan = plan["units"][uid] if audio else None
         if audio:
-            page = add_audio_buttons(page, lesson, unit_plan, used_german)
+            page = add_audio_buttons(page, lesson, unit_plan, used_german, prof, ui)
             sequences[uid] = listening_order(f"{uid}-", lesson, unit_plan)
             examples[uid] = examples_order(f"{uid}-", lesson, unit_plan)
             stories[uid] = story_order(f"{uid}-", unit_plan)
@@ -788,7 +802,7 @@ def build(course, output, audio=True, bitrate="32k", explain_bitrate="24k", plac
         body = re.search(r'<main class="wrap">(.*?)</main>', page, re.S).group(1)
         if audio:
             body = body.replace("</header>", f'<div class="listen-row"><button type="button" class="listen-open" data-unit="{uid}">'
-                                             f'🎧 Anhören</button></div></header>', 1)
+                                             f'{html.escape(ui.get("🎧 Anhören", "🎧 Anhören"))}</button></div></header>', 1)
         title = html.unescape(re.search(r"<h1>(.*?)</h1>", body).group(1))
         options.append(f'<option value="{uid}">{html.escape(label)} · {html.escape(title.split(" – ")[0])}</option>')
         for kind, cid, inner in re.findall(r'<article class="(voc|rule|phrase)" id="([^"]+)">(.*?)</article>', body, re.S):
@@ -820,13 +834,14 @@ def build(course, output, audio=True, bitrate="32k", explain_bitrate="24k", plac
             for cid, data in zip([j[0] for j in jobs], pool.map(lambda j: compressed(course["cache"], j[0], j[1], ff), jobs)):
                 payloads[cid] = data
     config = {"key": slug(course["title"]), "perDay": int(course.get("new_per_day", 20)),
-              "units": [[u["id"], u["id"]] for u in course["units"]], "labels": {u["id"]: u["label"] for u in course["units"]}}
+              "units": [[u["id"], u["id"]] for u in course["units"]], "labels": {u["id"]: u["label"] for u in course["units"]},
+              "arts": prof["articles"], "col": prof["article_colours"]}
     blocks = {}
     for cid, data in payloads.items():
         blocks.setdefault(first_unit[cid], []).append(f"{cid}:{data}")
     audio_blocks = "".join(f'<script type="text/plain" id="au-{k}">{";".join(v)}</script>\n' for k, v in sorted(blocks.items()))
     index = {cid: first_unit[cid] for cid in payloads}
-    js = (APP_JS.replace("__LISTEN__", LISTEN_JS)
+    js = (language.localize(APP_JS.replace("__LISTEN__", LISTEN_JS), ui)
           .replace("__INDEX__", json.dumps(index, separators=(",", ":")))
           .replace("__SEQUENCES__", compact(sequences))
           .replace("__EXAMPLES__", compact(examples))
@@ -835,31 +850,26 @@ def build(course, output, audio=True, bitrate="32k", explain_bitrate="24k", plac
           .replace("__ORDER__", json.dumps([u["id"] for u in course["units"]]))
           .replace("__CONFIG__", compact(config))
           .replace("__GAME__", compact(games)))
-    subtitle = html.escape(course.get("subtitle", f"{len(course['units'])} Lektionen · Wortschatz · Grammatik · Redemittel"))
+    names = prof["sections"]
+    subtitle = html.escape(course.get("subtitle", f"{len(course['units'])} {ui.get('Lektionen', 'Lektionen')} · "
+                                                  f"{names['vocabulary']} · {names['grammar']} · {names['redemittel']}"))
+    frame = language.localize(FRAME, ui).replace("__OPTIONS__", "".join(options))
     doc = f"""<!DOCTYPE html>
-<html lang="de"><head>
+<html lang="{prof['code']}"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="study-pack-app" content="course v2">
 <title>{html.escape(course['title'])}</title>
 <style>{css}{AUDIO_CSS}{APP_CSS}</style>
 </head>
 <body><main class="wrap">
-<nav class="bar" aria-label="Navigation">
-<div class="tabs"><button type="button" id="tab-l" aria-pressed="true">Lernen</button><button type="button" id="tab-p" aria-pressed="false">Üben</button><button type="button" id="tab-g" aria-pressed="false">Spielen</button></div>
-<button class="nav lern-only" id="prev" type="button" aria-label="Vorherige Lektion">‹</button>
-<select class="lern-only" id="pick" aria-label="Lektion wählen">{''.join(options)}</select>
-<button class="nav lern-only" id="next" type="button" aria-label="Nächste Lektion">›</button>
-<input class="lern-only search-only" id="q" type="search" placeholder="Suchen…" aria-label="Suchen">
-<div class="hits lern-only search-only" id="hits"></div>
-</nav>
-<noscript><p class="cover">Audio, Üben und Spielen brauchen einen Browser mit JavaScript.</p></noscript>
+{frame}
 <div class="lernen">
 <div class="cover"><b>{html.escape(course['title'])}</b>{subtitle}</div>
 {''.join(sections)}
 </div>
-{PRACTICE}
-{GAMES}
-{LISTEN_HTML}
+{language.localize(PRACTICE, ui)}
+{language.localize(GAMES, ui)}
+{language.localize(LISTEN_HTML, ui)}
 </main>
 <script>{js}</script>
 {audio_blocks}

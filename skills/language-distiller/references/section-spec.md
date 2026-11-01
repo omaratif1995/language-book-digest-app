@@ -4,7 +4,7 @@ The HTML is a compact reference to study and listen to, not a workbook or a reco
 
 A small header names the level, the unit and the topic. **It never names the source**: no book title, publisher, ISBN, author, teacher, school or character names, anywhere in the sheet. List such names in the inventory's `private_terms`, and the validator refuses any learner text that contains them. Write the lesson title yourself, from the topic (*Auslandssemester*, *Alternatives Wohnen*); do not copy the source's chapter title.
 
-After the header, render these `h2` sections in this order:
+After the header, render these `h2` sections in this order. The names come from the language profile ([languages.md](languages.md)); German's are shown, Spanish's are Vocabulario, Gramática, Expresiones útiles and Historia:
 
 1. `Wortschatz`
 2. `Grammatik`

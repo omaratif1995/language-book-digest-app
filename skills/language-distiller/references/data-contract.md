@@ -97,6 +97,8 @@ Only these top-level keys are accepted (`story` is optional for older lessons an
 
 `title` is the learner's title for the unit, written from its topic, not the source's chapter title.
 
+`target_language` is a language code with a profile in `languages/` (`de`, `de-DE`, `es` …; see [languages.md](languages.md)); every unit of a course has the same one. The text fields `de` and `en` in examples and story paragraphs hold the target-language text and its English gloss, whatever the language: the names stayed from the German original.
+
 ### Vocabulary record
 
 ```json

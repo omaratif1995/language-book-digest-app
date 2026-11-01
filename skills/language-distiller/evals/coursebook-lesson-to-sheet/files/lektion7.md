@@ -1,6 +1,6 @@
 # Treffpunkt B1 · Kursbuch · Lindenverlag · ISBN 978-0-000-00000-0
 
-(Original test material written for the German Language Distiller evaluations. "Treffpunkt B1" and "Lindenverlag" are invented.)
+(Original test material written for the Language Distiller evaluations. "Treffpunkt B1" and "Lindenverlag" are invented.)
 
 ---
 

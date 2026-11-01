@@ -1,0 +1,87 @@
+{
+  "code": "es",
+  "name": "Spanish",
+  "native": "Español",
+  "voice": "es-ES-ElviraNeural",
+  "sections": {
+    "vocabulary": "Vocabulario",
+    "grammar": "Gramática",
+    "redemittel": "Expresiones útiles",
+    "story": "Historia"
+  },
+  "translation": "Traducción",
+  "articles": [
+    "el",
+    "la"
+  ],
+  "article_colours": {
+    "el": "der",
+    "la": "die"
+  },
+  "adjective_nouns": false,
+  "first_person": "yo",
+  "verb_hint": null,
+  "ui": "en",
+  "bingo": {
+    "function_words": "a al algo algunas algunos allí ante antes aquí bien como con contra cual cuando de del desde donde durante e el ella ellas ellos en entre era eres es esa ese eso esta estamos estar estas este esto estos estoy está están estás fue ha han has hasta hay he hemos la las le les lo los me mi mis mucho muchos muy más mí nada ni no nos nosotros o os otra otras otro otros para pero poco por porque que quien quienes qué se ser sin sobre somos son soy su sus sí también tanto te ti todo todos tu tus tú un una uno unos y ya yo él",
+    "verb_endings": [
+      "ar",
+      "er",
+      "ir"
+    ]
+  },
+  "speech": {
+    "spellchecker": "es",
+    "letters": "A-Za-zÁÉÍÓÚÜÑáéíóúüñ",
+    "upper": "A-ZÁÉÍÓÚÜÑ",
+    "lower": "a-záéíóúüñ",
+    "special": "ñÑáéíóúÁÉÍÓÚ",
+    "german_notation": false,
+    "words": "al allí aquí aunque ayer buena bueno como con cuando de del desde donde el ella ellas ellos en entre era es esa ese esta estar estas este estos está están fue gracias hasta hay hoy la las le les lo los mañana me mi muy no nos nosotros nuestro o para pero por porque que se ser si sin sobre son su sí también te tu tú un una unas unos y ya yo él",
+    "ambiguous": "a no me he son sea come van era fin solo once",
+    "articles": "el la los las un una unos unas",
+    "lone": [],
+    "speakable": [
+      [
+        "→",
+        " se convierte en "
+      ],
+      [
+        "↔",
+        ", lo contrario: "
+      ],
+      [
+        "≈",
+        ", parecido: "
+      ],
+      [
+        " + ",
+        ", "
+      ],
+      [
+        " / ",
+        " o "
+      ],
+      [
+        "p. ej.",
+        "por ejemplo"
+      ],
+      [
+        "etc.",
+        "etcétera"
+      ],
+      [
+        "alg.",
+        "algo"
+      ],
+      [
+        "sg.",
+        "singular"
+      ],
+      [
+        "pl.",
+        "plural"
+      ]
+    ]
+  }
+}

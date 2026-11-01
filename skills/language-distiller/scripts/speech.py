@@ -27,7 +27,9 @@ import re
 import shutil
 import subprocess
 
-DEFAULT_VOICES = {"de": "de-DE-KatjaNeural", "en": "en-US-AvaNeural"}
+import language
+
+DEFAULT_VOICES = {"de": "de-DE-KatjaNeural", "en": "en-US-AvaNeural"}   # target language ("de" slot), gloss language
 
 
 class SpeechError(ValueError):
@@ -42,11 +44,6 @@ def require(condition, message):
 # ------------------------------------------------------------------ speakable text ---
 _COMMON = (("…", ", "), ("...", ", "), ("„", ""), ("“", ""), ("”", ""), ("‚", ""), ("‘", ""), ("’", "'"),
            ("«", ""), ("»", ""), ("(!)", ""), ("~", ""), ("*", ""), (" | ", ", "), ("·", ". "), (" = ", ": "))
-_DE = (("→", " wird zu "), ("↔", ", Gegenteil: "), ("≈", ", ähnlich: "), (" + ", ", "), (" / ", " oder "),
-       ("z. B.", "zum Beispiel"), ("usw.", "und so weiter"), ("bzw.", "beziehungsweise"), ("etw.", "etwas"),
-       ("jdn.", "jemanden"), ("jdm.", "jemandem"), ("Akk.", "Akkusativ"), ("Dat.", "Dativ"), ("Gen.", "Genitiv"),
-       ("Nom.", "Nominativ"), ("Sg.", "Singular"), ("Pl.", "Plural"), ("Partizip II", "Partizip zwei"),
-       ("Konjunktiv II", "Konjunktiv zwei"), ("Konjunktiv I", "Konjunktiv eins"), ("also:", "auch:"))
 _EN = (("→", " becomes "), ("↔", ", the opposite of "), ("≈", ", roughly "), (" + ", " plus "), (" / ", " or "),
        ("e.g.", "for example"), ("i.e.", "that is"), ("etc.", "and so on"), (" vs ", " versus "),
        (" sb ", " somebody "), (" sth ", " something "), ("sb.", "somebody"), ("sth.", "something"),
@@ -59,8 +56,8 @@ def speakable(text, lang="de"):
     for old, new in _COMMON + (_DE if lang == "de" else _EN):
         text = text.replace(old, new)
     text = re.sub(r"\((e|n|en|s|es|er)\)", r"\1", text)          # Tag(e)s → Tages
-    text = re.sub(r"(?<![A-Za-zÄÖÜäöüß])'|'(?![A-Za-zÄÖÜäöüß])", "", text)   # quote marks, not don't / I'm
-    text = re.sub(r"(?<![\w])-(?=[a-zäöüß])", "", text)            # endings -er, -en → er, en
+    text = re.sub(rf"(?<![{_LETTERS}])'|'(?![{_LETTERS}])", "", text)   # quote marks, not don't / I'm
+    text = re.sub(rf"(?<![\w])-(?=[{_LOWER}])", "", text)          # endings -er, -en → er, en
     text = re.sub(r"[()\[\]{}]", ", ", text)
     text = re.sub(r"\s+", " ", text)
     text = re.sub(r"\s+([,.;:!?])", r"\1", text)
@@ -73,19 +70,9 @@ def speakable(text, lang="de"):
 
 
 # ------------------------------------------------------------------ language detection ---
-DE_WORDS = set("""
-der die das den dem des ein eine einen einem einer eines kein keine keinen keinem keiner keines mein meine meinen
-meinem meiner dein deine sein seine ihr ihre unser unsere euer eure ich du er sie es wir mich dich sich mir dir ihm ihn
-uns euch nicht auch noch schon sehr gern gerne ja nein doch mal nur immer und oder aber denn sondern weil dass ob als
-wenn wann wie was wer wo wohin woher warum obwohl trotzdem deshalb darum daher deswegen damit sodass bevor nachdem
-während seit seitdem bis um zu ohne statt anstatt wegen trotz mit von bei aus nach gegenüber für durch gegen auf über
-unter vor hinter neben zwischen im zum zur vom beim ins ans aufs hat haben habe hast ist sind bist sei wird werden
-würde würden wäre wären hätte hätten hättest könnte könnten müsste sollte sollten wollte kann können muss müssen soll
-sollen will wollen darf dürfen möchte möchten man jemand etwas nichts alle viele wenige einige jedes jeder jede jeden
-dann also sowie zwar entweder weder noch je desto umso jemandem jemanden dort hier heute gestern morgen bitte danke
-Nominativ Akkusativ Dativ Genitiv Infinitiv Partizip Perfekt Präteritum Präsens Konjunktiv Imperativ Passiv
-Nebensatz Hauptsatz Verb Adjektiv Nomen Artikel Plural Singular Wortschatz Grammatik Redemittel
-""".lower().split())
+# What the splitter knows about the target language comes from its profile (languages/<code>.json, see use()):
+# its common words, the words it shares with English, its articles, its letters and how its notation is read aloud.
+# The slot names stay "de" (the target language) and "en" (the gloss language) for every language.
 EN_WORDS = set("""
 the a an of to in on at for with and or but is are was were be been being it its this that these those you your we
 they he she them his her our their not no yes if then when where what which who whom how why because so as than
@@ -103,11 +90,6 @@ prepositions pronoun pronouns conjunction conjunctions connector connectors infi
 prefix prefixes suffix suffixes stem tense present past future masculine feminine neuter dative accusative
 genitive nominative rare
 """.split())
-AMBIGUOUS = set("die an in so also was will man war hat bin am er fast hell kind rat gift rot arm bad hand land "
-                "wind name plan test warm alt see hier her hin form position".split())
-ARTICLES = set("der die das den dem des ein eine einen einem einer eines kein keine keinen keinem keiner keines".split())
-
-_TOKEN = re.compile(r"(?:(?<![A-Za-zÄÖÜäöüß])-)?[A-Za-zÄÖÜäöüß]+(?:['’][A-Za-zÄÖÜäöüß]+)*")
 _BOUNDARY = re.compile(r"[.:;!?()=·|→\[\]]")
 _REGION = re.compile(r"(^|[·(;|,]\s*)(A\s*/\s*CH|CH|A|D\s*\(south\)|D)(?=\s*(?:also\s*)?:)")
 _REGIONS = {"A/CH": "in Österreich und in der Schweiz", "CH": "in der Schweiz", "A": "in Österreich",
@@ -115,13 +97,32 @@ _REGIONS = {"A/CH": "in Österreich und in der Schweiz", "CH": "in der Schweiz",
 _dictionaries = None
 
 
+def use(prof):
+    """Split and speak text for the target language of this profile (language.profile); German until called."""
+    global DE_WORDS, AMBIGUOUS, ARTICLES, _DE, _LONE, _SPELL, _GERMAN_NOTATION, _LETTERS, _UPPER, _LOWER
+    global _SPECIAL, _TOKEN, _dictionaries
+    s = prof["speech"]
+    DE_WORDS, AMBIGUOUS, ARTICLES = (set(s[key].lower().split()) for key in ("words", "ambiguous", "articles"))
+    _DE = tuple(tuple(pair) for pair in s["speakable"])
+    _LONE, _SPELL, _GERMAN_NOTATION = set(s.get("lone", [])), s.get("spellchecker"), bool(s.get("german_notation"))
+    _LETTERS, _UPPER, _LOWER = s["letters"], s["upper"], s["lower"]
+    _SPECIAL = re.compile(f"[{s['special']}]") if s.get("special") else None
+    _TOKEN = re.compile(rf"(?:(?<![{_LETTERS}])-)?[{_LETTERS}]+(?:['’][{_LETTERS}]+)*")
+    _dictionaries = None
+
+
+use(language.profile("de"))
+
+
 def normalize(text):
     """Notation to settle before detection: regional labels (A:, CH:, D:), optional letters, stress capitals."""
-    text = _REGION.sub(lambda m: m.group(1) + _REGIONS[re.sub(r"\s+", "", m.group(2))], str(text))
-    text = re.sub(r"(Österreich|Schweiz|[Dd]eutschland) also:", r"\1 auch:", text)
-    text = re.sub(r"\b(Konjunktiv|Partizip) (II|I)\b", lambda m: m.group(1) + (" zwei" if m.group(2) == "II" else " eins"), text)
-    text = re.sub(r"(?<=[A-Za-zÄÖÜäöüß])\((e|n|en|s|es|er)\)(?=[a-zäöüß])", r"\1", text)      # schütt(e)le
-    return re.sub(r"\b[a-zäöüß]+[A-ZÄÖÜ]{2,}[a-zäöüß]*\b", lambda m: m.group(0).lower(), text)  # unterBRECHEN
+    text = str(text)
+    if _GERMAN_NOTATION:
+        text = _REGION.sub(lambda m: m.group(1) + _REGIONS[re.sub(r"\s+", "", m.group(2))], text)
+        text = re.sub(r"(Österreich|Schweiz|[Dd]eutschland) also:", r"\1 auch:", text)
+        text = re.sub(r"\b(Konjunktiv|Partizip) (II|I)\b", lambda m: m.group(1) + (" zwei" if m.group(2) == "II" else " eins"), text)
+        text = re.sub(rf"(?<=[{_LETTERS}])\((e|n|en|s|es|er)\)(?=[{_LOWER}])", r"\1", text)      # schütt(e)le
+    return re.sub(rf"\b[{_LOWER}]+[{_UPPER}]{{2,}}[{_LOWER}]*\b", lambda m: m.group(0).lower(), text)  # unterBRECHEN
 
 
 def dictionaries_available():
@@ -138,9 +139,9 @@ def _dicts():
         try:
             from spellchecker import SpellChecker
         except ImportError as error:
-            raise SpeechError("pyspellchecker is required to find German words inside English text: "
+            raise SpeechError("pyspellchecker is required to find target-language words inside English text: "
                               "pip install pyspellchecker") from error
-        _dictionaries = (SpellChecker(language="de"), SpellChecker(language="en"))
+        _dictionaries = (SpellChecker(language=_SPELL) if _SPELL else None, SpellChecker(language="en"))
     return _dictionaries
 
 
@@ -149,8 +150,8 @@ def _classify(token, sentence_start, base, notes=False):
     low = word.lower()
     if token.startswith("-"):
         return "de"                                   # German endings such as -er, -ung
-    if re.search(r"[äöüßÄÖÜ]", word):
-        return "de"
+    if _SPECIAL and _SPECIAL.search(word):
+        return "de"                                   # letters only the target language has: ä, ñ
     if low in AMBIGUOUS:
         return "?"
     in_de, in_en = low in DE_WORDS, low in EN_WORDS
@@ -158,10 +159,12 @@ def _classify(token, sentence_start, base, notes=False):
         return "de" if in_de else "en"
     if in_de or len(word) == 1 or re.fullmatch(r"[IVX]+", word):
         return "?"                                    # in both lists, single letters, Roman numerals
-    if re.fullmatch(r"[A-ZÄÖÜ]{2,}s?", word):
+    if re.fullmatch(rf"[{_UPPER}]{{2,}}s?", word):
         return base                                   # acronyms (CV, TV, PCs) follow the surrounding text
     capital = word[:1].isupper() and not sentence_start
     de, en = _dicts()
+    if de is None:                                    # no dictionary for this language: only the lists decide
+        return "en" if en.known([low]) else ("de" if capital else base)
     known_de, known_en = bool(de.known([low])), bool(en.known([low]))
     if known_de != known_en:
         return "de" if known_de else "en"
@@ -208,7 +211,7 @@ def segments(text, base="en"):
         sentence_start = previous_end == 0 or bool(re.search(r"[.!?:]\s*$", gap))
         label = _classify(match.group(0), sentence_start, bases[-1], notes=base == "de")
         after = text[match.end():match.end() + 2]
-        if after[:1] == "-" and not re.match(r"-[A-Za-zÄÖÜäöüß]", after):
+        if after[:1] == "-" and not re.match(rf"-[{_LETTERS}]", after):
             label = "de"                              # prefix notation: be-, ver-, ent-
         elif re.search(r"(…|\.\.\.)$", gap):          # ending notation: am …sten, but English …ing
             label = "en" if match.group(0).lower() in ("ing", "ed", "ly") else "de"
@@ -244,7 +247,7 @@ def segments(text, base="en"):
             labels[i] = max(weight, key=weight.get)
         elif left or right:                           # a tie: a function word belongs to the phrase it opens
             labels[i] = right[0] if right else left[0]
-        elif tokens[i].group(0).lower() == "die":
+        elif tokens[i].group(0).lower() in _LONE:
             labels[i] = "de"                          # a lone «die» is the German article
         elif text[tokens[i].end():].lstrip()[:1] == ":":
             later = [labels[j] for j in range(i + 1, len(labels)) if labels[j] != "?"][:1]
@@ -271,7 +274,7 @@ def unmarked_german(text):
 def _merge(parts):
     merged = []
     for lang, chunk in parts:
-        if merged and (merged[-1][0] == lang or not re.search(r"[A-Za-zÄÖÜäöüß0-9]", chunk)):
+        if merged and (merged[-1][0] == lang or not re.search(rf"[{_LETTERS}0-9]", chunk)):
             merged[-1] = (merged[-1][0], merged[-1][1] + chunk)
         else:
             merged.append((lang, chunk))
@@ -307,7 +310,7 @@ def make_clip(text, kind, voices):
     else:
         raw = segments(normalize(text), base="de" if kind == "mix-de" else "en")
     spoken = [(lang, speakable(chunk, lang), _pause_after(chunk)) for lang, chunk in raw]
-    spoken = [item for item in spoken if re.search(r"[A-Za-zÄÖÜäöüß0-9]", item[1])]
+    spoken = [item for item in spoken if re.search(rf"[{_LETTERS}0-9]", item[1])]
     require(spoken, f"empty audio text: {text!r}")
     parts = tuple((lang, words) for lang, words, _ in spoken)
     pauses = tuple(pause for _, _, pause in spoken[:-1])

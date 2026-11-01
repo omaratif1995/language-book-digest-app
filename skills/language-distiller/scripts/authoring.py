@@ -37,8 +37,9 @@ def ex(de, en, *targets):
 
 
 class Pack:
-    def __init__(self, lesson_id, title, scope_label, work_dir, level="B1", book="", private_terms=()):
+    def __init__(self, lesson_id, title, scope_label, work_dir, level="B1", book="", private_terms=(), language="de"):
         self.id, self.title, self.level, self.book, self.scope_label = lesson_id, title, level, book, scope_label
+        self.language = language                 # the target language: a profile in languages/ (de, es, …)
         self.work = Path(work_dir)
         self.private_terms = list(private_terms)
         self.pages, self.region_index, self.items, self.deps = [], {}, [], []
@@ -124,7 +125,7 @@ class Pack:
         if self.private_terms:
             inventory["private_terms"] = self.private_terms
         lesson = {"schema_version": 2, "lesson_id": self.id, "inventory_sha256": ZERO, "title": self.title,
-                  "level": self.level, "target_language": "de", "gloss_language": "en",
+                  "level": self.level, "target_language": self.language, "gloss_language": "en",
                   "vocabulary": self.voc_, "grammar": self.gram_, "redemittel": self.red_}
         if self.story_:
             lesson["story"] = self.story_

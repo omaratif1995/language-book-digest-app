@@ -4,7 +4,7 @@ Use this mode only when the user requests audio for a single sheet. It extends t
 
 ## Required result
 
-- Generate natural Standard German neural speech ahead of time. Do not use `speechSynthesis`: installed browser voices vary and may sound poor.
+- Generate natural neural speech in the target language ahead of time (German: Standard German). Do not use `speechSynthesis`: installed browser voices vary and may sound poor.
 - Embed every audio payload in the HTML. Do not link to local MP3 files, CDNs or hosted audio.
 - Put one compact **🎧 Anhören** control in the header. It opens a small panel: *Ganze Lektion*, *Nur Beispiele* and, with a story, *Geschichte*; how often each German sentence is played (1×, 2×, 3×, 5×); and whether the session stops or starts again at the end. Once a session was stopped, the panel's first button, *▶ Weiter*, goes on where it stopped. Settings changed during a session apply at once.
 - Put a small speaker control beside each vocabulary headword, German example, grammar title, Redemittel frame and useful German variant, a **🔊 Ganze Geschichte** button on the story header, and a speaker control beside each story paragraph. A tap on a story sentence plays that sentence.
@@ -17,7 +17,7 @@ The whole-lesson sequence covers the meaningful visible sheet in reading order: 
 
 ## Voice and privacy
 
-Use two single-language neural voices: a Standard German voice for German and an English voice for English (defaults: `de-DE-KatjaNeural` and `en-US-AvaNeural`). Do not give mixed text to one multilingual voice. It guesses the language of each request and reads short German words inside English with English pronunciation. `scripts/speech.py` splits mixed text into German and English runs, speaks each with its own voice and joins them with natural pauses (see [course-app.md](course-app.md)). Keep the provider and voices configurable; do not imply the skill owns or guarantees a third-party service.
+Use two single-language neural voices: one for the target language and an English voice for English (defaults: the profile's voice, German `de-DE-KatjaNeural`, and `en-US-AvaNeural`). Do not give mixed text to one multilingual voice. It guesses the language of each request and reads short German words inside English with English pronunciation. `scripts/speech.py` splits mixed text into German and English runs, speaks each with its own voice and joins them with natural pauses (see [course-app.md](course-app.md)). Keep the provider and voices configurable; do not imply the skill owns or guarantees a third-party service.
 
 Hosted synthesis sends the selected learner text to the provider. Obtain explicit user approval for that transmission before generating audio. Cache generated clips only under `_work` or `_skill_test`, never beside the learner HTML. The delivered HTML must work without the cache and without a network connection.
 

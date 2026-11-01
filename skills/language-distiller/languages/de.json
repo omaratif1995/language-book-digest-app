@@ -1,0 +1,138 @@
+{
+  "code": "de",
+  "name": "German",
+  "native": "Deutsch",
+  "voice": "de-DE-KatjaNeural",
+  "sections": {
+    "vocabulary": "Wortschatz",
+    "grammar": "Grammatik",
+    "redemittel": "Redemittel",
+    "story": "Geschichte"
+  },
+  "translation": "Übersetzung",
+  "articles": [
+    "der",
+    "die",
+    "das"
+  ],
+  "article_colours": {
+    "der": "der",
+    "die": "die",
+    "das": "das"
+  },
+  "adjective_nouns": true,
+  "first_person": "ich",
+  "verb_hint": {
+    "forms": "\\b(hat|ist|haben|sein)\\b",
+    "note": "Verb cards without a Perfekt form (hat/ist + Partizip II)"
+  },
+  "ui": "de",
+  "bingo": {
+    "function_words": "aber als am an ans auch auf aus bei beim bin bis bist darf das dass dein deine dem den denn der des dich die dir du durch dürfen ein eine einem einen einer eines er es etwas euch euer für gegen habe haben hast hat hatte ich ihm ihn ihnen ihr im in ins ist jemand kann kein keine keinem keinen keiner können mag man mein meine mich mir mit muss möchte müssen nach nicht noch nur ob oder ohne schon sehr sein seine seit sich sie sind so soll sollen um und uns unser unter vom von vor war waren wenn werden wie will wir wird wollen wurde zu zum zur über",
+    "verb_endings": [
+      "en",
+      "rn",
+      "ln"
+    ]
+  },
+  "speech": {
+    "spellchecker": "de",
+    "letters": "A-Za-zÄÖÜäöüß",
+    "upper": "A-ZÄÖÜ",
+    "lower": "a-zäöüß",
+    "special": "äöüßÄÖÜ",
+    "german_notation": true,
+    "words": "aber adjektiv akkusativ alle als also ans anstatt artikel auch auf aufs aus bei beim bevor bis bist bitte daher damit danke dann darf darum das dass dativ dein deine dem den denn der des deshalb desto deswegen dich die dir doch dort du durch dürfen ein eine einem einen einer eines einige entweder er es etwas euch euer eure für gegen gegenüber genitiv gern gerne gestern grammatik habe haben hast hat hauptsatz heute hier hinter hätte hätten hättest ich ihm ihn ihr ihre im immer imperativ infinitiv ins ist ja je jede jeden jeder jedes jemand jemandem jemanden kann kein keine keinem keinen keiner keines konjunktiv können könnte könnten mal man mein meine meinem meinen meiner mich mir mit morgen muss möchte möchten müssen müsste nach nachdem neben nebensatz nein nicht nichts noch nomen nominativ nur ob obwohl oder ohne partizip passiv perfekt plural präsens präteritum redemittel schon sehr sei sein seine seit seitdem sich sie sind singular sodass soll sollen sollte sollten sondern sowie statt trotz trotzdem um umso und uns unser unsere unter verb viele vom von vor wann warum was weder wegen weil wenige wenn wer werden wie will wir wird wo woher wohin wollen wollte wortschatz während wäre wären würde würden zu zum zur zwar zwischen über",
+    "ambiguous": "also alt am an arm bad bin die er fast form gift hand hat hell her hier hin in kind land man name plan position rat rot see so test war warm was will wind",
+    "articles": "das dem den der des die ein eine einem einen einer eines kein keine keinem keinen keiner keines",
+    "lone": [
+      "die"
+    ],
+    "speakable": [
+      [
+        "→",
+        " wird zu "
+      ],
+      [
+        "↔",
+        ", Gegenteil: "
+      ],
+      [
+        "≈",
+        ", ähnlich: "
+      ],
+      [
+        " + ",
+        ", "
+      ],
+      [
+        " / ",
+        " oder "
+      ],
+      [
+        "z. B.",
+        "zum Beispiel"
+      ],
+      [
+        "usw.",
+        "und so weiter"
+      ],
+      [
+        "bzw.",
+        "beziehungsweise"
+      ],
+      [
+        "etw.",
+        "etwas"
+      ],
+      [
+        "jdn.",
+        "jemanden"
+      ],
+      [
+        "jdm.",
+        "jemandem"
+      ],
+      [
+        "Akk.",
+        "Akkusativ"
+      ],
+      [
+        "Dat.",
+        "Dativ"
+      ],
+      [
+        "Gen.",
+        "Genitiv"
+      ],
+      [
+        "Nom.",
+        "Nominativ"
+      ],
+      [
+        "Sg.",
+        "Singular"
+      ],
+      [
+        "Pl.",
+        "Plural"
+      ],
+      [
+        "Partizip II",
+        "Partizip zwei"
+      ],
+      [
+        "Konjunktiv II",
+        "Konjunktiv zwei"
+      ],
+      [
+        "Konjunktiv I",
+        "Konjunktiv eins"
+      ],
+      [
+        "also:",
+        "auch:"
+      ]
+    ]
+  }
+}

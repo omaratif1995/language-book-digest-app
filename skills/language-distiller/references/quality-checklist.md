@@ -33,7 +33,7 @@ When audio was requested, also check that:
 - the HTML contains no external media URL and plays after the source files/cache are removed;
 - every visible speaker button resolves to non-empty embedded audio;
 - a speaker tap repeats until tapped again, and the listening panel starts the whole lesson, only the examples and the story;
-- German targets and examples use a clear Standard German neural voice at normal speed; and
+- targets and examples use the profile's clear neural voice for the target language (German: Standard German) at normal speed; and
 - audio controls do not add another `h2`, hide content, overlap text or cause mobile overflow.
 
 Run the bundled tests and HTML validator. Their pass proves structure and record consistency, not German quality or good selection.

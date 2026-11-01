@@ -17,10 +17,13 @@ import re
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import language  # noqa: E402
 import speech  # noqa: E402
 from study_pack import story_sentences  # noqa: E402
 
-SECTIONS = ("Wortschatz", "Grammatik", "Redemittel", "Geschichte")
+def sections_of(lesson):
+    """The section names of the lesson's language, also spoken as section titles (Wortschatz … for German)."""
+    return language.profile(lesson.get("target_language", "de"))["sections"]
 
 
 class AudioError(ValueError):
@@ -57,12 +60,13 @@ def voices_of(voices):
 def build_plan(lesson, voices=None, narration=None):
     """Clips, listening order, per-card controls and the spoken grammar explanations of one lesson.
 
-    German text goes to the German voice, English text to the English voice; German words inside English
-    text are detected and spoken in German. `narration` maps grammar ids to authored spoken explanations
-    (English with German marked «…»); without one, meaning, rule, patterns and contrast are read.
+    Target-language text goes to the target voice (German: de-DE-KatjaNeural), English text to the English voice;
+    target-language words inside English text are detected and spoken by the target voice. `narration` maps grammar
+    ids to authored spoken explanations (English with target-language words marked «…»); without one, meaning,
+    rule, patterns and contrast are read.
     Returns (clips, sequence, controls, explain).
     """
-    voices, narration = voices_of(voices), narration or {}
+    voices, narration, names = voices_of(voices), narration or {}, sections_of(lesson)
     clips, sequence, controls, explain = {}, [], {}, {}
 
     def add(value, kind, control=None):
@@ -75,7 +79,7 @@ def build_plan(lesson, voices=None, narration=None):
         return clip.clip_id
 
     add(lesson["title"], "de")
-    add("Wortschatz", "de")
+    add(names["vocabulary"], "de")
     previous = None
     for record in lesson["vocabulary"]:
         if record["group"] != previous:
@@ -90,7 +94,7 @@ def build_plan(lesson, voices=None, narration=None):
             add(example["de"], "de", f'{record["id"]}-ex-{index}')
             add(example["en"], "en")
 
-    add("Grammatik", "de")
+    add(names["grammar"], "de")
     for record in lesson["grammar"]:
         gid = record["id"]
         chain = [add(record["title"], "en", f"{gid}-head")]
@@ -108,7 +112,7 @@ def build_plan(lesson, voices=None, narration=None):
             add(example["de"], "de", f'{gid}-ex-{index}')
             add(example["en"], "en")
 
-    add("Redemittel", "de")
+    add(names["redemittel"], "de")
     previous = None
     for record in lesson["redemittel"]:
         if record["group"] != previous:
@@ -126,7 +130,7 @@ def build_plan(lesson, voices=None, narration=None):
 
     story = lesson.get("story")
     if story:                                     # the closing story: read straight through, one clip per sentence
-        add("Geschichte", "de")
+        add(names["story"], "de")
         add(story["title"], "de", "story-title")
         number = 0
         for paragraph in story["paragraphs"]:
@@ -147,7 +151,7 @@ def lesson_plan(lesson, voices=None, narration=None):
         return clip.clip_id
 
     plan = {"title": add(lesson["title"]),
-            "sections": {name: add(name) for name in SECTIONS if name != "Geschichte" or lesson.get("story")},
+            "sections": {key: add(name) for key, name in sections_of(lesson).items() if key != "story" or lesson.get("story")},
             "sequence": sequence, "controls": controls, "explain": explain, "story": [],
             "english": {f'{record["id"]}-ex-{index}': add(example["en"], "en")
                         for section in ("vocabulary", "grammar", "redemittel") for record in lesson[section]
@@ -167,30 +171,30 @@ def lesson_plan(lesson, voices=None, narration=None):
 # grows with the factor and the clip's length, to about 2 s after an example (LISTEN_JS: after); a repeatable
 # (German) step is played as often as the learner chose, with a shorter pause between the plays (again).
 def listening_order(prefix, lesson, plan):
-    """The whole lesson: German vocabulary and expressions, grammar explained, then the story read through."""
+    """The whole lesson: vocabulary and expressions, grammar explained, then the story read through."""
     c, seq = plan["controls"], []
-    seq += [[plan["title"], 0.3, None, 0], [plan["sections"]["Wortschatz"], 0.3, None, 0]]
+    seq += [[plan["title"], 0.3, None, 0], [plan["sections"]["vocabulary"], 0.3, None, 0]]
     for rec in lesson["vocabulary"]:
         seq.append([c[f'{rec["id"]}-head'], 0.6, prefix + rec["id"], 1])
         seq += [[c[f'{rec["id"]}-ex-{i}'], 1.0, f'{prefix}{rec["id"]}-x{i}', 1] for i in range(len(rec["examples"]))]
     if lesson["grammar"]:
-        seq.append([plan["sections"]["Grammatik"], 0.3, None, 0])
+        seq.append([plan["sections"]["grammar"], 0.3, None, 0])
     for rec in lesson["grammar"]:
         seq += [[cid, 0.4, prefix + rec["id"], 0] for cid in plan["explain"][rec["id"]]]
         seq += [[c[f'{rec["id"]}-ex-{i}'], 1.0, f'{prefix}{rec["id"]}-x{i}', 1] for i in range(len(rec["examples"]))]
-    seq.append([plan["sections"]["Redemittel"], 0.3, None, 0])
+    seq.append([plan["sections"]["redemittel"], 0.3, None, 0])
     for rec in lesson["redemittel"]:
         seq.append([c[f'{rec["id"]}-head'], 0.8, prefix + rec["id"], 1])
         seq += [[c[f'{rec["id"]}-variant-{i}'], 0.8, prefix + rec["id"], 1] for i in range(len(rec.get("variants", [])))]
         seq += [[c[f'{rec["id"]}-ex-{i}'], 1.0, f'{prefix}{rec["id"]}-x{i}', 1] for i in range(len(rec["examples"]))]
     if plan["story"]:
-        seq.append([plan["sections"]["Geschichte"], 0.3, None, 0])
+        seq.append([plan["sections"]["story"], 0.3, None, 0])
         seq += [[step[0], step[1], step[2], 0] for step in story_order(prefix, plan)]
     return seq
 
 
 def examples_order(prefix, lesson, plan):
-    """Only the German example sentences, in reading order."""
+    """Only the example sentences, in reading order."""
     return [[plan["controls"][f'{rec["id"]}-ex-{i}'], 1.0, f'{prefix}{rec["id"]}-x{i}', 1]
             for section in ("vocabulary", "grammar", "redemittel") for rec in lesson[section]
             for i in range(len(rec["examples"]))]
@@ -219,17 +223,18 @@ def number_examples(document, lesson):
     return document
 
 
-def inject_story_audio(document, plan, heads=None):
-    """Audio on each story sentence, a 🔊 per paragraph and, optionally, the headword clip on underlined words."""
-    controls = plan["controls"]
+def inject_story_audio(document, plan, heads=None, ui=None):
+    """Audio on each story sentence, a 🔊 per paragraph and, optionally, the headword clip on underlined words.
+    `ui` translates the German button labels (language.ui_table)."""
+    controls, tr = plan["controls"], (lambda text: esc((ui or {}).get(text, text)))
     document = re.sub(r'(<article class="story" id="story"><h3>.*?)(</h3>)', lambda m: m.group(1) + (
-        '<button type="button" class="story-play" aria-label="Ganze Geschichte anh\u00f6ren" title="Ganze Geschichte anh\u00f6ren">'
-        '\U0001f50a Ganze Geschichte</button>') + m.group(2), document, count=1, flags=re.S)
+        f'<button type="button" class="story-play" aria-label="{tr("Ganze Geschichte anhören")}" title="{tr("Ganze Geschichte anhören")}">'
+        f'{tr("🔊 Ganze Geschichte")}</button>') + m.group(2), document, count=1, flags=re.S)
     document = re.sub(r'<span class="ss" id="story-s(\d+)">',
                       lambda m: f'<span class="ss" id="story-s{m.group(1)}" data-audio="{controls["story-s" + m.group(1)]}">',
                       document)
     document = re.sub(r'(<div class="story-p" id="story-p\d+">)', lambda m: m.group(1) + (
-        '<button type="button" class="speak-button para-play" aria-label="Absatz anhören" title="Absatz anhören">🔊</button>'),
+        f'<button type="button" class="speak-button para-play" aria-label="{tr("Absatz anhören")}" title="{tr("Absatz anhören")}">🔊</button>'),
         document)
     if heads:
         document = re.sub(r'<span class="lw" data-card="([^"]+)"',
@@ -259,14 +264,14 @@ def transform_card(document, css_class, record_id, transform):
     return document[:start] + transform(document[start:end]) + document[end:]
 
 
-def inject_example_buttons(block, clip_ids, record_id):
+def inject_example_buttons(block, clip_ids, record_id, label="Play German example"):
     iterator = iter(clip_ids)
     count = 0
 
     def replacement(match):
         nonlocal count
         count += 1
-        return match.group(0) + play_button(next(iterator), "Play German example")
+        return match.group(0) + play_button(next(iterator), label)
 
     updated = re.sub(r'<div class="ex">', replacement, block)
     require(count == len(clip_ids),
@@ -534,7 +539,8 @@ __LISTEN__
 def inject_audio(document, lesson, payloads, plan):
     require('<meta name="study-pack-audio"' not in document, "Input already contains embedded audio")
     require(document.count("<h2") in (3, 4), "Input must contain the three teaching sections and at most a story")
-    controls = plan["controls"]
+    controls, prof = plan["controls"], language.profile(lesson.get("target_language", "de"))
+    ui, name = language.ui_table(prof), prof["name"]
 
     document = document.replace(
         '<meta name="study-pack-status"',
@@ -542,18 +548,18 @@ def inject_audio(document, lesson, payloads, plan):
     require("</style>" in document, "HTML has no style block")
     document = document.replace("</style>", AUDIO_CSS + "\n</style>", 1)
     open_button = ('<div class="listen-row"><button type="button" class="listen-open" data-unit="L">'
-                   '🎧 Anhören</button></div>')
+                   f'{esc(ui.get("🎧 Anhören", "🎧 Anhören"))}</button></div>')
     header_end = document.find("</header>")
     require(header_end >= 0, "HTML has no header")
     document = document[:header_end] + open_button + document[header_end:]
-    document = document.replace("</header>", "</header>" + LISTEN_HTML, 1)
+    document = document.replace("</header>", "</header>" + language.localize(LISTEN_HTML, ui), 1)
 
     for record in lesson["vocabulary"]:
         def transform(block, record=record):
             head_id = controls[f'{record["id"]}-head']
             block, count = re.subn(
                 r'(<div class="top"><span class="de">.*?</span>)(?=<span class="en">)',
-                lambda match: match.group(1) + play_button(head_id, "Play German headword"),
+                lambda match: match.group(1) + play_button(head_id, f"Play {name} headword"),
                 block, count=1, flags=re.S)
             require(count == 1, f"Cannot place headword audio for {record['id']}")
             ids = [controls[f'{record["id"]}-ex-{index}'] for index in range(len(record["examples"]))]
@@ -577,7 +583,7 @@ def inject_audio(document, lesson, payloads, plan):
             head_id = controls[f'{record["id"]}-head']
             block, count = re.subn(
                 r'(<div class="head">.*?</div>)',
-                lambda match: match.group(1)[:-6] + play_button(head_id, "Play German expression") + "</div>",
+                lambda match: match.group(1)[:-6] + play_button(head_id, f"Play {name} expression") + "</div>",
                 block, count=1, flags=re.S)
             require(count == 1, f"Cannot place expression audio for {record['id']}")
             variant_ids = iter(controls[f'{record["id"]}-variant-{index}']
@@ -586,7 +592,7 @@ def inject_audio(document, lesson, payloads, plan):
             def variant_replacement(match):
                 nonlocal seen
                 seen += 1
-                return match.group(1) + play_button(next(variant_ids), "Play German variant") + "</p>"
+                return match.group(1) + play_button(next(variant_ids), f"Play {name} variant") + "</p>"
             block = re.sub(r'(<p class="variant">.*?)(</p>)', variant_replacement, block, flags=re.S)
             require(seen == len(record.get("variants", [])),
                     f"HTML/lesson variant mismatch for {record['id']}")
@@ -596,9 +602,9 @@ def inject_audio(document, lesson, payloads, plan):
 
     document = number_examples(document, lesson)
     heads = {record["id"]: controls[f'{record["id"]}-head'] for record in lesson["vocabulary"] + lesson["redemittel"]}
-    document = inject_story_audio(document, plan, heads)
+    document = inject_story_audio(document, plan, heads, ui)
     compact = lambda value: json.dumps(value, separators=(",", ":"))
-    script = (AUDIO_JS.replace("__LISTEN__", LISTEN_JS)
+    script = (AUDIO_JS.replace("__LISTEN__", language.localize(LISTEN_JS, ui))
               .replace("__SEQUENCE__", compact(listening_order("", lesson, plan)))
               .replace("__EXAMPLES__", compact(examples_order("", lesson, plan)))
               .replace("__STORY__", compact(story_order("", plan)))
@@ -613,7 +619,7 @@ def main(argv=None):
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--cache-dir", type=Path, required=True)
-    parser.add_argument("--voice-de", default=speech.DEFAULT_VOICES["de"], help="German voice for all German text")
+    parser.add_argument("--voice-de", help="voice for the target language (default: the language profile's voice)")
     parser.add_argument("--voice-en", default=speech.DEFAULT_VOICES["en"], help="English voice for glosses and explanations")
     parser.add_argument("--concurrency", type=int, default=4)
     parser.add_argument("--confirm-external-tts", action="store_true",
@@ -628,11 +634,12 @@ def main(argv=None):
         require(args.output.parent.is_dir(), "Output directory does not exist")
         require(1 <= args.concurrency <= 8, "Concurrency must be from 1 to 8")
         lesson = json.loads(args.lesson.read_text(encoding="utf-8"))
-        require(isinstance(lesson, dict) and lesson.get("target_language", "").startswith("de"),
-                "Lesson must be German v2 lesson data")
+        require(isinstance(lesson, dict) and lesson.get("target_language"), "Lesson must be v2 lesson data")
+        prof = language.profile(lesson["target_language"])
+        speech.use(prof)
         for key in ("title", "vocabulary", "grammar", "redemittel"):
             require(key in lesson, f"Lesson is missing {key}")
-        voices = {"de": args.voice_de, "en": args.voice_en}
+        voices = {"de": args.voice_de or prof["voice"], "en": args.voice_en}
         clips, plan = lesson_plan(lesson, voices)
         print(f"AUDIO PLAN: {len(clips)} unique clips; {len(plan['sequence'])} listening steps; voices={voices}")
         paths = asyncio.run(synthesize(clips, args.cache_dir, voices, args.concurrency))
@@ -651,7 +658,7 @@ def main(argv=None):
             stream.write(output)
         print(f"WROTE: {args.output} ({args.output.stat().st_size} bytes, fully embedded audio)")
         return 0
-    except (AudioError, speech.SpeechError, OSError, json.JSONDecodeError) as error:
+    except (AudioError, speech.SpeechError, language.LanguageError, OSError, json.JSONDecodeError) as error:
         print("FAIL: " + str(error), file=sys.stderr)
         return 1
 

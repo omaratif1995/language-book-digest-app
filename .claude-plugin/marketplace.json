@@ -1,15 +1,15 @@
 {
-  "name": "german-language-distiller",
-  "description": "Turn German language-course material (course books, lecture slides, handouts, notes) into compact study sheets, a phone study app with audio and flashcards, and listening episodes.",
+  "name": "language-distiller",
+  "description": "Turn language-course material (course books, lecture slides, handouts, notes) into compact study sheets, a phone study app with audio, flashcards and games, and listening episodes. German is the reference language.",
   "owner": {
     "name": "omaratif1995",
     "url": "https://github.com/omaratif1995"
   },
   "plugins": [
     {
-      "name": "german-language-distiller",
+      "name": "language-distiller",
       "source": "./",
-      "description": "Distill lessons into Wortschatz / Grammatik / Redemittel sheets with a closing story, an offline study app (German audio that sounds German and repeats on tap, one-tap spaced repetition, lesson games) and MP3 listening episodes."
+      "description": "Distill lessons into vocabulary / grammar / phrase sheets with a closing story (German: Wortschatz, Grammatik, Redemittel, Geschichte), an offline study app (each language spoken by its own voice, repeats on tap, plays with the screen off, one-tap spaced repetition, lesson games) and MP3 listening episodes."
     }
   ]
 }

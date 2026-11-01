@@ -23,6 +23,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from embed_audio import AudioError, lesson_plan, require, synthesize  # noqa: E402
+import language  # noqa: E402
 import speech  # noqa: E402
 
 BYTES_PER_SECOND = 6000   # edge-tts delivers 48 kbit/s constant-bitrate MP3
@@ -38,7 +39,6 @@ def load_course(path):
     require(not unknown, f"course.json has unknown key(s) {', '.join(unknown)}; see references/course-app.md")
     require(isinstance(course.get("units"), list) and course["units"], "course.json needs a non-empty units list")
     course["title"] = course.get("title") or "Course"
-    course["voices"] = {**speech.DEFAULT_VOICES, **(course.get("voices") or {})}
     narration = course.get("narration")
     course["narration"] = json.loads((base / narration).read_text(encoding="utf-8-sig")) if narration else {}
     course["cache"] = (base / course.get("cache", "_work/audio")).resolve()
@@ -58,6 +58,15 @@ def load_course(path):
         unit["sheet"] = (base / unit["sheet"]).resolve()
         require(unit["lesson"].is_file(), f"lesson file not found: {unit['lesson']}")
         require(unit["sheet"].is_file(), f"sheet file not found: {unit['sheet']}")
+    codes = {language.code_of(json.loads(unit["lesson"].read_text(encoding="utf-8-sig")).get("target_language", "de"))
+             for unit in course["units"]}
+    require(len(codes) == 1, f"all units of a course need one target language, not {', '.join(sorted(codes))}")
+    try:
+        course["profile"] = language.profile(codes.pop())
+    except language.LanguageError as error:
+        raise AudioError(str(error)) from error
+    speech.use(course["profile"])                 # the course's language: its voice, words and notation
+    course["voices"] = {"de": course["profile"]["voice"], "en": speech.DEFAULT_VOICES["en"], **(course.get("voices") or {})}
     return course
 
 
@@ -90,7 +99,7 @@ def narration_notes(course):
         grammar = {record["id"] for record in lessons[uid]["grammar"]}
         for gid, text in points.items():
             require(gid in grammar, f"narration names an unknown grammar point: {uid} {gid}")
-            notes += [f"{uid} {gid}: '{word}' looks German but is not marked «…»" for word in speech.unmarked_german(text)]
+            notes += [f"{uid} {gid}: '{word}' looks {course['profile']['name']} but is not marked «…»" for word in speech.unmarked_german(text)]
     return notes
 
 
@@ -164,7 +173,8 @@ def example_steps(unit_plan_, lesson, times):
 def build_episodes(course, plan, kind="lesson", times=2):
     """One MP3 per unit: the whole sheet (kind 'lesson') or only its example sentences (kind 'examples')."""
     ff = ffmpeg_exe()
-    folder = course["episodes_dir"] / ("Beispiele" if kind == "examples" else "")
+    examples = language.ui_table(course["profile"]).get("Beispiele", "Beispiele")       # German: Beispiele
+    folder = course["episodes_dir"] / (examples if kind == "examples" else "")
     folder.mkdir(parents=True, exist_ok=True)
     clips_dir, total = course["cache"] / "clips", 0.0
     for number, unit in enumerate(course["units"], 1):

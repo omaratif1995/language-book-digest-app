@@ -69,7 +69,7 @@ class EmbeddedAudioTests(unittest.TestCase):
         clips, plan = embed_audio.lesson_plan(lesson, "test-voice")
         self.assertEqual(len(plan["story"]), 1)
         self.assertEqual(len(plan["story"][0]), 2)
-        self.assertIn("Geschichte", plan["sections"])
+        self.assertIn("story", plan["sections"])
         result = embed_audio.inject_audio(HTML.replace("</main>", STORY_HTML + "</main>"), lesson,
                                           {clip_id: "AAAA" for clip_id in clips}, plan)
         self.assertEqual(result.count('class="story-play"'), 1)

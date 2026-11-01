@@ -26,7 +26,7 @@ The Geschichte is the last section of every sheet: one short, catchy text that p
 
 ## Audio-friendly writing
 
-The story is spoken by a German voice, one clip per sentence.
+The story is spoken by the target language's voice (German: a German voice), one clip per sentence.
 
 - Write numbers, times and abbreviations the way they are spoken when a voice could stumble: *zum Beispiel*, not *z. B.*
 - Avoid brackets, slashes, arrows and symbols.

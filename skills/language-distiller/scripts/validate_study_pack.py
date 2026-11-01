@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Check the compact learner HTML structure: three teaching sections and an optional closing Geschichte."""
+"""Check the compact learner HTML structure: three teaching sections and an optional closing story, named in the
+sheet's language (Wortschatz, Grammatik, Redemittel, Geschichte for German; see languages/)."""
 from __future__ import annotations
 
 import argparse
@@ -9,10 +10,10 @@ from pathlib import Path
 import re
 import sys
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import language  # noqa: E402
 
 VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
-REQUIRED = ("Wortschatz", "Grammatik", "Redemittel")
-STORY = "Geschichte"
 ISBN = re.compile(r"\b97[89](?:[-\s]?\d){10}\b")
 FORBIDDEN_TEXT = ("Start hier", "Start here", "Mini-Abruf", "30-Sekunden-Merkhilfe",
                   "coverage report", "coverage notes", "source coverage", "source review",
@@ -35,6 +36,12 @@ class Parser(HTMLParser):
         self.hidden, self.disclosures, self.vocab_tables = [], [], []
         self.forbidden_classes, self.ids = [], {}
         self.story_paragraphs = 0
+        self.use("de")
+
+    def use(self, lang):
+        """The section names of the sheet's language (<html lang>)."""
+        sections = language.profile(lang)["sections"]
+        self.required, self.story = (sections["vocabulary"], sections["grammar"], sections["redemittel"]), sections["story"]
 
     def active(self, kind):
         for _, info in reversed(self.stack):
@@ -44,15 +51,20 @@ class Parser(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         info, attributes, cls = None, dict(attrs), classes(attrs)
+        if tag == "html" and attributes.get("lang"):
+            try:
+                self.use(attributes["lang"])
+            except language.LanguageError as error:
+                self.errors.append(str(error))
         if cls & FORBIDDEN_CLASSES:
             self.forbidden_classes.append((self.getpos()[0], sorted(cls & FORBIDDEN_CLASSES)))
         if "hidden" in attributes or attributes.get("aria-hidden") == "true" or re.search(r"display\s*:\s*none|visibility\s*:\s*hidden", attributes.get("style", ""), re.I):
             self.hidden.append(self.getpos()[0])
-        if tag == "details" and not ("story-tr" in cls and self.section == STORY):
+        if tag == "details" and not ("story-tr" in cls and self.section == self.story):
             self.disclosures.append(self.getpos()[0])     # only the story's translations may be folded
-        if "story-p" in cls and self.section == STORY:
+        if "story-p" in cls and self.section == self.story:
             self.story_paragraphs += 1
-        if tag == "table" and self.section == "Wortschatz":
+        if tag == "table" and self.section == self.required[0]:
             self.vocab_tables.append(self.getpos()[0])
         if "id" in attributes:
             if attributes["id"] in self.ids:
@@ -91,7 +103,7 @@ class Parser(HTMLParser):
         if tag == "h2" and self.heading is not None:
             text = " ".join("".join(self.heading).split())
             self.headings.append(text)
-            self.section = next((name for name in REQUIRED + (STORY,) if name.casefold() in text.casefold()), text)
+            self.section = next((name for name in self.required + (self.story,) if name.casefold() in text.casefold()), text)
             self.heading = None
         if tag in VOID:
             return
@@ -109,9 +121,9 @@ def meaningful(example):
     return bool("".join(example["text"]).strip()) and any("".join(mark["text"]).strip() for mark in example["marks"])
 
 
-def normalized_heading(heading):
+def normalized_heading(heading, names):
     label = re.sub(r"^\s*\d+[.)]?\s*", "", heading).strip()
-    return next((name for name in REQUIRED + (STORY,) if label.casefold() == name.casefold()), "")
+    return next((name for name in names if label.casefold() == name.casefold()), "")
 
 
 def style(text):
@@ -140,11 +152,12 @@ def main(argv=None):
         failures.extend(parser.errors)
         if parser.stack:
             failures.append("unclosed tags")
-    normalized = tuple(normalized_heading(heading) for heading in parser.headings)
-    if normalized not in (REQUIRED, REQUIRED + (STORY,)):
-        failures.append("the h2 sections must be Wortschatz, Grammatik, Redemittel and optionally Geschichte, in this order")
-    if STORY in normalized and parser.story_paragraphs < 3:
-        failures.append("the Geschichte needs at least three paragraphs")
+    normalized = tuple(normalized_heading(heading, parser.required + (parser.story,)) for heading in parser.headings)
+    required, story = parser.required, parser.story
+    if normalized not in (required, required + (story,)):
+        failures.append(f"the h2 sections must be {', '.join(required)} and optionally {story}, in this order")
+    if story in normalized and parser.story_paragraphs < 3:
+        failures.append(f"the {story} needs at least three paragraphs")
     for card in parser.cards:
         if not card["examples"] or not all(meaningful(example) for example in card["examples"]):
             failures.append(f"card on line {card['line']} lacks a marked example")
@@ -180,7 +193,7 @@ def main(argv=None):
     print(f"Sections: {' | '.join(parser.headings)}")
     print(f"Vocabulary: {len(vocabulary)}; grammar: {len(parser.rules)}; Redemittel: {len(phrases)}; "
           f"story paragraphs: {parser.story_paragraphs}")
-    print("LIMIT: structure only; selection and German require source/language review.")
+    print("LIMIT: structure only; selection and language require source/language review.")
     for message in warnings:
         print("WARN: " + message)
     for message in failures:

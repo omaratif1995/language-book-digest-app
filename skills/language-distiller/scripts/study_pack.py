@@ -17,6 +17,9 @@ from pathlib import Path
 import re
 import sys
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import language  # noqa: E402
+
 
 SCHEMA = 2
 KINDS = {"vocabulary", "grammar", "expression", "source_only"}
@@ -294,12 +297,15 @@ def example_notes(lesson, inventory, notes):
         notes.append("Very short examples (check they are not too simple): " + ", ".join(sorted(set(short))))
     if copied:
         notes.append("Examples that repeat six or more source words in a row (write your own): " + ", ".join(sorted(set(copied))))
-    if starts and starts.count("ich") / len(starts) > 0.4:
-        notes.append(f"{starts.count('ich')} of {len(starts)} examples start with «Ich»; vary the subjects")
-    perfekt = [record["id"] for record in lesson["vocabulary"]
-               if record["pos"] == "verb" and not re.search(r"\b(hat|ist|haben|sein)\b", record.get("forms", ""))]
-    if perfekt:
-        notes.append("Verb cards without a Perfekt form (hat/ist + Partizip II): " + ", ".join(perfekt))
+    prof = language.profile(lesson["target_language"])
+    first = prof.get("first_person")
+    if first and starts and starts.count(first) / len(starts) > 0.4:
+        notes.append(f"{starts.count(first)} of {len(starts)} examples start with «{first.capitalize()}»; vary the subjects")
+    hint = prof.get("verb_hint")                  # German: the Perfekt belongs on every verb card
+    missing = [record["id"] for record in lesson["vocabulary"]
+               if hint and record["pos"] == "verb" and not re.search(hint["forms"], record.get("forms", ""))]
+    if missing:
+        notes.append(hint["note"] + ": " + ", ".join(missing))
 
 
 def copied_run(text, protected, source, n=6):
@@ -392,8 +398,10 @@ def validate_bundle(inventory_path, lesson_path, review_path=None, source_path=N
         field(inventory, name, "inventory")
     for name in ("title", "level", "target_language", "gloss_language"):
         field(lesson, name, "lesson")
-    require(lesson["target_language"].split("-")[0].lower() == "de",
-            "This skill revision is for German learner sheets (target_language de)")
+    try:
+        prof = language.profile(lesson["target_language"])
+    except language.LanguageError as error:
+        raise PackError(str(error)) from error
 
     blockers, notes = [], []
     scope = seq(inventory.get("scope_pages"), "inventory.scope_pages", 1)
@@ -448,10 +456,11 @@ def validate_bundle(inventory_path, lesson_path, review_path=None, source_path=N
                 optional_string(record.get("forms", ""), f"{nid}.forms")
                 require(record["pos"] in ("noun", "verb", "adjective", "adverb", "pronoun",
                                                   "preposition", "conjunction", "other"), f"{nid}: invalid pos")
-                if record["pos"] == "noun":
+                if record["pos"] == "noun" and prof["articles"]:
                     article = field(record, "article", nid)
-                    require(article in ("der", "die", "das"), f"{nid}: German noun needs der/die/das")
+                    require(article in prof["articles"], f"{nid}: {prof['name']} noun needs {'/'.join(prof['articles'])}")
                     require(not record["lemma"].startswith(article + " "), f"{nid}: do not repeat article in lemma")
+                if record["pos"] == "noun" and prof.get("noun_plural", True):
                     require(re.search(r"plural|\bpl\.|no plural|uncountable|singular.only|nur singular", record.get("forms", ""), re.I),
                             f"{nid}: noun forms need useful plural/no-plural information")
                 if record["pos"] == "verb":
@@ -624,11 +633,11 @@ def example_html(record, gloss_language):
 
 def story_html(lesson, node_sections):
     """Section 4: the story, one span per sentence (audio and highlighting) and the lesson's words underlined."""
-    story, support = lesson["story"], lesson["gloss_language"]
+    story, support, prof = lesson["story"], lesson["gloss_language"], language.profile(lesson["target_language"])
     hints = {record["id"]: (f'{record["article"]} ' if record.get("article") else "") + f'{record["lemma"]}: {record["gloss"]}'
              for record in lesson["vocabulary"]}
     hints.update({record["id"]: f'{record["frame"]}: {record["gloss"]}' for record in lesson["redemittel"]})
-    parts = ['<h2><span class="num">4</span> Geschichte</h2><div class="rule-under"></div>',
+    parts = [f'<h2><span class="num">4</span> {esc(prof["sections"]["story"])}</h2><div class="rule-under"></div>',
              f'<article class="story" id="story"><h3>{esc(story["title"])}</h3>']
     number = 0
     for index, paragraph in enumerate(story["paragraphs"], 1):
@@ -645,7 +654,7 @@ def story_html(lesson, node_sections):
             inner.append(esc(text[cursor:end]))
             sentences.append(f'<span class="ss" id="story-s{number}">{"".join(inner)}</span>')
         parts.append(f'<div class="story-p" id="story-p{index}"><p>{" ".join(sentences)}</p>'
-                     f'<details class="story-tr"><summary>Übersetzung</summary><p lang="{esc(support)}">{esc(paragraph["en"])}</p></details></div>')
+                     f'<details class="story-tr"><summary>{esc(prof["translation"])}</summary><p lang="{esc(support)}">{esc(paragraph["en"])}</p></details></div>')
     parts.append('</article>')
     return "".join(parts)
 
@@ -657,6 +666,8 @@ def render_html(bundle, draft=False, template_path=TEMPLATE):
     style = re.search(r"<style\b[^>]*>.*?</style>", template, re.I | re.S)
     require(style, "Shared template has no style block")
     lesson, support = bundle.lesson, bundle.lesson["gloss_language"]
+    prof = language.profile(lesson["target_language"])
+    titles = {key: esc(name) for key, name in prof["sections"].items()}
     status = "draft" if draft else "reviewed"
     parts = ['<!DOCTYPE html>', f'<html lang="{esc(lesson["target_language"])}"><head>',
              '<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">',
@@ -665,7 +676,7 @@ def render_html(bundle, draft=False, template_path=TEMPLATE):
              '</head><body><main class="wrap">',
              # The header names level and unit only: the source's title, publisher and ISBN stay in _work.
              f'<header class="hero"><div class="lekt">{esc(lesson["level"])} · {esc(lesson["lesson_id"])}</div><h1>{esc(lesson["title"])}</h1></header>',
-             '<h2><span class="num">1</span> Wortschatz</h2><div class="rule-under"></div>']
+             f'<h2><span class="num">1</span> {titles["vocabulary"]}</h2><div class="rule-under"></div>']
     previous = None
     for record in lesson["vocabulary"]:
         if record["group"] != previous:
@@ -675,17 +686,17 @@ def render_html(bundle, draft=False, template_path=TEMPLATE):
                 parts[-1] = '</div>' + parts[-1]
             previous = record["group"]
         article = record.get("article", "")
-        article_html = f'<span class="art-{esc(article)}">{esc(article)}</span> ' if article else ""
+        article_html = f'<span class="art-{esc(language.article_class(prof, article))}">{esc(article)}</span> ' if article else ""
         forms = f'<p class="forms">{esc(record["forms"])}</p>' if record.get("forms", "").strip() else ""
         parts.append(f'<article class="voc" id="{esc(record["id"])}"><div class="top"><span class="de">{article_html}{esc(record["lemma"])}</span><span class="en">{esc(record["gloss"])}</span></div>{forms}{example_html(record, support)}</article>')
     if previous is not None:
         parts.append('</div>')
-    parts.extend(['<h2><span class="num">2</span> Grammatik</h2><div class="rule-under"></div>'])
+    parts.extend([f'<h2><span class="num">2</span> {titles["grammar"]}</h2><div class="rule-under"></div>'])
     for record in lesson["grammar"]:
         patterns = ''.join(f'<p><b>{esc(pattern["label"])}:</b> {esc(pattern["form"])}</p>' for pattern in record["patterns"])
         contrast = f'<p class="contrast"><b>Important:</b> {esc(record["contrast"])}</p>' if record.get("contrast") else ""
         parts.append(f'<article class="rule" id="{esc(record["id"])}"><h3>{esc(record["title"])}</h3><p><b>Meaning:</b> {esc(record["meaning"])}</p><p><b>Rule:</b> {esc(record["rule"])}</p><div class="patterns">{patterns}</div>{contrast}{example_html(record, support)}</article>')
-    parts.extend(['<h2><span class="num">3</span> Redemittel</h2><div class="rule-under"></div>'])
+    parts.extend([f'<h2><span class="num">3</span> {titles["redemittel"]}</h2><div class="rule-under"></div>'])
     previous = None
     for record in lesson["redemittel"]:
         if record["group"] != previous:

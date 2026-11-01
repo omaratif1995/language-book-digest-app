@@ -1,6 +1,6 @@
 # Deutschkurs B1 · Volkshochschule Nordstadt · Frau Dr. Brandt · Woche 12
 
-(Original test material written for the German Language Distiller evaluations. The school and the teacher are invented.)
+(Original test material written for the Language Distiller evaluations. The school and the teacher are invented.)
 
 ---
 

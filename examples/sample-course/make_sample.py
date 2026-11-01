@@ -9,7 +9,7 @@ import copy, json, subprocess, sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-SCRIPTS = HERE.parents[1] / "skills" / "german-language-distiller" / "scripts"
+SCRIPTS = HERE.parents[1] / "skills" / "language-distiller" / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 import study_pack as pack  # noqa: E402
 
